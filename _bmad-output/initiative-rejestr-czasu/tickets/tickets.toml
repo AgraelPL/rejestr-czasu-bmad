@@ -1,0 +1,27 @@
+# Epiki inicjatywy Rejestr czasu pracy, w kolejności budowy.
+
+[[epic]]
+id = 1
+slug = "epic-szkielet-i-slowniki"
+title = "Szkielet aplikacji i Słowniki"
+description = "Aplikacja startuje przez docker compose up -d i dotnet run (Kestrel tylko na 127.0.0.1, CSP, zasoby lokalne, appsettings.Local.json, .gitignore), robi Kopię bazy i migracje, a README opisuje odtwarzanie z Kopii bazy. Epik dostarcza dla kolejnych: schemat z migracją Initial, Domain/Czas, PolishCalendar i YearMonth, DictionaryOptions, MainLayout z menu, Notify, Confirm, ReportGrid w pełnym zakresie AD-9 (filtr wartości, licznik, ikony akcji, stałe grupowanie z sumą od ekranu) i Testcontainers. Autor prowadzi Projekty i Typy pracy; R17 tu: filtr i licznik na listach Słowników."
+covers = ["R1", "R2", "R3", "R14", "R15", "R17"]
+
+[[epic]]
+id = 2
+slug = "epic-wpisy-i-lista"
+title = "Wpisy w Sesji wpisywania i Lista wpisów"
+description = "Autor przenosi notatki z kilku dni do Wpisów samą klawiaturą, a na Liście wpisów wyszukuje, edytuje, kopiuje i usuwa Wpisy z sumą Czasu. Epik dostarcza dla epiku 3: EntryForm (strona /wpisy/nowy i okno dialogowe) oraz DeleteEntry z Confirm. R2 tu: nieaktywne pozycje znikają z list wyboru formularza i zostają przy edycji. R17 tu: filtr kolumn i licznik na Liście wpisów."
+covers = ["R2", "R4", "R5", "R6", "R7", "R8", "R16", "R17"]
+after = [{ epic = 1, needs = "schemat z migracją Initial, Domain/Czas, PolishCalendar, YearMonth, DictionaryOptions, ReportGrid (pełny zakres AD-9), MainLayout, Notify i Confirm" }]
+
+[[epic]]
+id = 3
+slug = "epic-miesiac-i-zestawienie"
+title = "Widok miesiąca i Zestawienie"
+description = "Autor sprawdza Miesiąc w siatce grupowanej Tydzień → Dzień i pobiera Zestawienie xlsx w układzie Odbiorcy (endpoint /zestawienie, ekran Eksport); Test wrześniowy przechodzi. Epik posiada MonthEntriesQuery i MonthReport.Build, jedyne źródło sum (AD-5). R17 tu: filtr kolumn i licznik w Widoku miesiąca; filtr nie zmienia sum z MonthReport."
+covers = ["R9", "R10", "R11", "R12", "R13", "R17"]
+after = [
+  { epic = 1, needs = "ReportGrid ze stałym grupowaniem, schemat, Domain/Czas, PolishCalendar, YearMonth, Notify i Confirm" },
+  { epic = 2, needs = "EntryForm w oknie dialogowym i DeleteEntry dla ikon w wierszach" },
+]

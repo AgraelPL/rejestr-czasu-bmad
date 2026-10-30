@@ -67,7 +67,12 @@ Autor oddaje Odbiorcy miesięczne Zestawienie prosto z eksportu, przyjęte bez p
 - Brak wykresów, raportów według Projektu, stawek i kwot, timera, importu (w tym z notatek), eksportu CSV, zamykania Miesiąca i przypomnień.
 - Brak autostartu, synchronizacji i kopii poza dyskiem lokalnym.
 - Aplikacja nie zastępuje notatek i nie rozwiązuje „szacowania po fakcie”.
-- Ścieżka przez epiki: Słowniki → Wpis w Sesji wpisywania → Widok miesiąca z sumami → Zestawienie xlsx sprawdzone Testem wrześniowym.
+- Touch point: Docker Desktop i obraz `postgres:18` — instaluje i uruchamia Autor; compose, wolumen i `docker exec pg_dump`; owner: epic-szkielet-i-slowniki
+- Touch point: katalog Kopii bazy na dysku lokalnym — wskazuje Autor w konfiguracji; owner: epic-szkielet-i-slowniki
+- Touch point: Odbiorca — konsumuje Zestawienie w układzie z `export-layout.md`; owner: epic-miesiac-i-zestawienie
+- Touch point: źródłowy xlsx wrześniowy — tylko lokalnie, poza gitem, do Testu wrześniowego; owner: epic-miesiac-i-zestawienie
+- Touch point: notatki Autora — źródło ręczne, bez importu
+- Ścieżka przez epiki: Szkielet (start, Kopia bazy, układ) → Słowniki → Wpis w Sesji wpisywania → Widok miesiąca z sumami → Zestawienie xlsx sprawdzone Testem wrześniowym.
 
 ## References
 
@@ -81,3 +86,6 @@ Autor oddaje Odbiorcy miesięczne Zestawienie prosto z eksportu, przyjęte bez p
 ## Notes
 
 - Source conflict: prd NFR-4, FR-14, FR-15 i addendum PRD (Node.js, SQLite, `npm start`, `.sqlite`) vs architecture AD-1–AD-3 — obowiązuje architektura (decyzja Autora, 30.10.2026); PRD do aktualizacji.
+- Decision (30.10.2026): podział na 3 epiki według zasady „jedna zdolność dostarczana w całości, szkielet otwiera”: szkielet i Słowniki → Wpisy i Lista wpisów → Widok miesiąca i Zestawienie.
+- Decision (30.10.2026): `ReportGrid` w pełnym zakresie AD-9 i typy domeny powstają w epiku 1 („najpierw mechanizm, później zastosowanie”).
+- Decision (30.10.2026): SM-2 i SM-4 zostają kryteriami inicjatywy; epik 3 kończy się Testem wrześniowym.

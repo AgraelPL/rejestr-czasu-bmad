@@ -8,7 +8,7 @@ scope: 'Cała aplikacja Rejestr czasu pracy: Słowniki, Wpisy, Widok miesiąca, 
 status: final
 created: '2026-10-30'
 updated: '2026-10-30'
-binds: [R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12, R13, R14, R15, R16]
+binds: [R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12, R13, R14, R15, R16, R17]
 sources:
   - _bmad-output/initiative-rejestr-czasu/initiative-rejestr-czasu.md
   - _bmad-output/initiative-rejestr-czasu/glossary.md
