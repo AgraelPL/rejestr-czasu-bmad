@@ -5,9 +5,11 @@ parent: none
 sources:
   - _bmad-output/initiative-rejestr-czasu/prd-rejestr-czasu/prd-rejestr-czasu.md
   - _bmad-output/initiative-rejestr-czasu/prd-rejestr-czasu/addendum.md
+  - _bmad-output/initiative-rejestr-czasu/architecture-rejestr-czasu/architecture-rejestr-czasu.md
 companions:
   - _bmad-output/initiative-rejestr-czasu/glossary.md
   - _bmad-output/initiative-rejestr-czasu/export-layout.md
+  - _bmad-output/initiative-rejestr-czasu/architecture-rejestr-czasu/architecture-rejestr-czasu.md
 risk: medium
 ---
 
@@ -28,32 +30,34 @@ Autor oddaje Odbiorcy miesięczne Zestawienie prosto z eksportu, przyjęte bez p
 - R3 (prd FR-4): Usunięcie Projektu lub Typu pracy udaje się tylko, gdy nie występuje w żadnym Wpisie; inaczej Autor widzi komunikat z liczbą Wpisów i propozycją dezaktywacji.
 - R4 (prd FR-5): Autor dodaje Wpis z datą, jednym Projektem, jednym Typem pracy, wymaganym opisem i Czasem; Czas spoza `0:15`–`24:00` lub niebędący wielokrotnością 15 minut jest odrzucany z komunikatem; dzień tygodnia jest wyliczany z daty; Suma dnia ponad 24 h nie jest blokowana.
 - R5 (prd FR-5): W Sesji wpisywania pierwszy Wpis ma domyślnie dzisiejszą datę; po zapisie formularz zostaje otwarty z tą samą datą, a Projekt, Typ pracy, opis i Czas są wyczyszczone.
-- R6 (prd FR-6): Autor edytuje każde pole Wpisu i usuwa Wpis po potwierdzeniu, także w poprzednich Miesiącach.
-- R7 (prd FR-7): Kopia Wpisu otwiera formularz z Projektem, Typem pracy, opisem i Czasem oryginału oraz datą ustawioną w formularzu; nic nie zapisuje się bez potwierdzenia; nieaktywny Projekt lub Typ pracy zostawia pole puste.
+- R6 (prd FR-6, architecture AD-10): Autor edytuje każde pole Wpisu w oknie dialogowym otwieranym ikoną w wierszu raportu i usuwa Wpis po potwierdzeniu, także w poprzednich Miesiącach; po zmianie raport pokazuje dane z bazy.
+- R7 (prd FR-7, architecture AD-10): Kopia Wpisu, otwierana ikoną w wierszu raportu, otwiera okno z Projektem, Typem pracy, opisem i Czasem oryginału oraz datą ustawioną w formularzu; nic nie zapisuje się bez potwierdzenia; nieaktywny Projekt lub Typ pracy zostawia pole puste.
 - R8 (prd FR-8): Lista wpisów filtruje po zakresie dat (domyślnie bieżący Miesiąc), Projekcie i Typie pracy (także nieaktywnych), sortuje od najnowszej daty i pokazuje liczbę Wpisów oraz sumę Czasu; z listy można edytować, kopiować i usuwać Wpis.
-- R9 (prd FR-9): Widok miesiąca pokazuje Wpisy wybranego Miesiąca (domyślnie bieżącego) dzień po dniu, tylko dni z Wpisami, w dniu według kodu Projektu, potem nazwy Typu pracy, z dniem tygodnia, Sumą dnia, Sumą tygodnia i sumą Miesiąca; edycja, kopia i usunięcie Wpisu przeliczają sumy od razu.
+- R9 (prd FR-9, architecture AD-9): Widok miesiąca to siatka Wpisów wybranego Miesiąca (domyślnie bieżącego) grupowana Tydzień → Dzień, tylko dni z Wpisami, w dniu według kodu Projektu, potem nazwy Typu pracy, z dniem tygodnia, Sumą tygodnia i Sumą dnia w nagłówkach grup oraz sumą Miesiąca; sumy dotyczą całego Miesiąca także przy włączonym filtrze; edycja, kopia i usunięcie Wpisu przeliczają sumy od razu.
 - R10 (prd FR-10): Suma dnia, Suma tygodnia i suma Miesiąca w Widoku miesiąca są identyczne z sumami w Zestawieniu za ten Miesiąc.
 - R11 (prd FR-11): W Zestawieniu Wpisy z tego samego dnia o tym samym Projekcie i Typie pracy tworzą jeden Wiersz zestawienia: Czas się sumuje, opisy trafiają do kolejnych linii jednej komórki w kolejności dodania.
-- R12 (prd FR-12): Jedno kliknięcie w Widoku miesiąca daje Zestawienie xlsx w układzie z `export-layout.md`; sumy są wartościami, nie formułami.
+- R12 (prd FR-12, architecture AD-14): Zestawienie xlsx w układzie z `export-layout.md` pobiera się jednym kliknięciem w Widoku miesiąca albo z ekranu Eksport po wyborze Miesiąca; sumy są wartościami, nie formułami.
 - R13 (prd FR-13): Plik Zestawienia nazywa się `<prefiks>_Zestawienie-<miesiąc małą literą>_<RRRR>.xlsx` (prefiks z konfiguracji; bez prefiksu `Zestawienie-<miesiąc małą literą>_<RRRR>.xlsx`); eksport Miesiąca bez Wpisów daje komunikat zamiast pliku.
-- R14 (prd FR-14): Przy każdym uruchomieniu, zanim aplikacja przyjmie pierwsze żądanie, powstaje Kopia bazy `rejestr-RRRR-MM-DD_GGMMSS.sqlite` w osobnym katalogu; zostaje 10 najnowszych, najstarsza jest usuwana dopiero po udanym zapisie nowej; nieudana kopia zatrzymuje uruchomienie z czytelnym komunikatem.
-- R15 (prd FR-15): Ścieżki bazy i katalogu kopii pochodzą z konfiguracji; domyślne leżą poza repozytorium i poza folderami synchronizowanymi z chmurą.
+- R14 (prd FR-14, architecture AD-3): Przy każdym uruchomieniu, zanim aplikacja przyjmie pierwsze żądanie, powstaje Kopia bazy `rejestr-RRRR-MM-DD_GGMMSS.sql` (`pg_dump`) w osobnym katalogu; zostaje 10 najnowszych, najstarsza jest usuwana dopiero po udanym zapisie nowej; niedostępna baza albo nieudana kopia zatrzymują uruchomienie z czytelnym komunikatem.
+- R15 (prd FR-15, architecture AD-2, AD-13): Parametry połączenia z bazą i katalog kopii pochodzą z konfiguracji poza gitem; dane bazy leżą w wolumenie Dockera, a domyślny katalog kopii poza repozytorium i poza folderami synchronizowanymi z chmurą.
 - R16 (prd NFR-3): Każdy kolejny Wpis w Sesji wpisywania, od pustego formularza do zapisu, zajmuje nie więcej niż 10 s i da się go wykonać samą klawiaturą.
+- R17 (architecture AD-9): Każdy raport (Widok miesiąca, Lista wpisów) i lista Słownika ma filtr wartości w każdej kolumnie i licznik pozycji; filtr nie zmienia sum liczonych dla Miesiąca; brak eksportu CSV.
 
 ## Constraints
 
 - prd NFR-1: nasłuch tylko na `127.0.0.1`; zero połączeń wychodzących (telemetria, CDN, zewnętrzne czcionki), wszystkie zasoby lokalne; brak logowania i kont.
 - prd NFR-2, SM-1: baza, kopie, źródłowy xlsx i plik konfiguracji z prefiksem poza gitem; testy, przykłady i dane startowe zanonimizowane; prawdziwe dane wrześniowe nigdy w repozytorium. Kody Projektów i sumy z września mogą być w dokumentach planistycznych.
-- prd NFR-4: desktop, aktualna przeglądarka na komputerze Autora; interfejs tylko po polsku; uruchomienie komendą `npm start`, bez autostartu.
+- prd NFR-4: desktop, aktualna przeglądarka na komputerze Autora; interfejs tylko po polsku; bez autostartu.
 - prd NFR-5: Czas liczony w minutach całkowitych; konwersja na godziny dziesiętne dopiero w Zestawieniu.
-- prd addendum: Node.js; baza SQLite w jednym pliku.
+- architecture AD-1, AD-2: .NET 10, Blazor Web App Interactive Server, Fluent UI Blazor 5, EF Core 10, PostgreSQL 18 w Dockerze (port tylko na `127.0.0.1`); uruchomienie `docker compose up -d`, potem `dotnet run`.
+- architecture: kręgosłup `architecture-rejestr-czasu.md` (AD-1…AD-14) wiąże każdy epik.
 - prd SM-4, SM-C1: cały kod piszą agenci BMad; przy zderzeniu z terminem wygrywa metoda, a utknięcie agenta to materiał do notatki końcowej.
 - prd §3: terminy z `glossary.md` obowiązują dosłownie.
 
 ## Done when
 
 - Test wrześniowy przechodzi lokalnie do 28.12.2026: Sumy dnia, Sumy tygodnia 30 / 16 / 18 / 25 / 14 h i RAZEM 103 h zgodne z oryginałem (prd SM-1).
-- Aplikacja działa na komputerze Autora (`npm start`) i w pierwszym Miesiącu „na serio” (styczeń 2027, najpóźniej luty) wszystkie Wpisy trafiają do niej przed końcem Miesiąca (prd SM-2).
+- Aplikacja działa na komputerze Autora (`docker compose up -d`, `dotnet run`) i w pierwszym Miesiącu „na serio” (styczeń 2027, najpóźniej luty) wszystkie Wpisy trafiają do niej przed końcem Miesiąca (prd SM-2).
 - Zestawienie za ten Miesiąc trafia do Odbiorcy prosto z eksportu, bez poprawek w Excelu, i zostaje przyjęte (prd SM-3).
 - Cały kod napisali agenci BMad, a po pierwszym Miesiącu „na serio” powstała notatka o tym, co w metodzie działało (prd SM-4).
 
@@ -72,3 +76,8 @@ Autor oddaje Odbiorcy miesięczne Zestawienie prosto z eksportu, przyjęte bez p
 - brief — _bmad-output/initiative-rejestr-czasu/brief-rejestr-czasu/brief-rejestr-czasu.md, Ryzyka i otwarte sprawy
 - glossary — _bmad-output/initiative-rejestr-czasu/glossary.md
 - export layout — _bmad-output/initiative-rejestr-czasu/export-layout.md
+- architecture — _bmad-output/initiative-rejestr-czasu/architecture-rejestr-czasu/architecture-rejestr-czasu.md, Invariants & Rules, Capability → Architecture Map
+
+## Notes
+
+- Source conflict: prd NFR-4, FR-14, FR-15 i addendum PRD (Node.js, SQLite, `npm start`, `.sqlite`) vs architecture AD-1–AD-3 — obowiązuje architektura (decyzja Autora, 30.10.2026); PRD do aktualizacji.
