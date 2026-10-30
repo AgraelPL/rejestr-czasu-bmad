@@ -30,7 +30,7 @@ Przedsięwzięcie ma dwa cele o równej wadze: narzędzie, w którym Autor od st
 
 ### 2.2 Ścieżki użytkownika
 
-- **UJ-1. Sesja wpisywania.** Autor uruchamia aplikację (`npm start`), otwiera notatki z ostatnich 3–4 dni i wpisuje po kolei 6–12 Wpisów: ustawia datę pierwszego dnia, wybiera Projekt i Typ pracy, wpisuje opis i Czas, zapisuje; formularz zostaje z tą samą datą na kolejny Wpis, a przy następnym dniu Autor zmienia tylko datę.
+- **UJ-1. Sesja wpisywania.** Autor uruchamia bazę i aplikację (`docker compose up -d`, `dotnet run`), otwiera ekran Nowy wpis i notatki notatki z ostatnich 3–4 dni i wpisuje po kolei 6–12 Wpisów: ustawia datę pierwszego dnia, wybiera Projekt i Typ pracy, wpisuje opis i Czas, zapisuje; formularz zostaje z tą samą datą na kolejny Wpis, a przy następnym dniu Autor zmienia tylko datę.
 - **UJ-2. Zamknięcie miesiąca.** Pierwszego dnia nowego miesiąca autor otwiera Widok miesiąca za poprzedni Miesiąc, sprawdza Sumy dnia i Sumy tygodnia, uzupełnia brakujący Wpis, klika eksport i wysyła Zestawienie Odbiorcy.
 - **UJ-3. Pytanie o godziny.** Autor otwiera Listę wpisów, ustawia zakres 01.01–31.03 i Projekt RDZ, odczytuje sumę pod listą.
 
@@ -81,7 +81,7 @@ Autor może usunąć Projekt lub Typ pracy, który nie występuje w żadnym Wpis
 **Opis:** Formularz Wpisu to najczęściej używany ekran; ma działać szybko z klawiatury (NFR-3). Realizuje UJ-1.
 
 #### FR-5: Dodanie Wpisu
-Autor może dodać Wpis: data (z kalendarza), Projekt i Typ pracy (z list aktywnych pozycji), opis, Czas.
+Autor może dodać Wpis na osobnym ekranie Nowy wpis (przycisk na górze menu): data (z kalendarza), Projekt i Typ pracy (z list aktywnych pozycji), opis, Czas.
 - Pierwszy Wpis w Sesji wpisywania ma domyślnie dzisiejszą datę. Po zapisie formularz zostaje otwarty na kolejny Wpis z tą samą datą; Projekt, Typ pracy, opis i Czas są czyszczone.
 - Dzień tygodnia jest wyliczany z daty i pokazywany przy niej; nie da się go wpisać.
 - Czas spoza zakresu `0:15`–`24:00` lub niebędący wielokrotnością 15 minut jest odrzucany z komunikatem.
@@ -90,10 +90,10 @@ Autor może dodać Wpis: data (z kalendarza), Projekt i Typ pracy (z list aktywn
 - Suma dnia powyżej 24 h nie jest blokowana.
 
 #### FR-6: Edycja i usunięcie Wpisu
-Autor może zmienić każde pole Wpisu i usunąć Wpis (z potwierdzeniem). Dotyczy też Wpisów z poprzednich Miesięcy; v1 nie ma zamykania Miesiąca.
+Autor może zmienić każde pole Wpisu w oknie dialogowym otwieranym ikoną w wierszu raportu (Widok miesiąca, Lista wpisów) i usunąć Wpis ikoną w wierszu (z potwierdzeniem). Po zmianie raport pokazuje dane z bazy. Dotyczy też Wpisów z poprzednich Miesięcy; v1 nie ma zamykania Miesiąca.
 
 #### FR-7: Kopiowanie Wpisu
-Autor może skopiować Wpis: otwiera się formularz nowego Wpisu z Projektem, Typem pracy, opisem i Czasem oryginału oraz z datą ustawioną aktualnie w formularzu Wpisu (na początku Sesji wpisywania dzisiejszą). Nic nie zapisuje się bez potwierdzenia Autora. Jeśli Projekt lub Typ pracy oryginału jest nieaktywny, odpowiednie pole pozostaje puste do ponownego wyboru.
+Autor może skopiować Wpis ikoną w wierszu raportu: otwiera się okno dialogowe z formularzem nowego Wpisu z Projektem, Typem pracy, opisem i Czasem oryginału oraz z datą ustawioną aktualnie w formularzu Wpisu (na początku Sesji wpisywania dzisiejszą). Nic nie zapisuje się bez potwierdzenia Autora. Jeśli Projekt lub Typ pracy oryginału jest nieaktywny, odpowiednie pole pozostaje puste do ponownego wyboru.
 
 ### 4.3 Lista wpisów
 
@@ -105,12 +105,18 @@ Autor może przeglądać Wpisy z filtrami: zakres dat (domyślnie bieżący Mies
 - Pod listą widać liczbę Wpisów i sumę Czasu dla bieżących filtrów.
 - Z listy można edytować, kopiować i usuwać Wpis.
 
+#### FR-16: Filtry w siatce raportów
+Każdy raport (Widok miesiąca, Lista wpisów) i lista Słownika jest siatką z filtrem wartości w każdej kolumnie (zaznaczanie wartości) i licznikiem pozycji.
+- Filtr ukrywa wiersze; nie zmienia Sum dnia, Sum tygodnia ani sumy Miesiąca w Widoku miesiąca.
+- Siatka nie ma eksportu CSV. Grupowanie sterowane przez Autora, sortowanie po kilku kolumnach i wybór kolumn są poza v1.
+
 ### 4.4 Widok miesiąca
 
 **Opis:** Kontrola przed eksportem, odpowiednik dotychczasowego arkusza. Realizuje UJ-2.
 
 #### FR-9: Widok miesiąca
-Autor może wybrać Miesiąc (domyślnie bieżący) i zobaczyć jego Wpisy dzień po dniu, chronologicznie, z dniem tygodnia, Sumą dnia, Sumą tygodnia i sumą Miesiąca.
+Autor może wybrać Miesiąc (domyślnie bieżący) i zobaczyć jego Wpisy w siatce grupowanej Tydzień → Dzień, chronologicznie, z dniem tygodnia, Sumą tygodnia i Sumą dnia w nagłówkach grup oraz sumą Miesiąca.
+- Sumy dotyczą całego Miesiąca, także gdy filtr (FR-16) ukrywa część wierszy.
 - W obrębie dnia Wpisy są ułożone jak Wiersze zestawienia (FR-11): według kodu Projektu, potem nazwy Typu pracy.
 - Suma tygodnia obejmuje tylko dni danego Miesiąca.
 - Dni bez Wpisów są pomijane.
@@ -121,7 +127,7 @@ Sumy dnia, Sumy tygodnia i suma Miesiąca w Widoku miesiąca są identyczne z od
 
 ### 4.5 Zestawienie
 
-**Opis:** Jedno kliknięcie w Widoku miesiąca daje Zestawienie za wybrany Miesiąc. Realizuje UJ-2.
+**Opis:** Jedno kliknięcie w Widoku miesiąca daje Zestawienie za wybrany Miesiąc; to samo daje ekran Eksport (pozycja w menu) po wyborze Miesiąca. Realizuje UJ-2.
 
 #### FR-11: Złączenie Wpisów w Wiersze zestawienia
 Wpisy z tego samego dnia o tym samym Projekcie i Typie pracy tworzą jeden Wiersz zestawienia: Czas się sumuje, opisy trafiają do kolejnych linii tej samej komórki w kolejności dodania Wpisów. Wiersze zestawienia jednego dnia są ułożone według kodu Projektu, potem nazwy Typu pracy.
@@ -150,20 +156,21 @@ Plik nazywa się `<prefiks>_Zestawienie-<miesiąc małą literą>_<RRRR>.xlsx` (
 ### 4.6 Bezpieczeństwo danych
 
 #### FR-14: Kopia bazy
-Kopia bazy powstaje przy każdym uruchomieniu aplikacji, zanim aplikacja przyjmie pierwsze żądanie; w trakcie działania kopie nie powstają (aplikacja działa 1–2 h co kilka dni). Kopie bazy trafiają do osobnego katalogu pod nazwą `rejestr-RRRR-MM-DD_GGMMSS.sqlite`; zachowywanych jest 10 najnowszych.
+Kopia bazy powstaje przy każdym uruchomieniu aplikacji, zanim aplikacja przyjmie pierwsze żądanie; w trakcie działania kopie nie powstają (aplikacja działa 1–2 h co kilka dni). Kopie bazy (pełny zrzut bazy) trafiają do osobnego katalogu pod nazwą `rejestr-RRRR-MM-DD_GGMMSS.sql`; zachowywanych jest 10 najnowszych.
 - Najstarsza Kopia bazy jest usuwana dopiero po udanym zapisie nowej.
-- Nieudana Kopia bazy zatrzymuje uruchomienie z czytelnym komunikatem.
+- Niedostępna baza albo nieudana Kopia bazy zatrzymuje uruchomienie z czytelnym komunikatem.
 
 #### FR-15: Lokalizacja danych
-Ścieżki pliku bazy i katalogu kopii pochodzą z konfiguracji. Domyślne ścieżki leżą poza repozytorium i poza folderami synchronizowanymi z chmurą (na Windowsie `Documents` bywa przekierowany do OneDrive, a repozytorium leży w `Documents`).
+Parametry połączenia z bazą i katalog kopii pochodzą z konfiguracji poza gitem. Dane bazy i domyślny katalog kopii leżą poza repozytorium i poza folderami synchronizowanymi z chmurą (na Windowsie `Documents` bywa przekierowany do OneDrive, a repozytorium leży w `Documents`).
 
 ## 5. Wymagania niefunkcjonalne
 
 - **NFR-1 Tylko lokalnie:** aplikacja nasłuchuje wyłącznie na `127.0.0.1` i nie nawiązuje żadnych połączeń wychodzących (brak telemetrii, CDN, zewnętrznych czcionek); wszystkie zasoby są serwowane lokalnie. Brak logowania i kont.
 - **NFR-2 Prywatność repozytorium:** baza, kopie, źródłowy xlsx i plik konfiguracji z prefiksem nie trafiają do gita. Testy, przykłady i dane startowe w repozytorium są zanonimizowane. Kody Projektów i sumy z września mogą zostać w dokumentach planistycznych (decyzja Autora, 30.10.2026).
 - **NFR-3 Szybkość wpisu:** każdy kolejny Wpis w Sesji wpisywania, od pustego formularza do zapisu, zajmuje kilka sekund, nie więcej niż 10; całość da się wykonać samą klawiaturą.
-- **NFR-4 Platforma:** desktop, aktualna przeglądarka na komputerze Autora; interfejs tylko po polsku. Uruchomienie komendą `npm start`.
+- **NFR-4 Platforma:** desktop, aktualna przeglądarka na komputerze Autora; interfejs tylko po polsku. Uruchomienie: Autor uruchamia lokalną bazę, potem aplikację (`docker compose up -d`, `dotnet run`; stos w addendum).
 - **NFR-5 Arytmetyka:** Czas jest liczony w minutach całkowitych; zaokrąglenia nie występują aż do konwersji na godziny dziesiętne w Zestawieniu.
+- **NFR-6 Układ i komunikaty:** belka górna, menu boczne (przycisk Nowy wpis; sekcja Rejestr: Widok miesiąca, Lista wpisów, Eksport; sekcja Administracja: Projekty, Typy pracy), treść na pełną szerokość. Walidacja i mniej istotne operacje w pasku komunikatu, każde potwierdzenie w oknie komunikatu. Skala 90/100/110/125% według szerokości okna; motyw jasny i ciemny.
 
 ## 6. Poza zakresem (świadomie nie robimy)
 

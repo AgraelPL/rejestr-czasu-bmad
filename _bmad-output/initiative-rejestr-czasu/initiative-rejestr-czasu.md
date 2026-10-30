@@ -41,7 +41,7 @@ Autor oddaje Odbiorcy miesięczne Zestawienie prosto z eksportu, przyjęte bez p
 - R14 (prd FR-14, architecture AD-3): Przy każdym uruchomieniu, zanim aplikacja przyjmie pierwsze żądanie, powstaje Kopia bazy `rejestr-RRRR-MM-DD_GGMMSS.sql` (`pg_dump`) w osobnym katalogu; zostaje 10 najnowszych, najstarsza jest usuwana dopiero po udanym zapisie nowej; niedostępna baza albo nieudana kopia zatrzymują uruchomienie z czytelnym komunikatem.
 - R15 (prd FR-15, architecture AD-2, AD-13): Parametry połączenia z bazą i katalog kopii pochodzą z konfiguracji poza gitem; dane bazy leżą w wolumenie Dockera, a domyślny katalog kopii poza repozytorium i poza folderami synchronizowanymi z chmurą.
 - R16 (prd NFR-3): Każdy kolejny Wpis w Sesji wpisywania, od pustego formularza do zapisu, zajmuje nie więcej niż 10 s i da się go wykonać samą klawiaturą.
-- R17 (architecture AD-9): Każdy raport (Widok miesiąca, Lista wpisów) i lista Słownika ma filtr wartości w każdej kolumnie i licznik pozycji; filtr nie zmienia sum liczonych dla Miesiąca; brak eksportu CSV.
+- R17 (prd FR-16, architecture AD-9): Każdy raport (Widok miesiąca, Lista wpisów) i lista Słownika ma filtr wartości w każdej kolumnie i licznik pozycji; filtr nie zmienia sum liczonych dla Miesiąca; brak eksportu CSV.
 
 ## Constraints
 
@@ -85,7 +85,7 @@ Autor oddaje Odbiorcy miesięczne Zestawienie prosto z eksportu, przyjęte bez p
 
 ## Notes
 
-- Source conflict: prd NFR-4, FR-14, FR-15 i addendum PRD (Node.js, SQLite, `npm start`, `.sqlite`) vs architecture AD-1–AD-3 — obowiązuje architektura (decyzja Autora, 30.10.2026); PRD do aktualizacji.
+- Decision (30.10.2026): konflikt PRD (Node.js, SQLite, `npm start`, `.sqlite`) z architekturą AD-1–AD-3 rozwiązany aktualizacją PRD; PRD ma też FR-16 (filtry w siatce) i NFR-6 (układ i komunikaty).
 - Decision (30.10.2026): podział na 3 epiki według zasady „jedna zdolność dostarczana w całości, szkielet otwiera”: szkielet i Słowniki → Wpisy i Lista wpisów → Widok miesiąca i Zestawienie.
 - Decision (30.10.2026): `ReportGrid` w pełnym zakresie AD-9 i typy domeny powstają w epiku 1 („najpierw mechanizm, później zastosowanie”).
 - Decision (30.10.2026): SM-2 i SM-4 zostają kryteriami inicjatywy; epik 3 kończy się Testem wrześniowym.

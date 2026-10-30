@@ -2,12 +2,15 @@
 
 Szczegóły dla architektury, które nie należą do PRD.
 
-## Decyzje techniczne z briefu
+## Decyzje techniczne
 
-- Aplikacja webowa uruchamiana lokalnie przez `npm start` (Node.js), nasłuch na `127.0.0.1`.
-- Baza SQLite w jednym pliku; ścieżka w konfiguracji, poza folderami synchronizowanymi z chmurą.
-- Kopia bazy wyłącznie przy starcie, przed przyjęciem pierwszego żądania; rotacja do 10 plików. Aplikacja działa 1–2 h co kilka dni, więc kopie cykliczne nie są potrzebne.
-- `.gitignore` już wyklucza `docs/*.xlsx`, `docs/projekt-testowy-material.md`, pliki `*.sqlite`/`*.db` z plikami WAL i katalog `backups/`. Plik konfiguracji z prefiksem nazwy Zestawienia też musi być wykluczony.
+Obowiązują decyzje z kręgosłupa architektury [`architecture-rejestr-czasu.md`](../architecture-rejestr-czasu/architecture-rejestr-czasu.md) (AD-1–AD-14, 30.10.2026). Zastąpiły pierwotne założenia briefu (Node.js, SQLite w jednym pliku, `npm start`).
+
+- .NET 10, Blazor Web App (Interactive Server), Fluent UI Blazor 5, FluentValidation 12, EF Core 10 z Npgsql.
+- PostgreSQL 18 w kontenerze Docker (`docker compose`), port tylko na `127.0.0.1`, dane w wolumenie Dockera.
+- Uruchomienie: `docker compose up -d`, potem `dotnet run`.
+- Kopia bazy przy starcie przez `pg_dump` (plik `.sql`), przed migracjami; rotacja do 10 plików. Aplikacja działa 1–2 h co kilka dni, więc kopie cykliczne nie są potrzebne.
+- `.gitignore` wyklucza `docs/*.xlsx`, `docs/projekt-testowy-material.md` i katalog `backups/`; `appsettings.Local.json` (prefiks nazwy Zestawienia, katalog kopii, hasło) i `.env` też muszą być wykluczone.
 
 ## Źródło układu Zestawienia
 
