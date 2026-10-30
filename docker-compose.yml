@@ -1,0 +1,18 @@
+# Local PostgreSQL for Rejestr czasu pracy (AD-2). Start: docker compose up -d
+services:
+  db:
+    image: postgres:18
+    container_name: rejestr-czasu-db
+    restart: "no"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?ustaw POSTGRES_USER w .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?ustaw POSTGRES_PASSWORD w .env}
+      POSTGRES_DB: ${POSTGRES_DB:?ustaw POSTGRES_DB w .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - rejestr-czasu-data:/var/lib/postgresql
+
+volumes:
+  rejestr-czasu-data:
+    name: rejestr-czasu-data
