@@ -1,6 +1,6 @@
 # Dane z nazwami klientów i osób, nie trafiają do publicznego repozytorium
 docs/*.xlsx
-docs/projekt-testowy-material.md
+projekt-testowy-material.md
 *Zestawienie*.xlsx
 
 # Konfiguracja lokalna: prefiks nazwy Zestawienia, katalog kopii, hasło bazy
