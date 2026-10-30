@@ -1,0 +1,120 @@
+# Historie epiku Szkielet aplikacji i Słowniki, w kolejności budowy.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Szkielet aplikacji ze schematem Initial"
+description = "Scaffold Blazor Web App (.NET 10, Interactive Server, Fluent UI 5 z zasobami lokalnymi i czcionką Segoe UI) z docker-compose.yml (postgres:18, 127.0.0.1:5432, wolumen, .env), AppDbContext ze wszystkimi encjami (Project, WorkType, TimeEntry), indeksami unikalności i FK RESTRICT w migracji Initial, startem: sprawdzenie bazy → Migrate() → serwer na 127.0.0.1 (krok Kopii bazy dokłada historia 2), kulturą pl-PL i rejestracją TimeProvider, szkieletem rejestracji usług w Program.cs (Fluent UI z IDialogService, IDbContextFactory, IOptions dla Database/Backup/Export), nagłówkiem CSP, appsettings.Local.json, .gitignore i README z krokami uruchomienia. Projekt testów: xUnit, bUnit z usługami Fluent UI oraz Testcontainers (wspólny kontener postgres:18, schemat przez Migrate(), czyszczenie danych między testami). Daje pozostałym historiom aplikację, schemat i infrastrukturę testów."
+verify = "Po docker compose up -d i dotnet run strona startowa na http://127.0.0.1:<port> odpowiada z nagłówkiem Content-Security-Policy, a karta Sieć w DevTools pokazuje tylko żądania do 127.0.0.1; docker exec <container_name> psql -U <user> -c \"\\dt\" pokazuje tabele z migracji Initial; po docker compose stop dotnet run kończy się komunikatem „uruchom Docker Desktop i docker compose up -d”; dotnet test przechodzi, w tym jeden test bUnit i jeden na Testcontainers."
+covers = ["R15"]
+after = []
+hitl = true # Autor instaluje Docker Desktop, tworzy .env i appsettings.Local.json według README, uruchamia docker compose up -d
+risk = "medium"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-1", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-2", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-3", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-6", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-7", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-12", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-13", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#consistency-conventions"]
+
+[[entry]]
+id = 2
+type = "story"
+title = "Kopia bazy przy starcie i odtwarzanie z README"
+description = "Dokłada krok 2 startu z AD-3 między sprawdzenie bazy a Migrate() z historii 1: docker exec pg_dump do katalogu kopii z konfiguracji (rejestr-RRRR-MM-DD_GGMMSS.sql, zapis binarny), domyślny katalog kopii w appsettings.json poza repozytorium i poza folderami synchronizowanymi z chmurą, rotacja do 10 plików z usunięciem najstarszego dopiero po udanym zapisie, nieudana kopia zatrzymuje start z komunikatem; README z historii 1 dostaje sekcje odtwarzania przez psql i DOTNET_CLI_TELEMETRY_OPTOUT=1."
+verify = "Każde dotnet run dodaje plik .sql w katalogu kopii, a przy 11. zostaje 10 najnowszych; przy błędnym container_name start kończy się komunikatem i bez migracji; Autor odtwarza bazę z Kopii bazy według README i widzi te same dane."
+covers = ["R14", "R15"]
+after = [1]
+hitl = true # Autor wskazuje katalog kopii w appsettings.Local.json i raz wykonuje odtworzenie według README
+risk = "high"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-3", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-12", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-13"]
+
+[[entry]]
+id = 3
+type = "story"
+title = "Układ aplikacji z menu, Notify i Confirm"
+description = "MainLayout z AD-11: belka górna, menu boczne (Nowy wpis; Rejestr: Widok miesiąca, Lista wpisów, Eksport; Administracja: Projekty, Typy pracy), nagłówek treści z tytułem, podtytułem, okruszkami i przyciskiem Odśwież, skala 90/100/110/125%, motyw jasny/ciemny, polskie teksty Fluent UI; Shared/Notify (FluentMessageBar) i Shared/Confirm (FluentMessageBox, fokus na Anuluj) oraz obsługa nieobsłużonego wyjątku ekranu przez Notify. Pozycje menu ekranów z epików 2 i 3 są aktywne od razu i do czasu budowy prowadzą do polskiej strony „nie znaleziono”. Daje Słownikom i epikom 2–3 układ i komunikaty."
+verify = "Autor otwiera aplikację i widzi menu ze wszystkimi pozycjami, przełącza motyw, a zwężenie okna zmienia skalę; testy bUnit pokazują, że Confirm zwraca false po Anuluj i true po potwierdzeniu, a Notify wyświetla komunikat."
+covers = []
+after = [1]
+hitl = false
+risk = "low"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11"]
+
+[[entry]]
+id = 4
+type = "story"
+title = "Typy domeny: Czas, PolishCalendar, YearMonth"
+description = "Domain/Czas (minuty jako int; parsowanie i formatowanie h:mm, także sum ponad 24 h; reguła 0:15–24:00 i wielokrotność 15 minut; godziny dziesiętne do eksportu), Domain/PolishCalendar (nazwy dni i miesięcy w mianowniku, tydzień od poniedziałku), Domain/YearMonth, bez EF i UI. Daje epikom 2 i 3 jedyne miejsca konwersji Czasu i dat."
+verify = "Testy xUnit bez bazy przechodzą dla przypadków brzegowych: 0:15 i 24:00 przyjęte, 0:10, 24:15 i 0:00 odrzucone, 1830 minut formatuje się jako 30:30, 1:30 daje 1,5, 1.09.2026 to wtorek, a tydzień zaczyna się w poniedziałek."
+covers = []
+after = [1]
+hitl = false
+risk = "low"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-6"]
+
+[[entry]]
+id = 5
+type = "story"
+title = "ReportGrid: lista z filtrem, licznikiem i ikonami akcji"
+description = "Shared/ReportGrid<T> jako nakładka na FluentDataGrid: przyjmuje IReadOnlyList<T>, zachowuje kolejność wejścia, nie liczy sum, ma filtr wartości w każdej kolumnie, licznik pozycji po filtrze i ikony akcji w wierszu (edycja, kopia, usunięcie) zadawane przez ekran. Daje listom Słowników i Liście wpisów jedną siatkę."
+verify = "Testy bUnit pokazują, że filtr w kolumnie ukrywa wiersze i zmienia licznik, kolejność wierszy jest kolejnością wejścia, a kliknięcie ikony wywołuje akcję ekranu z danym wierszem."
+covers = ["R17"]
+after = [1]
+hitl = false
+risk = "medium"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-9", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-12"]
+
+[[entry]]
+id = 6
+type = "story"
+title = "ReportGrid: stałe grupowanie z sumą od ekranu"
+description = "Rozszerza ReportGrid z historii 5 o stałe grupowanie zadane przez ekran (wiele poziomów, np. Tydzień → Dzień) z nagłówkami grup i sumą podaną przez ekran; filtr ukrywa tylko wiersze, sumy w nagłówkach się nie zmieniają, grupa bez widocznych wierszy znika. Daje epikowi 3 siatkę Widoku miesiąca."
+verify = "Testy bUnit na danych przykładowych pokazują dwa poziomy grup z sumami przekazanymi przez test, a włączenie filtru ukrywa wiersze bez zmiany tych sum."
+covers = ["R17"]
+after = [5]
+hitl = false
+risk = "high" # FluentDataGrid 5 może nie mieć grupowania; nagłówki grup mogą wymagać własnego renderowania bez JavaScriptu
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-9"]
+
+[[entry]]
+id = 7
+type = "story"
+title = "Projekty: lista, dodawanie, edycja, dezaktywacja i usuwanie"
+description = "Ekran /projekty w ReportGrid z historii 5 i układzie z historii 3: dodawanie i edycja (kod i nazwa, walidator FluentValidation przez Blazilla, kod zapisywany wielkimi literami w SaveChanges; Wpisy odwołują się do Projektu tylko kluczem, więc zmiana widać we wszystkich Wpisach), duplikat kodu rozpoznawany przez tworzone tu Data/DbErrors i pokazywany w MessageBar, dezaktywacja i przywrócenie, usunięcie po Confirm tylko bez Wpisów, inaczej komunikat z liczbą Wpisów i propozycją dezaktywacji. Pierwszy ekran Słownika; historia 8 powtarza jego wzorzec i używa Data/DbErrors."
+verify = "Autor dodaje Projekt „rdz”, widzi RDZ na liście, a próba dodania „Rdz” kończy się komunikatem; po dodaniu Wpisu z tym Projektem poleceniem z README (docker exec … psql INSERT) usunięcie pokazuje liczbę Wpisów i propozycję dezaktywacji; testy na Testcontainers obejmują unikalność, normalizację i blokadę usunięcia."
+covers = ["R1", "R2", "R3", "R17"]
+after = [3, 5]
+hitl = false
+risk = "medium"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-4", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-7", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-8", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-9", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11"]
+
+[[entry]]
+id = 8
+type = "story"
+title = "Typy pracy: lista, dodawanie, edycja, dezaktywacja i usuwanie"
+description = "Ekran /typy-pracy według wzorca z historii 7: nazwa unikalna bez względu na wielkość liter (indeks lower(name) z migracji Initial, błąd przez Data/DbErrors z historii 7), dezaktywacja i przywrócenie, usunięcie po Confirm tylko bez Wpisów, inaczej komunikat z liczbą Wpisów i propozycją dezaktywacji."
+verify = "Autor dodaje Typ pracy „Development”, a „development” zostaje odrzucony komunikatem; po dodaniu Wpisu z tym Typem pracy poleceniem z README usunięcie pokazuje liczbę Wpisów i propozycję dezaktywacji; testy na Testcontainers przechodzą."
+covers = ["R1", "R2", "R3", "R17"]
+after = [7]
+hitl = false
+risk = "low"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-4", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-7", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-8", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-9", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11"]
+
+[[entry]]
+id = 9
+type = "story"
+title = "DictionaryOptions dla formularza Wpisu"
+description = "Data/DictionaryOptions: opcje Projektów i Typów pracy do list wyboru, czyli aktywne pozycje plus bieżąca wartość edytowanego Wpisu, sortowane w C# według pl-PL (Projekty po kodzie, Typy pracy po nazwie). Daje epikowi 2 jedyne źródło opcji formularza (część R2 dla list wyboru realizuje tamten epik)."
+verify = "Testy na Testcontainers pokazują, że nieaktywny Projekt nie występuje w opcjach nowego Wpisu, występuje przy edycji Wpisu, który go używa, a sortowanie stosuje kolejność pl-PL (np. „Łódź” między „Lublin” a „Mielec”)."
+covers = ["R2"]
+after = [1]
+hitl = false
+risk = "low"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-10"]
+
+[[entry]]
+id = 10
+type = "story"
+title = "Refactor sweep"
+description = "Porządki odłożone w planach i przeglądach historii 1–9; zakres ustalany na starcie tej historii, wyłącznie sprzątanie."
+verify = "dotnet build bez ostrzeżeń i dotnet test przechodzą; lista odłożonych uwag z planów historii 1–9 jest zamknięta albo przeniesiona do nowych historii."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+hitl = false
+risk = "low"
