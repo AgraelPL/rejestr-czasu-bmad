@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rejestr czasu — forge</title>
+<style>
+:root{--bg:#f7f3ea;--ink:#2a2620;--muted:#6b6357;--card:#fffdf8;--line:#e2d9c6;--seal:#8f1d1d;--ok:#2f6b3a;--warn:#9a6a12}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1a17;--ink:#ece6da;--muted:#a59c8c;--card:#26231f;--line:#3a352e;--seal:#c0392b;--ok:#6fbf7d;--warn:#e0a83a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Georgia,"Times New Roman",serif}
+main{max-width:860px;margin:0 auto;padding:32px 16px 64px}
+header{display:flex;gap:24px;align-items:center;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:20px}
+header h1{margin:0 0 4px;font-size:2rem}
+header p{margin:0;color:var(--muted)}
+.seal{flex:0 0 auto}
+h2{font-size:1.15rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:32px 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px}
+ul{margin:0;padding-left:20px}
+li{margin:4px 0}
+.kill li::marker{content:"✕  ";color:var(--seal)}
+.lock li::marker{content:"✓  ";color:var(--ok)}
+.weak li::marker{content:"!  ";color:var(--warn)}
+.cast{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.cast div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.cast b{display:block}
+.cast i{color:var(--muted);font-size:.92rem}
+code{font-family:Consolas,monospace;font-size:.9em}
+</style>
+</head>
+<body>
+<main>
+<header>
+<svg class="seal" width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Pieczęć: HARDENED">
+  <defs><path id="c" d="M70,70 m-48,0 a48,48 0 1,1 96,0 a48,48 0 1,1 -96,0"/></defs>
+  <path fill="var(--seal)" d="M70 4l9 8 12-3 5 11 12 3-1 12 9 8-6 11 4 12-11 5-2 12-12 0-7 10-11-5-11 5-7-10-12 0-2-12-11-5 4-12-6-11 9-8-1-12 12-3 5-11 12 3z"/>
+  <circle cx="70" cy="70" r="44" fill="none" stroke="#f7e9d7" stroke-width="2" opacity=".7"/>
+  <text fill="#f7e9d7" font-size="10" font-family="Georgia" letter-spacing="3"><textPath href="#c">REJESTR CZASU · FORGE · 2026-10-30 ·</textPath></text>
+  <text x="70" y="76" text-anchor="middle" fill="#f7e9d7" font-size="17" font-weight="bold" font-family="Georgia" letter-spacing="1">HARDENED</text>
+</svg>
+<div>
+<h1>Rejestr czasu pracy</h1>
+<p>Lokalny rejestr godzin dla jednej osoby, budowany do nauki. Pomysł przetrwał sesję: zakres się zawęził, a dwie zmiany kierunku zostały rozstrzygnięte.</p>
+</div>
+</header>
+
+<h2>Ustalone</h2>
+<div class="card lock"><ul>
+<li>Jeden użytkownik, bez logowania w v1; aplikacja lokalna na <code>127.0.0.1</code>.</li>
+<li>Node.js, Express, Handlebars i SQLite.</li>
+<li>Wpis: data, projekt, zadanie, opis, czas. Słownik zadań niezależny od projektu.</li>
+<li>Słowniki z flagą <code>CZY_AKTYWNY</code>; zmiana nazwy działa wstecz; usunięcie zablokowane, gdy pozycja jest użyta.</li>
+<li>Czas w minutach; wpisywany jako <code>h:mm</code>; eksport w godzinach dziesiętnych; więcej niż 0 i najwyżej 24 h na wpis.</li>
+<li>Lista z filtrem dat (bieżący miesiąc), projektu i zadania, z sumą godzin; edycja i usuwanie wpisów.</li>
+<li>Eksport CSV i xlsx z wyniku filtra; CSV ze średnikiem i UTF-8 z BOM.</li>
+<li>Ścieżka do bazy w konfiguracji, plik bazy w <code>.gitignore</code>; bez systemu backupów.</li>
+</ul></div>
+
+<h2>Odrzucone i dlaczego</h2>
+<div class="card kill"><ul>
+<li>Deploy na DigitalOcean (Ubuntu i nginx): wymaga domeny i HTTPS, ochrony logowania i utrzymania serwera.</li>
+<li>Mailer do resetu hasła: zbędna zależność przy jednym użytkowniku.</li>
+<li>Plik JSON jako baza: uszkodzenie przy przerwanym zapisie i nadpisania.</li>
+<li>Clockify i arkusz Excela: funkcjonalnie wystarczą, ale nie spełniają celu nauki ani kontroli nad danymi.</li>
+</ul></div>
+
+<h2>Słabe punkty, które zostały</h2>
+<div class="card weak"><ul>
+<li>Brak kopii zapasowej: utrata dysku oznacza utratę danych, a eksport CSV nie zawiera słowników.</li>
+<li>Kierunek zmieniał się dwa razy (lokalnie, chmura, lokalnie). Ryzyko, że zakres znów zacznie puchnąć.</li>
+<li>Lista „poza zakresem v1” to założenie, którego nie potwierdzono wprost: logowanie, timer, raporty, stawki, telefon, import.</li>
+</ul></div>
+
+<h2>Kto dociskał</h2>
+<div class="cast">
+<div><b>🎯 Sofia</b><i>prowadząca, Product Owner</i></div>
+<div><b>📋 John</b><i>„Jaką pracę robi to, czego nie zrobi arkusz?”</i></div>
+<div><b>🏗️ Winston</b><i>trzy znaczenia słowa „lokalnie”</i></div>
+<div><b>🎨 Sally</b><i>40 projektów na liście po roku</i></div>
+<div><b>🔒 Vex</b><i>HTTPS, bcrypt, limit prób logowania</i></div>
+<div><b>🌶️ Boundary</b><i>przerwany zapis, usuwanie ze słownika</i></div>
+<div><b>🎯 Yui</b><i>SQLite zamiast pozornego uproszczenia</i></div>
+<div><b>🚢 Dana</b><i>„To nie bank”</i></div>
+<div><b>🪵 Splinter</b><i>przeformułował „bez chmury”</i></div>
+<div><b>🃏 Wildcard</b><i>decyzja o domenie niczego nie blokuje</i></div>
+<div><b>📏 Level</b><i>cztery formaty czasu</i></div>
+<div><b>🛑 Killjoy</b><i>„Nie budujcie systemu backupów”</i></div>
+<div><b>🧾 Bartek</b><i>freelancer od 8 lat, użytkownik Clockify</i></div>
+<div><b>🔍 Ola</b><i>audytorka danych: kopie zapasowe</i></div>
+<div><b>🧮 Krystyna</b><i>księgowa: godziny dziesiętne, średnik i BOM</i></div>
+</div>
+</main>
+</body>
+</html>

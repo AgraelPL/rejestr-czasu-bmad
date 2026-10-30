@@ -17,3 +17,6 @@ obj/
 .vs/
 *.user
 TestResults/
+
+# BMad: wygenerowane renderowania skilli (lokalne ścieżki, odtwarzane automatycznie)
+_bmad/render/

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Product Brief&colon; Rejestr czasu pracy</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <span id="markdown-mermaid" aria-hidden="true" data-config="{&quot;darkModeTheme&quot;:&quot;vscode&quot;,&quot;lightModeTheme&quot;:&quot;vscode&quot;,&quot;maxTextSize&quot;:50000,&quot;clickDrag&quot;:&quot;alt&quot;,&quot;showControls&quot;:&quot;onHoverOrFocus&quot;,&quot;resizable&quot;:true,&quot;maxHeight&quot;:&quot;&quot;}"></span>
+				<hr>
+<h2 id="title-product-brief-rejestr-czasu-pracystatus-draftcreated-2026-10-30updated-2026-10-30">title: &quot;Product Brief: Rejestr czasu pracy&quot;
+status: draft
+created: 2026-10-30
+updated: 2026-10-30</h2>
+<h1 id="product-brief-rejestr-czasu-pracy">Product Brief: Rejestr czasu pracy</h1>
+<h2 id="w-skrócie">W skrócie</h2>
+<p>Lokalna aplikacja webowa, w której jedna osoba (autor) rejestruje czas pracy na bieżąco i na koniec miesiąca generuje zestawienie xlsx w układzie, jakiego oczekuje odbiorca. Zastępuje obecny proces: notatki w dowolnej formie w ciągu miesiąca, potem ręczne przepisywanie do Excela.</p>
+<p>Projekt ma dwa cele o równej wadze: nauczyć się metody BMad na prawdziwym, małym produkcie i mieć narzędzie, w którym od 1 stycznia 2027 autor naprawdę prowadzi swoje rozliczenia. Grudzień 2026 to czas budowy. Styczeń to pierwszy miesiąc „na serio”.</p>
+<h2 id="problem">Problem</h2>
+<p>Dziś czas pracy trafia najpierw do notatek („RDZ – 4 h”, czasem tylko suma dnia), a na koniec miesiąca jest ręcznie przepisywany do arkusza, który idzie do odbiorcy. Zestawienie za wrzesień 2026 (28 wpisów, 103 h, 7 projektów) pokazuje, ile kosztuje ten krok:</p>
+<ul>
+<li><strong>Szacowanie po fakcie.</strong> Gdy w notatce jest tylko suma dnia, rozbicie na zadania jest odtwarzane z pamięci.</li>
+<li><strong>Błędy przepisywania.</strong> Zły rok w dacie, nazwa dnia niezgodna z datą, <code>RDEZ</code> zamiast <code>RDZ</code>. Nie wiadomo, czy to literówka, czy nowy projekt.</li>
+<li><strong>Kruche formuły.</strong> Sumy dnia i tygodnia liczą formuły z ręcznie dobieranymi zakresami. Każdy dodany wiersz grozi cichym błędem w sumie.</li>
+<li><strong>Brak reguł.</strong> Typ pracy jest przypisywany według niepisanej konwencji, a jeden wpis bywa przypisany do dwóch projektów naraz.</li>
+</ul>
+<p>Każdy z tych problemów wymaga potem ręcznej kontroli (osobny arkusz „Założenia” we wrześniu) i trafia do dokumentu, na podstawie którego autor się rozlicza.</p>
+<h2 id="rozwiązanie">Rozwiązanie</h2>
+<p>Wpis powstaje w dniu pracy, w formularzu, który nie pozwala na błędy z września:</p>
+<ul>
+<li>data z kalendarza, dzień tygodnia wyliczany z daty,</li>
+<li>projekt i typ pracy wybierane ze słowników, nie wpisywane,</li>
+<li>jeden wpis to jeden projekt,</li>
+<li>czas wpisywany jako <code>h:mm</code>, w krokach co 15 minut, od 0:15 do 24:00 na wpis.</li>
+</ul>
+<p>Lista wpisów z filtrem dat (domyślnie bieżący miesiąc), projektu i typu pracy pokazuje sumę godzin. Wpisy można edytować i usuwać.</p>
+<p>Na koniec miesiąca jedno kliknięcie daje zestawienie xlsx za wybrany miesiąc w dotychczasowym układzie odbiorcy: dzień tygodnia, data, kod projektu, typ pracy, opis, godziny, suma dnia, suma tygodnia (pn–nd), wiersz RAZEM, arkusz nazwany „&lt;Miesiąc RRRR&gt;”. Wpisy z tego samego dnia o tym samym projekcie i typie pracy łączą się w jeden wiersz, tak jak dziś: godziny się sumują, a każdy opis trafia do nowej linii w tej samej komórce. Sumy liczy aplikacja, nie formuły z ręcznymi zakresami.</p>
+<p>Aplikacja działa tylko na komputerze autora (nasłuch na <code>127.0.0.1</code>), bez logowania. Dane są w lokalnym pliku SQLite poza folderami synchronizowanymi z chmurą. Każde <code>npm start</code> najpierw robi kopię bazy do osobnego katalogu i trzyma kilka ostatnich kopii.</p>
+<h2 id="dlaczego-nie-gotowe-narzędzie">Dlaczego nie gotowe narzędzie</h2>
+<p>Clockify czy dalsze prowadzenie arkusza rozwiązałyby część problemu. Odpadają z dwóch powodów: dane o klientach mają zostać na sprzęcie autora, a wartością projektu jest też sama droga, czyli zbudowanie go metodą BMad. Aplikacja nie ma przewagi nad tymi narzędziami poza tym, że robi dokładnie jedno zestawienie w dokładnie tym układzie, którego potrzebuje odbiorca.</p>
+<h2 id="dla-kogo">Dla kogo</h2>
+<ul>
+<li><strong>Autor:</strong> jedyny użytkownik. Pracuje dla kilku projektów naraz (7 kodów we wrześniu), także w weekendy. Chce wpisać czas w kilka sekund w dniu pracy i na koniec miesiąca nie dotykać Excela.</li>
+<li><strong>Odbiorca zestawienia:</strong> nie korzysta z aplikacji, dostaje plik xlsx. Akceptuje godziny dziesiętne (1,5; 0,75), ale oczekuje dotychczasowego układu arkusza.</li>
+</ul>
+<h2 id="kryteria-sukcesu">Kryteria sukcesu</h2>
+<p><strong>Rejestr</strong></p>
+<ol>
+<li><strong>Test wrześniowy, przed 1 stycznia 2027:</strong> wrzesień 2026 wpisany do aplikacji (28 wpisów, wpis „WKU, RRJ” przypisany do jednego projektu) daje eksport zgodny z oryginałem: sumy dni, sumy tygodni 30 / 16 / 18 / 25 / 14 h i RAZEM 103 h.</li>
+<li><strong>Styczeń 2027 na serio:</strong> wszystkie wpisy stycznia powstają w aplikacji, bez równoległych notatek.</li>
+<li><strong>Zestawienie za styczeń</strong> trafia do odbiorcy prosto z eksportu, bez ręcznych poprawek w Excelu, i odbiorca je przyjmuje.</li>
+</ol>
+<p><strong>Nauka BMad</strong>
+4. Projekt przechodzi cały cykl: brief → PRD → architektura → epiki i historie → kod.
+5. Cały kod piszą agenci BMad, nie autor ręcznie.
+6. Po styczniu powstaje krótka notatka: co w metodzie działało, a co nie.</p>
+<h2 id="zakres-v1">Zakres v1</h2>
+<p><strong>W zakresie</strong></p>
+<ul>
+<li>Słowniki projektów (kod i nazwa [ASSUMPTION]) i typów pracy, niezależne od siebie. Flaga aktywności: nieaktywne znikają z wyboru, zostają w historii i eksporcie. Zmiana nazwy działa wstecz. Usunąć można tylko pozycję nieużytą we wpisach.</li>
+<li>Wpis: data, projekt, typ pracy, opis, czas (<code>h:mm</code>, co 15 minut, od 0:15 do 24:00). Dodawanie, edycja i usuwanie.</li>
+<li>Lista wpisów z filtrem dat (domyślnie bieżący miesiąc), projektu i typu pracy oraz sumą godzin.</li>
+<li>Eksport xlsx za miesiąc w układzie odbiorcy, z łączeniem wierszy jak wyżej.</li>
+<li>Automatyczna kopia bazy przy starcie. Ścieżka do bazy w konfiguracji. Baza i kopie w <code>.gitignore</code>.</li>
+</ul>
+<p><strong>Poza zakresem v1</strong></p>
+<ul>
+<li>Logowanie i konta (może wrócić później jako osobne ćwiczenie), dostęp z telefonu i innych urządzeń.</li>
+<li>Timer, raporty i wykresy (np. godziny według projektu), stawki i kwoty.</li>
+<li>Import danych, w tym z notatek. Wrzesień na potrzeby testu wpisuje się ręcznie.</li>
+<li>Eksport CSV.</li>
+<li>Zamknięcie miesiąca (blokada edycji po oddaniu zestawienia), przypomnienia o dniu bez wpisu [ASSUMPTION].</li>
+<li>Widok miesiąca dzień po dniu z sumami tygodni w aplikacji i kopiowanie wpisu [ASSUMPTION]. Sumy dnia i tygodnia są w eksporcie.</li>
+</ul>
+<h2 id="ryzyka-i-otwarte-sprawy">Ryzyka i otwarte sprawy</h2>
+<ul>
+<li><strong>Brak miesiąca próbnego.</strong> Styczeń jest jednocześnie pierwszym prawdziwym użyciem. Test wrześniowy to jedyne zabezpieczenie, więc musi przejść przed końcem grudnia.</li>
+<li><strong>Kopia na tym samym dysku.</strong> Chroni przed uszkodzeniem bazy i przypadkowym usunięciem, nie przed awarią dysku ani utratą laptopa. Ryzyko przyjęte świadomie [ASSUMPTION].</li>
+<li><strong>Dane klientów a repozytorium.</strong> Zestawienie wrześniowe (xlsx) leży dziś w <code>docs/</code> bez <code>.gitignore</code>. Baza, kopie i źródłowy xlsx nie mogą trafić do gita. Ewentualne dane testowe w repo muszą być zanonimizowane.</li>
+<li><strong>Termin a zasada „tylko agenci”.</strong> <em>(do ustalenia: co wygrywa, gdy się zderzą)</em></li>
+</ul>
+<h2 id="co-dalej">Co dalej</h2>
+<p>Jeśli styczeń się uda, naturalne następne kroki to podsumowania miesiąca według projektu i typu pracy, zamknięcie miesiąca oraz logowanie, każde jako osobne ćwiczenie w BMad. Dostęp spoza komputera autora wymagałby powrotu do odrzuconego w forge pomysłu z serwerem, domeną i HTTPS, więc nie jest planowany.</p>
+
+            
+            
+        </body>
+        </html>
