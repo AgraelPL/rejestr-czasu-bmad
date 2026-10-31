@@ -1,0 +1,36 @@
+name: PR
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  # Nazwa joba jest wymagana przez regułę ochrony main (docs/admin/README.md) — nie zmieniać.
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore tools
+        run: dotnet tool restore
+
+      - name: Build
+        run: dotnet build
+
+      # Testy biorą bazę i hasło wyłącznie z Testcontainers (postgres:18); Docker jest na ubuntu-latest.
+      - name: Test
+        run: dotnet test --no-build
+
+      - name: Check pending model changes
+        run: dotnet ef migrations has-pending-model-changes --project src/RejestrCzasu
