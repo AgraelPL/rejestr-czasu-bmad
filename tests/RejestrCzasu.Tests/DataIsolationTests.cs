@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using RejestrCzasu.Data;
 
 namespace RejestrCzasu.Tests;
@@ -241,30 +242,219 @@ public sealed class DataIsolationTests(PostgresFixture postgres) : IAsyncLifetim
         }
     }
 
-    /// <summary>AD-16: every entity with a <c>UserId</c> (outside Identity and Data Protection) is <see cref="IUserOwned"/>.</summary>
     [Fact]
-    public void EveryEntityWithUserId_ImplementsIUserOwned()
+    public async Task ExecuteUpdate_ChangingUserId_IsRejectedByDatabase()
     {
-        Type[] excluded =
+        var (projectA, _) = await SeedDictionariesAsync(_userA, "AAA", "Analiza");
+
+        await using (var db = await postgres.CreateUserContextAsync(_userA))
+        {
+            var ex = await Assert.ThrowsAsync<PostgresException>(() => db.Projects
+                .Where(p => p.Id == projectA)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.UserId, _userB), Ct));
+            AssertUserIdTrigger(ex);
+        }
+
+        await AssertProjectCountAsync(_userA, 1);
+        await AssertProjectCountAsync(_userB, 0);
+    }
+
+    [Theory]
+    [InlineData("project")]
+    [InlineData("work_type")]
+    [InlineData("time_entry")]
+    [InlineData("account_settings")]
+    public async Task RawUpdate_ChangingUserId_IsRejectedByDatabase(string table)
+    {
+        await SeedAsync(_userA, "AAA", "Analiza", "Opis A");
+
+        await using var connection = new NpgsqlConnection(postgres.DatabaseOptions.BuildConnectionString());
+        await connection.OpenAsync(Ct);
+        await using (var update = new NpgsqlCommand($"UPDATE {table} SET user_id = @b", connection))
+        {
+            update.Parameters.AddWithValue("b", _userB);
+            AssertUserIdTrigger(await Assert.ThrowsAsync<PostgresException>(() => update.ExecuteNonQueryAsync(Ct)));
+        }
+
+        await using var owners = new NpgsqlCommand($"SELECT array_agg(DISTINCT user_id) FROM {table}", connection);
+        Assert.Equal([_userA], (int[])(await owners.ExecuteScalarAsync(Ct))!);
+    }
+
+    /// <summary>Every IUserOwned table of the model (also one added later) has the user_id trigger.</summary>
+    [Fact]
+    public async Task EveryUserOwnedTable_HasUserIdTrigger()
+    {
+        await using var db = postgres.CreateContext();
+        var tables = db.Model.GetEntityTypes()
+            .Where(e => typeof(IUserOwned).IsAssignableFrom(e.ClrType))
+            .Select(e => e.GetTableName()!)
+            .Distinct()
+            .ToList();
+        Assert.NotEmpty(tables);
+
+        await using var connection = new NpgsqlConnection(postgres.DatabaseOptions.BuildConnectionString());
+        await connection.OpenAsync(Ct);
+        foreach (var table in tables)
+        {
+            // tgtype bits: 1 = FOR EACH ROW, 2 = BEFORE, 16 = UPDATE.
+            await using var query = new NpgsqlCommand(
+                "SELECT count(*) FROM pg_trigger t JOIN pg_proc p ON p.oid = t.tgfoid " +
+                "WHERE t.tgrelid = to_regclass(@table) AND NOT t.tgisinternal AND t.tgenabled <> 'D' " +
+                "AND p.proname = 'forbid_user_id_change' AND t.tgtype & 19 = 19",
+                connection);
+            query.Parameters.AddWithValue("table", table);
+            Assert.True((long)(await query.ExecuteScalarAsync(Ct))! == 1, $"Brak triggera user_id na tabeli {table}");
+        }
+    }
+
+    [Fact]
+    public async Task UserMode_UpdateWithoutUserIdChange_IsSaved()
+    {
+        var (projectA, _) = await SeedDictionariesAsync(_userA, "AAA", "Analiza");
+
+        await using (var db = await postgres.CreateUserContextAsync(_userA))
+        {
+            var project = await db.Projects.SingleAsync(p => p.Id == projectA, Ct);
+            project.Name = "Nowa nazwa";
+            await db.SaveChangesAsync(Ct);
+        }
+        await using (var db = await postgres.CreateUserContextAsync(_userA))
+        {
+            // The trigger lets an UPDATE through when user_id stays, also when it is set to the same value.
+            await db.Projects.ExecuteUpdateAsync(s => s.SetProperty(p => p.UserId, _userA), Ct);
+            Assert.Equal("Nowa nazwa", await db.Projects.Select(p => p.Name).SingleAsync(Ct));
+        }
+    }
+
+    [Fact]
+    public async Task UserMode_SeesNoIdentityOrDataProtectionData()
+    {
+        await SeedIdentityDataAsync();
+
+        await using var db = await postgres.CreateUserContextAsync(_userA);
+        Assert.Empty(await db.Users.ToListAsync(Ct));
+        Assert.Empty(await db.Roles.ToListAsync(Ct));
+        Assert.Empty(await db.UserRoles.ToListAsync(Ct));
+        Assert.Empty(await db.UserClaims.ToListAsync(Ct));
+        Assert.Empty(await db.UserLogins.ToListAsync(Ct));
+        Assert.Empty(await db.UserTokens.ToListAsync(Ct));
+        Assert.Empty(await db.RoleClaims.ToListAsync(Ct));
+        Assert.Empty(await db.DataProtectionKeys.ToListAsync(Ct));
+        // Bulk updates go through the filter too.
+        Assert.Equal(0, await db.Users.ExecuteUpdateAsync(s => s.SetProperty(u => u.Status, AccountStatus.Blocked), Ct));
+        Assert.Equal(0, await db.DataProtectionKeys.ExecuteDeleteAsync(Ct));
+
+        await using var system = postgres.CreateContext();
+        Assert.Equal(2, await system.Users.CountAsync(u => u.Status == AccountStatus.Active, Ct));
+        Assert.Equal(1, await system.DataProtectionKeys.CountAsync(Ct));
+    }
+
+    [Fact]
+    public async Task UserMode_SavingIdentityOrDataProtectionEntity_ThrowsBeforeSave()
+    {
+        var roleId = await SeedIdentityDataAsync();
+        AppUser userA;
+        await using (var system = postgres.CreateContext())
+        {
+            userA = await system.Users.AsNoTracking().SingleAsync(u => u.Id == _userA, Ct);
+        }
+
+        await using (var db = await postgres.CreateUserContextAsync(_userA))
+        {
+            db.UserRoles.Add(new IdentityUserRole<int> { UserId = _userA, RoleId = roleId });
+            await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync(Ct));
+        }
+        await using (var db = await postgres.CreateUserContextAsync(_userA))
+        {
+            db.Users.Attach(userA);
+            userA.Status = AccountStatus.Blocked;
+            await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync(Ct));
+            Assert.Throws<InvalidOperationException>(() => db.SaveChanges());
+        }
+        await using (var db = await postgres.CreateUserContextAsync(_userA))
+        {
+            db.DataProtectionKeys.Add(new DataProtectionKey { FriendlyName = "test-2", Xml = "<key />" });
+            await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync(Ct));
+        }
+
+        await using var check = postgres.CreateContext();
+        Assert.Equal(1, await check.UserRoles.CountAsync(Ct));
+        Assert.Equal(AccountStatus.Active, await check.Users.Where(u => u.Id == _userA).Select(u => u.Status).SingleAsync(Ct));
+        Assert.Equal(1, await check.DataProtectionKeys.CountAsync(Ct));
+    }
+
+    [Fact]
+    public async Task SystemMode_ReadsAndWritesIdentity()
+    {
+        await using (var db = postgres.CreateContext())
+        {
+            var user = await db.Users.SingleAsync(u => u.Id == _userA, Ct);
+            user.Status = AccountStatus.Blocked;
+            await db.SaveChangesAsync(Ct);
+        }
+
+        await using (var db = postgres.CreateContext())
+        {
+            Assert.Equal(AccountStatus.Blocked, await db.Users.Where(u => u.Id == _userA).Select(u => u.Status).SingleAsync(Ct));
+            Assert.Equal(AccountStatus.Active, await db.Users.Where(u => u.Id == _userB).Select(u => u.Status).SingleAsync(Ct));
+        }
+    }
+
+    /// <summary>
+    /// AD-16: every entity of the model outside Identity and Data Protection is <see cref="IUserOwned"/>
+    /// (or on the explicit, today empty, list of exceptions); every entity has its mode filter.
+    /// </summary>
+    [Fact]
+    public void EveryEntity_IsUserOwned_OrSystemOnly()
+    {
+        Type[] systemOnly =
         [
             typeof(AppUser), typeof(IdentityRole<int>), typeof(IdentityUserRole<int>), typeof(IdentityUserClaim<int>),
             typeof(IdentityUserLogin<int>), typeof(IdentityUserToken<int>), typeof(IdentityRoleClaim<int>),
             typeof(DataProtectionKey),
         ];
+        // Entities allowed to be neither IUserOwned nor Identity/Data Protection. Adding one needs an AD-16 decision.
+        Type[] notUserOwnedExceptions = [];
         using var db = postgres.CreateContext();
         var entityTypes = db.Model.GetEntityTypes().ToList();
 
-        var withUserId = entityTypes
-            .Where(e => !excluded.Contains(e.ClrType))
-            .Where(e => e.GetProperties().Any(p => p.GetColumnName() == "user_id"))
+        Assert.All(systemOnly, type => Assert.NotNull(db.Model.FindEntityType(type)));
+        var offenders = entityTypes
             .Select(e => e.ClrType)
+            .Where(type => !systemOnly.Contains(type) && !notUserOwnedExceptions.Contains(type))
+            .Where(type => !typeof(IUserOwned).IsAssignableFrom(type))
+            .Select(type => type.Name)
             .ToList();
+        Assert.Empty(offenders);
 
+        var userOwned = entityTypes.Where(e => typeof(IUserOwned).IsAssignableFrom(e.ClrType)).Select(e => e.ClrType);
         Assert.Equal(
             [typeof(AccountSettings), typeof(Project), typeof(TimeEntry), typeof(WorkType)],
-            withUserId.OrderBy(t => t.Name, StringComparer.Ordinal));
-        Assert.All(withUserId, type => Assert.True(typeof(IUserOwned).IsAssignableFrom(type), type.Name));
-        Assert.All(withUserId, type => Assert.NotEmpty(db.Model.FindEntityType(type)!.GetDeclaredQueryFilters()));
+            userOwned.OrderBy(t => t.Name, StringComparer.Ordinal));
+        Assert.All(entityTypes, e => Assert.Single(e.GetDeclaredQueryFilters()));
+    }
+
+    private static void AssertUserIdTrigger(PostgresException ex)
+    {
+        Assert.Equal(PostgresErrorCodes.IntegrityConstraintViolation, ex.SqlState);
+        Assert.Contains("user_id", ex.MessageText);
+    }
+
+    /// <summary>A role for User A, a claim, a login, a token, a role claim and a Data Protection key (system mode).</summary>
+    private async Task<int> SeedIdentityDataAsync()
+    {
+        await using var db = postgres.CreateContext();
+        var role = new IdentityRole<int> { Name = "Administrator", NormalizedName = "ADMINISTRATOR" };
+        db.Roles.Add(role);
+        await db.SaveChangesAsync(Ct);
+        db.UserRoles.Add(new IdentityUserRole<int> { UserId = _userA, RoleId = role.Id });
+        db.UserClaims.Add(new IdentityUserClaim<int> { UserId = _userA, ClaimType = "test", ClaimValue = "a" });
+        db.UserLogins.Add(new IdentityUserLogin<int> { UserId = _userA, LoginProvider = "test", ProviderKey = "a" });
+        db.UserTokens.Add(new IdentityUserToken<int> { UserId = _userA, LoginProvider = "test", Name = "t", Value = "a" });
+        db.RoleClaims.Add(new IdentityRoleClaim<int> { RoleId = role.Id, ClaimType = "test", ClaimValue = "r" });
+        db.DataProtectionKeys.Add(new DataProtectionKey { FriendlyName = "test-1", Xml = "<key />" });
+        await db.SaveChangesAsync(Ct);
+        return role.Id;
     }
 
     private async Task<(int ProjectId, int WorkTypeId)> SeedAsync(int userId, string code, string workTypeName, string description)

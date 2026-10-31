@@ -1,6 +1,4 @@
 using System.Globalization;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.FluentUI.AspNetCore.Components;
 using RejestrCzasu;
 using RejestrCzasu.Components;
@@ -22,12 +20,8 @@ builder.Configuration.AddCommandLine(args);
 
 builder.Services.AddOptions<DatabaseOptions>().Bind(builder.Configuration.GetSection(DatabaseOptions.SectionName));
 
-builder.Services.AddDbContextFactory<AppDbContext>((services, options) =>
-    options
-        .UseNpgsql(services.GetRequiredService<IOptions<DatabaseOptions>>().Value.BuildConnectionString())
-        .UseSnakeCaseNamingConvention());
-// System mode is the plain factory above (Startup, Identity, Data Protection); User mode only through this one (AD-16).
-builder.Services.AddScoped<UserDbContextFactory>();
+// System mode (Startup, Identity, Data Protection) and User mode (UserDbContextFactory), without pooling (AD-16).
+builder.Services.AddAppDatabase();
 
 builder.Services.AddSingleton(TimeProvider.System);
 

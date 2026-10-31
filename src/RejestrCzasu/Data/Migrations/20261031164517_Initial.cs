@@ -337,11 +337,40 @@ namespace RejestrCzasu.Data.Migrations
 
             // AD-7: work type name unique per User regardless of letter case.
             migrationBuilder.Sql("CREATE UNIQUE INDEX ux_work_type_user_id_name_lower ON work_type (user_id, lower(name));");
+
+            // AD-16: user_id of an existing record never changes, also outside SaveChanges
+            // (ExecuteUpdate, raw SQL). One function, one BEFORE UPDATE trigger per IUserOwned table.
+            migrationBuilder.Sql("""
+                CREATE FUNCTION forbid_user_id_change() RETURNS trigger
+                LANGUAGE plpgsql AS $$
+                BEGIN
+                    IF OLD.user_id IS DISTINCT FROM NEW.user_id THEN
+                        RAISE EXCEPTION 'Nie wolno zmieniać user_id (tabela %).', TG_TABLE_NAME
+                            USING ERRCODE = 'integrity_constraint_violation';
+                    END IF;
+                    RETURN NEW;
+                END;
+                $$;
+                """);
+            foreach (var table in UserOwnedTables)
+            {
+                migrationBuilder.Sql(
+                    $"CREATE TRIGGER trg_{table}_forbid_user_id_change BEFORE UPDATE ON {table} " +
+                    "FOR EACH ROW EXECUTE FUNCTION forbid_user_id_change();");
+            }
         }
+
+        /// <summary>Tables of the IUserOwned entities guarded by the user_id trigger.</summary>
+        private static readonly string[] UserOwnedTables = ["project", "work_type", "time_entry", "account_settings"];
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            foreach (var table in UserOwnedTables)
+            {
+                migrationBuilder.Sql($"DROP TRIGGER IF EXISTS trg_{table}_forbid_user_id_change ON {table};");
+            }
+            migrationBuilder.Sql("DROP FUNCTION IF EXISTS forbid_user_id_change();");
             migrationBuilder.Sql("DROP INDEX IF EXISTS ux_work_type_user_id_name_lower;");
 
             migrationBuilder.DropTable(

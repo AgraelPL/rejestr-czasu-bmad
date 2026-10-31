@@ -114,9 +114,14 @@ public sealed class PostgresFixture : IAsyncLifetime
     private sealed class TestContextFactory(string connectionString) : IDbContextFactory<AppDbContext>
     {
         public AppDbContext CreateDbContext() =>
-            new(new DbContextOptionsBuilder<AppDbContext>()
-                .UseNpgsql(connectionString)
-                .UseSnakeCaseNamingConvention()
-                .Options);
+            new(AppDbContextOptions(connectionString));
+    }
+
+    /// <summary>The application's database options (<see cref="DatabaseServiceCollectionExtensions.UseAppDatabase"/>).</summary>
+    private static DbContextOptions<AppDbContext> AppDbContextOptions(string connectionString)
+    {
+        var builder = new DbContextOptionsBuilder<AppDbContext>();
+        builder.UseAppDatabase(connectionString);
+        return builder.Options;
     }
 }

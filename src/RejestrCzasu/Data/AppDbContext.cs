@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
@@ -16,7 +17,9 @@ namespace RejestrCzasu.Data;
 /// <item><b>System mode</b> (no <see cref="CurrentUserId"/>): <see cref="IUserOwned"/> entities are invisible
 /// and saving any of them throws.</item>
 /// </list>
-/// Filter and assignment work by the interface, not by a list of tables.
+/// Every other entity (Identity, Data Protection keys) is system-only: invisible in User mode, and saving it there
+/// throws. Filter and assignment work by the interface, not by a list of tables. The database adds a trigger that
+/// rejects any change of <c>user_id</c>, also from <c>ExecuteUpdate</c> and raw SQL (Initial migration).
 /// </summary>
 public class AppDbContext(DbContextOptions<AppDbContext> options)
     : IdentityDbContext<AppUser, IdentityRole<int>, int>(options), IDataProtectionKeyContext
@@ -25,6 +28,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     private static readonly MethodInfo ConfigureUserOwnedMethod =
         typeof(AppDbContext).GetMethod(nameof(ConfigureUserOwned), BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    private static readonly MethodInfo SystemOnlyFilterMethod =
+        typeof(AppDbContext).GetMethod(nameof(SystemOnlyFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
 
     /// <summary>The User this context is bound to; <c>null</c> in system mode.</summary>
     public int? CurrentUserId { get; private set; }
@@ -123,12 +129,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entry.HasIndex(e => new { e.UserId, e.Date });
         });
 
-        // Every IUserOwned entity: foreign key to users and the User filter (AD-16).
+        // Every IUserOwned entity: foreign key to users and the User filter. Every other entity (Identity,
+        // Data Protection keys): visible only in system mode (AD-16).
         foreach (var entityType in modelBuilder.Model.GetEntityTypes().ToList())
         {
-            if (typeof(IUserOwned).IsAssignableFrom(entityType.ClrType) && !entityType.IsOwned())
+            if (entityType.IsOwned() || entityType.BaseType is not null)
+            {
+                continue;
+            }
+            if (typeof(IUserOwned).IsAssignableFrom(entityType.ClrType))
             {
                 ConfigureUserOwnedMethod.MakeGenericMethod(entityType.ClrType).Invoke(this, [modelBuilder]);
+            }
+            else
+            {
+                // Set on the metadata, not through modelBuilder.Entity<T>(): that would turn types discovered only by
+                // convention (e.g. IdentityPasskeyData, dropped later with the passkey schema) into explicit entities.
+                entityType.SetQueryFilter((LambdaExpression)SystemOnlyFilterMethod.MakeGenericMethod(entityType.ClrType).Invoke(this, [])!);
             }
         }
 
@@ -150,6 +167,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         entity.HasQueryFilter(e => CurrentUserId != null && e.UserId == CurrentUserId);
     }
 
+    /// <summary>
+    /// Filter of a system-only entity: in User mode the table is invisible, also for ExecuteUpdate/ExecuteDelete;
+    /// saving is rejected in <see cref="PrepareChanges"/>.
+    /// </summary>
+    private Expression<Func<TEntity, bool>> SystemOnlyFilter<TEntity>() => e => CurrentUserId == null;
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         PrepareChanges();
@@ -165,8 +188,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     private void PrepareChanges()
     {
         ChangeTracker.DetectChanges();
+        RejectSystemOnlyChangesInUserMode();
         ApplyUserOwnership();
         NormalizeProjectCodes();
+    }
+
+    private void RejectSystemOnlyChangesInUserMode()
+    {
+        if (CurrentUserId is null)
+        {
+            return;
+        }
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted
+                && entry.Entity is not IUserOwned)
+            {
+                throw new InvalidOperationException(
+                    $"Zapis {entry.Metadata.ClrType.Name} jest dozwolony tylko w trybie systemowym, nie w kontekście Usera.");
+            }
+        }
     }
 
     private void ApplyUserOwnership()
