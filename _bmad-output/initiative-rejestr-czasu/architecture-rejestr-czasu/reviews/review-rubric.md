@@ -1,126 +1,133 @@
-# Przegląd spine'u architektury — Rejestr czasu pracy
+# Recenzja według listy kontrolnej — architecture-rejestr-czasu.md (aktualizacja 31.10.2026)
 
-- **Przeglądany dokument:** `architecture-rejestr-czasu.md` (status: draft, 2026-10-30)
-- **Źródła:** `initiative-rejestr-czasu.md`, `glossary.md`, `export-layout.md`, `.memlog.md` (dziennik decyzji)
-- **Data przeglądu:** 2026-10-30
-- **Zakres:** Część A: zgodność z ticketem. Część B: lista kontrolna dobrego spine'u. Spine nie był edytowany.
+- Recenzowany dokument: `architecture-rejestr-czasu.md` (altitude: initiative, purpose: build-substrate)
+- Ticket: `initiative-rejestr-czasu.md` (R1–R31, R14 wycofane; NFR-1…NFR-9)
+- Źródła pomocnicze: `.memlog.md`, kod brownfield `src/RejestrCzasu` (historia 1.1)
+- Data: 31.10.2026
 
 ## Werdykt
 
-Spine trafnie ustala główne punkty rozjazdu: jedno źródło sum, minuty jako `int`, krótko żyjący `DbContext`, integralność w bazie, jedną siatkę i jeden sposób konfiguracji. Świadome odstępstwa od ticketu są poprawnie zapisane w memlogu. Brakuje jednak decyzji o wspólnym formularzu Wpisu i stanie Sesji wpisywania, z których korzystają trzy epiki. R16 (sama klawiatura, 10 s) i R2 (dezaktywacja) nie mają żadnej reguły. AD-13 (pobranie pliku) jest sprzeczne z AD-1 (bez JavaScriptu). Część kopertu operacyjnego (środowisko uruchomieniowe, ładowanie `appsettings.Local.json`, hasło w `docker-compose.yml`, właściciel `Startup/`) jest otwarta, choć spine o tym nie mówi. **Ocena: do poprawy przed rozpisaniem epików. Potrzebne są 3–4 nowe lub rozszerzone AD; przebudowa nie jest potrzebna.**
+**Wymaga poprawek przed planowaniem historii epiku Konta i wdrożenie.** Kręgosłup jest dojrzały: pokrywa wszystkie wymagania ticketu, wersje są zweryfikowane w memlogu, a większość reguł da się egzekwować. Zostały jednak cztery punkty rozjazdu o wadze wysokiej, które trafią dokładnie w pierwsze historie (Identity w obwodzie, zmiana hasła w obwodzie, kontrakt konfiguracji kontenera, dostarczanie plików `deploy/` na serwer), i kilka średnich luk w otoczeniu operacyjnym i ratyfikacji kodu brownfield.
 
----
+| Waga | Liczba |
+| --- | --- |
+| critical | 0 |
+| high | 4 |
+| medium | 8 |
+| low | 7 |
 
-## Część A — Zgodność z ticketem
+## Wyniki
 
-### A1. Wymagania pominięte lub naruszone BEZ zapisanej decyzji
+### H-1 — `UserManager`/`SignInManager` w obwodzie Interactive Server łamie AD-4; transakcja AD-18 nie jest atomowa (high)
 
-| # | Wymaganie | Co mówi spine | Problem | Waga |
-|---|---|---|---|---|
-| A1.1 | **R16**: każdy kolejny Wpis ≤ 10 s, **wyłącznie klawiaturą** | Mapa przypisuje R16 do `Features/Wpisy` z AD-4/6/8/10. Żadne z tych AD nie mówi o klawiaturze ani o czasie. | Nie ma reguły dla kolejności fokusu, skrótu zapisu (np. Enter / Ctrl+Enter), powrotu fokusu na pierwsze pole po zapisie ani dla sposobu wpisywania Czasu (pole tekstowe `h:mm` czy pickery). AD-10 („operacje istotne → `MessageBox`”) nie wyklucza, że zapis Wpisu zostanie uznany za istotny i będzie wymagał kliknięcia w okno, co łamie R16. Pickery Fluent UI (data, combobox) mają różną obsługę klawiatury i tę różnicę trzeba rozstrzygnąć architektonicznie. | **wysoka** |
-| A1.2 | **R5**: formularz zostaje otwarty, data zachowana, pozostałe pola czyszczone; domyślnie dzisiejsza data | Brak | Stan Sesji wpisywania (bieżąca data formularza) nie ma właściciela. R7 („data ustawiona w formularzu”) zakłada, że ten stan jest dostępny także przy Kopii z Listy wpisów i Widoku miesiąca. Nie ustalono, gdzie stan żyje (np. usługa `Scoped` na obwód), ani czy „dziś” to `DateTime.Now` (czas lokalny), a nie `UtcNow`. | **wysoka** (razem z B1.1) |
-| A1.3 | **R2**: dezaktywacja; nieaktywne znikają z list wyboru, ale zostają przy edycji istniejącego Wpisu, w filtrach, Widoku i Zestawieniu | Brak. Diagram ER nie ma atrybutów, nie ma kolumny aktywności ani reguły zapytań. | Każdy epik sam zdecyduje, czy filtrować `is_active`. Zbyt gorliwy filtr w Widoku miesiąca albo w eksporcie wytnie Wpisy i złamie R10 lub R12. Lista wyboru przy edycji musi zawierać „aktywne + bieżącą wartość Wpisu”, a R7 wymaga pustego pola przy nieaktywnej. To ta sama reguła w trzech miejscach. | **średnia** |
-| A1.4 | **NFR-4**: interfejs **tylko po polsku** | AD-6 ustawia kulturę `pl-PL` (liczby, dni). | Fluent UI Blazor ma wbudowane teksty po angielsku (puste stany siatki, popover filtra, paginacja, kalendarz, przyciski `MessageBox`). Kultura `pl-PL` ich nie tłumaczy. Trzeba ustalić jeden `IFluentLocalizer` (lub odpowiednik w v5) w `Shared/`. Bez tego każdy epik będzie nadpisywał teksty po swojemu albo zostawi angielskie. | **średnia** |
-| A1.5 | **R9**: edycja, kopia i usunięcie Wpisu **przeliczają sumy od razu** | AD-9 daje przycisk Odśwież. AD-5 daje `MonthReport.Build`. | Nie ustalono, jak ekran dowiaduje się o zmianie wykonanej w formularzu (callback z okna, ponowne `Build` po zamknięciu, zdarzenie). Jeśli formularz otwiera się z Listy, Widoku i menu, każdy epik może to zrobić inaczej. Przycisk Odśwież nie spełnia słów „od razu”. | **średnia** |
-| A1.6 | **R11**: opisy złączanych Wpisów „w kolejności dodania” | AD-5: kolejność liczy `MonthReport`. Konwencja: `id` z sekwencji. | Nie zapisano, że kluczem kolejności dodania jest `id` (lub `created_at`) i że typ domeny `Wpis` w `Reporting/` musi go mieć. Sortowanie po dacie lub opisie złamie R11 bez widocznego błędu. | **niska** |
-| A1.7 | **R9 / export-layout**: w dniu według kodu Projektu, potem **nazwy** Typu pracy | AD-5 (kolejność w `MonthReport`) | Nie ustalono porównania tekstów: kulturowe `pl-PL` czy porządkowe. Ma to znaczenie dla nazw z polskimi znakami. Jeśli Widok i eksport idą przez `MonthReport`, ryzyko rozjazdu jest małe, ale reguła powinna to powiedzieć wprost. | **niska** |
-| A1.8 | **R12**: Zestawienie „jednym kliknięciem **w Widoku miesiąca**” | AD-10: pozycja „Eksport” w menu bocznym, w sekcji Rejestr (memlog, wzorzec UI). | Pozycja menu „Eksport” nie jest sprzeczna z R12, ale spine nie mówi, że przycisk eksportu jest też w Widoku miesiąca. Nie mówi też, czym jest ekran „Eksport”: wyborem Miesiąca czy kolejnym klikiem. Bez tego R12 może zostać zrealizowany tylko przez menu, czyli dwoma kliknięciami. | **niska / średnia** |
-| A1.9 | **NFR-2**: źródłowy xlsx i pliki prywatne poza gitem | AD-12 obejmuje konfigurację i dane testowe. | Nie ma wzorców `.gitignore` dla `*.xlsx` (źródłowy oryginał, pobrane Zestawienia) ani dla katalogu kopii, gdyby ktoś ustawił go w repo. Hasło do PostgreSQL w `docker-compose.yml` jest opisane w B3.3. | **niska** |
-| A1.10 | **NFR-1**: zero połączeń wychodzących | AD-11 | Reguła jest dobra, ale nie ma jak jej sprawdzić (patrz B2). Pobranie obrazu `postgres:18` przy pierwszym `docker compose up` wymaga internetu. To jednorazowe działanie środowiska, nie aplikacji, ale warto je nazwać, żeby nie było sporu. | **niska** |
-| A1.11 | **NFR-2 / prywatność logów** | Konwencja: `ILogger` do konsoli | Nie ma zakazu `EnableSensitiveDataLogging` ani logowania treści opisów Wpisów. Treść jest lokalna, ale ograniczenie warto zapisać jednym zdaniem. | **niska** |
+- **Gdzie:** AD-4, AD-16 („Operacje na Kontach idą przez `UserManager`/`SignInManager`”), AD-17, AD-18, ekran `Features/Uzytkownicy`.
+- **Problem:** `UserManager<T>` i jego store są scoped i trzymają `AppDbContext` z DI. W obwodzie Interactive Server scope żyje tyle co obwód, więc ekran Użytkownicy (interaktywny: `ReportGrid`, dialogi, `Confirm`) dostaje długo żyjący, śledzący `AppDbContext` — dokładnie to, czemu AD-4 zapobiega (nieaktualne dane, wyjątki współbieżności przy dwóch szybkich akcjach). Dodatkowo AD-18 wymaga „jednej transakcji: Wpisy → Słowniki → `account_settings` → `UserManager.DeleteAsync`”, ale nie mówi, że transakcja i `UserManager` muszą używać tego samego wystąpienia kontekstu. Dwie historie (epik Konta, epik Administracja) mogą to rozwiązać różnie, a naiwne rozwiązanie da usunięcie niepełne.
+- **Poprawka:** dopisać regułę: komponent interaktywny wywołuje operacje Kont wyłącznie przez usługi `Accounts/` (np. `AccountAdmin`), które na każdą operację tworzą nowy scope (`IServiceScopeFactory.CreateAsyncScope()`) i z niego biorą `UserManager` oraz `AppDbContext`; `DeleteAccount` otwiera transakcję na kontekście tego scope'u, który jest też kontekstem store'a Identity. Zakaz wstrzykiwania `UserManager`/`SignInManager` do komponentów interaktywnych.
 
-Bez uwag (pokryte): R1 (AD-7, AD-8), R3 (AD-7: `RESTRICT` i liczba z zapytania), R4 (AD-6, AD-8), R6 (AD-10: potwierdzenie usunięcia), R8 suma (wyjątek w AD-5), R10 (AD-5), R11 złączanie (AD-5), R12 sumy jako wartości (AD-13), R13 prefiks w konfiguracji (AD-12), R14 kolejność i rotacja (AD-3), NFR-1 nasłuch na `127.0.0.1` (AD-2), NFR-5 (AD-6), terminy ze słownika (konwencja nazewnictwa).
+### H-2 — Zmiana własnego hasła w interaktywnych Ustawieniach konta wyloguje Usera (high)
 
-### A2. Świadome odstępstwa zapisane w memlogu → „wymaga aktualizacji ticketu”
+- **Gdzie:** AD-8 (walidator „Ustawienia konta” przez Blazilla, czyli formularz interaktywny), AD-15 („każda zmiana hasła … aktualizuje security stamp”; „tylko odpowiedź HTTP ustawia ciasteczko”), AD-17 (rewalidacja co 1 min), diagram paradygmatu (`Features -.->|tylko Użytkownicy| Accounts`), R25.
+- **Problem:** `ChangePasswordAsync` zmienia security stamp; odświeżenia ciasteczka (`RefreshSignInAsync`) nie da się zrobić z obwodu, więc najpóźniej po minucie rewalidacja zamknie sesję Usera, który właśnie zmienił hasło. Do tego diagram zabrania `Features/UstawieniaKonta` zależności od `Accounts/`, a bez niej ekran nie zmieni hasła. Szablon .NET trzyma zmianę hasła na statycznej stronie właśnie z tego powodu. Epik Widok miesiąca i Zestawienie (właściciel ekranu) i epik Konta rozjadą się tu na pewno.
+- **Poprawka:** zdecydować jawnie: zmiana własnego hasła to statyczna strona `/konto/zmiana-hasla` (ta sama co wymuszona zmiana, AD-15), do której link prowadzi z `/ustawienia-konta`; interaktywne Ustawienia konta mają tylko prefiks. Uzupełnić AD-8 (lista formularzy) i diagram.
 
-To nie są luki spine'u. Ticket (i PRD) trzeba z nimi zrównać:
+### H-3 — Brak kontraktu konfiguracji aplikacji w kontenerze; brownfield go łamie (high)
 
-1. **Stos:** ograniczenie z addendum „Node.js” → .NET 10 / Blazor Web App Interactive Server / Fluent UI Blazor 5 / FluentValidation / EF Core (memlog l.14).
-2. **Baza:** „SQLite w jednym pliku” → PostgreSQL 18 w kontenerze Docker, dane w nazwanym wolumenie (memlog l.15, l.21).
-3. **Uruchomienie, NFR-4 i Done when SM-2:** `npm start` → `docker compose up -d` + `dotnet run`. Docker Desktop staje się nowym wymaganiem wstępnym.
-4. **R14:** nazwa kopii `.sqlite` → `rejestr-RRRR-MM-DD_GGMMSS.sql`, tworzona przez `pg_dump` (memlog l.46).
-5. **R15:** „ścieżka bazy z konfiguracji” nie ma już odpowiednika. Baza żyje w wolumenie Dockera (w praktyce w VHDX Docker Desktop w `%LOCALAPPDATA%`), a z konfiguracji pochodzą parametry połączenia i nazwa kontenera. Ticket powinien to powiedzieć.
-6. **Siatka:** filtry wartości w każdej kolumnie, okruszki, przycisk Odśwież, licznik i Widok miesiąca jako siatka grupowana Tydzień → Dzień wykraczają poza R8 i R9 (memlog l.31, l.43–45).
-7. **UI:** menu boczne z pozycją „Eksport”, sekcja Administracja, skala 90–125% i motyw jasny/ciemny (memlog l.22–23). Ticket ich nie zna. Warto rozstrzygnąć relację „Eksport” w menu z R12 (A1.8).
+- **Gdzie:** AD-2, AD-13, AD-19, AD-20, AD-21 krok 3; brownfield `appsettings.json` (`"Urls": "http://127.0.0.1:5080"`, sekcja `Database` z `Host: 127.0.0.1`), `Options/DatabaseOptions.cs`.
+- **Problem:** kręgosłup nie ustala: (a) adresu i portu nasłuchu aplikacji w kontenerze (brownfield nasłuchuje na `127.0.0.1`, więc Caddy z innego kontenera się nie połączy), ani portu w `reverse_proxy`; (b) nazw zmiennych środowiskowych, które aplikacja czyta z `env_file` (`Database__Host=db`, `Database__Password`, klucze loginu i hasła pierwszego Administratora), i tego, jak to samo hasło trafia jednocześnie do `POSTGRES_PASSWORD` usługi `db` i do aplikacji; (c) `ASPNETCORE_ENVIRONMENT` na serwerze; (d) nazwy zmiennej z tagiem obrazu w `.env`, którą zmienia potok. Historie Dockerfile, `deploy/compose.yml`, pierwszego Administratora i workflow wdrożenia wybiorą to niezależnie.
+- **Poprawka:** dodać do AD-13 lub AD-19 tabelę kontraktu: port kontenera (np. `ASPNETCORE_HTTP_PORTS=8080`, `Urls` z `appsettings.json` usunięte lub nadpisane), lista kluczy `.env` serwera z ich odbiorcami (`db`, `app`, potok), nazwa sekcji pierwszego Administratora, zmienna tagu (np. `APP_IMAGE_TAG`).
 
----
+### H-4 — Nie wiadomo, jak `deploy/compose.yml` i `deploy/Caddyfile` trafiają na Droplet (high)
 
-## Część B — Lista kontrolna
+- **Gdzie:** AD-19, AD-20 („Jedyne ręczne kroki na serwerze to przygotowanie opisane w `docs/admin/`”), R29, SM-4.
+- **Problem:** pliki leżą w repozytorium, a potok robi tylko `docker compose pull && up -d` w `/opt/rejestr-czasu`. Kręgosłup nie mówi, czy potok kopiuje `deploy/*` na serwer przy każdym wdrożeniu, czy są one kopiowane ręcznie przy przygotowaniu. W drugim przypadku każda zmiana compose'a lub Caddyfile wymaga ręcznego kroku na serwerze, co łamie R29 i SM-4; rollback (AD-20) nie cofa też tych plików.
+- **Poprawka:** dopisać do AD-20: workflow wdrożenia kopiuje `deploy/compose.yml` i `deploy/Caddyfile` z commita odpowiadającego tagowi (scp/rsync przez SSH) przed `pull`/`up`; rollback robi to samo dla wskazanego tagu; `.env` jest jedynym plikiem tylko na serwerze.
 
-### B1. Czy spine ustala prawdziwe punkty rozjazdu dla epików i żadnego nie pomija?
+### M-1 — Przeniesienie `Components/` i sprzątanie brownfield nie są nazwane (medium)
 
-Ścieżka epików z ticketu: **Słowniki → Wpis w Sesji wpisywania → Widok miesiąca z sumami → Zestawienie xlsx**. Do tego dochodzi praca przekrojowa: scaffold, `Startup/` i `ReportGrid`.
+- **Gdzie:** Design Paradigm (tabela katalogów), Structural Seed (drzewo), brownfield `Components/` (`App.razor`, `Routes.razor`, `_Imports.razor`, `Layout/MainLayout.razor`, `Pages/Error.razor`, `Pages/Home.razor`, `Pages/NotFound.razor`), `Options/` (`DatabaseOptions`, `BackupOptions`, `ExportOptions`), `SecurityHeaders.cs`, komentarze „AD-3” w `Program.cs` i `Startup/DatabaseStartup.cs`.
+- **Problem:** kręgosłup opisuje nowy układ (`Features/`, `Shared/`, `Accounts/`), ale nigdzie nie mówi, że `Components/` jest przenoszone, ani gdzie lądują `App.razor`, `Routes.razor`, `_Imports.razor`, `Error`, `NotFound`. `Options/` i `SecurityHeaders.cs` nie występują w drzewie, choć `DatabaseOptions` zostaje. `BackupOptions` i krok kopii w `DatabaseStartup` wynikają z wycofanego AD-3, a `ExportOptions.Prefix` przeczy AD-13 („prefiks … nie konfiguracją”) — usunięcie obu jest tylko domniemane. Agent może zostawić stare katalogi obok nowych.
+- **Poprawka:** jedno zdanie w Structural Seed: „`Components/` → `Shared/` (layout, `App`, `Routes`, `Error`, `NotFound`), `Options/` zostaje dla `DatabaseOptions`, `BackupOptions` i `ExportOptions` usuwa historia epiku Konta i wdrożenie”; dopisać `Options/` i `SecurityHeaders.cs` do drzewa (lub wskazać ich nowe miejsce).
 
-**Dobrze ustalone:** stos (AD-1), dostęp do bazy (AD-4), jedno źródło sum (AD-5, najważniejsze dla R10), reprezentacja Czasu i dat (AD-6), duplikaty i usuwanie (AD-7), wzorzec walidacji (AD-8), jedna siatka (AD-9), wzorzec komunikatów (AD-10), konfiguracja (AD-12), biblioteka xlsx (AD-13).
+### M-2 — Kto tworzy role i czy pierwszy Administrator ma obie role (medium)
 
-**Pominięte punkty rozjazdu:**
+- **Gdzie:** AD-7, AD-15, AD-21 krok 3, R20.
+- **Problem:** memlog mówi, że role `Administrator` i `User` powstają w migracji `Initial`, ale AD-7 tego nie zapisuje. AD-21 krok 3 tworzy „Konto `active`”, bez ról, a R20 wymaga, żeby Konto Autora miało role User i Administrator. Dwie historie (Initial, Startup) mogą obie założyć role albo żadna.
+- **Poprawka:** w AD-7 „role `Administrator` i `User` jako dane w migracji `Initial`” (lub w Startup, ale jednoznacznie); w AD-21 krok 3 „z rolami `Administrator` i `User`”.
 
-| # | Punkt rozjazdu | Dlaczego to rozjazd między epikami | Waga |
-|---|---|---|---|
-| B1.1 | **Wspólny formularz Wpisu (dodaj / edytuj / kopiuj / usuń) i stan Sesji wpisywania** | Formularz buduje epik 2 (Wpis). Epik 3 (Widok miesiąca, R9) i Lista wpisów (R8) muszą z niego korzystać przy edycji, kopii i usuwaniu, R6–R7 także. Spine nie ustala, czy to jeden komponent (okno dialogowe / panel / strona z trasą), jak się go otwiera z innych ekranów, gdzie żyje data Sesji i jak ekran-wywołujący dostaje sygnał zmiany (A1.5). „Wygląd ekranów” w Deferred przerzuca to na historie, a historie różnych epików rozstrzygną to różnie. | **wysoka** |
-| B1.2 | **Formatowanie i parsowanie Czasu `h:mm`** | AD-6 ustala przechowywanie (`int minutes`), ale nie mówi, kto zamienia `"1:30"` ↔ 90 i 90 → `"1:30"` lub `1,5`. Formularz (epik 2), Lista i Widok (epik 3), eksport (epik 4) oraz walidator (AD-8) potrzebują tej samej funkcji. Diagram paradygmatu pokazuje typ domeny „Czas”, a konwencje mówią `int minutes`. Nie wiadomo, czy `Czas` jest typem wartościowym, czy liczbą całkowitą z funkcjami pomocniczymi. Typowe rozjazdy: `"0:15"` vs `"00:15"`, `"24:00"` vs `"1.00:00"`, kropka vs przecinek. | **wysoka / średnia** |
-| B1.3 | **Model danych i flaga aktywności** | Diagram ER nie ma atrybutów. Nie ustalono nazw i typów kolumn (`is_active`, długość `description`, `created_at`?), ani tego, kto tworzy pierwszą migrację i jak kolejne epiki dodają swoje. Przy `Database.Migrate()` przy starcie (AD-3) kolizje migracji z równoległych historii są realnym ryzykiem. Reguła list wyboru z R2 opisana w A1.3. | **średnia** |
-| B1.4 | **Właściciel i czas powstania `ReportGrid<T>` oraz `Startup/`** | Memlog: siatka „powstaje przed pierwszym raportem”. AD-9 używa jej też na ekranach Administracji, czyli w epiku 1. `Startup/` (AD-3, R14) i README odtwarzania („przy epiku startu”) nie mają epiku na ścieżce z ticketu. Spine powinien przypisać jedno i drugie do epiku 1 (scaffold), inaczej pierwszy epik zrobi prowizoryczną siatkę. | **średnia** |
-| B1.5 | **Lokalizacja tekstów Fluent UI** | Patrz A1.4. Jeden mechanizm w `Shared/`. | **średnia** |
-| B1.6 | **Granica błędu w obwodzie Blazor Server** | Konwencja „nieobsłużony wyjątek → `MessageBar`” nie zadziała bez `ErrorBoundary` w układzie (lub w ekranach). Bez niej nieobsłużony wyjątek zrywa obwód. Trzeba ustalić jedno miejsce. | **niska / średnia** |
-| B1.7 | **Trasy i nazwy stron** | Menu (AD-10) linkuje do ekranów z różnych epików. Brak konwencji tras (np. `/miesiac/{rok}/{miesiac}`, `/wpisy`, `/administracja/projekty`) i nazewnictwa folderów (`Features/Miesiac` po polsku przy kodzie po angielsku — konwencje są tu niespójne). | **niska** |
+### M-3 — Właściciel wiersza `account_settings` nieustalony (medium)
 
-### B2. Czy każda reguła AD jest egzekwowalna i faktycznie zapobiega swojemu rozjazdowi?
+- **Gdzie:** AD-7, AD-14, AD-16, R13, R25.
+- **Problem:** nie wiadomo, czy wiersz powstaje przy rejestracji (epik Konta), przy pierwszym zapisie Ustawień konta (epik Widok miesiąca i Zestawienie), czy brak wiersza znaczy „bez prefiksu”. Endpoint Zestawienia, rejestracja, pierwszy Administrator i `DeleteAccount` muszą przyjąć to samo.
+- **Poprawka:** jedno zdanie w AD-7: np. „wiersz powstaje przy pierwszym zapisie Ustawień konta; brak wiersza = brak prefiksu”.
 
-| AD | Egzekwowalna? | Zapobiega? | Uwagi |
-|---|---|---|---|
-| AD-1 | częściowo | tak | „Bez JavaScriptu poza Fluent UI” jest sprzeczne z samym Blazorem (`blazor.web.js`) i z **AD-13**: pobranie pliku w Blazor Server wymaga albo JS interop (`DotNetStreamReference` + skrypt), albo osobnego endpointu HTTP (minimal API `GET` zwracający `File(...)`). Spine tego nie rozstrzyga. Pierwsza historia eksportu albo złamie AD-1, albo wymyśli obejście. **Wysoka.** Rekomendacja: endpoint minimal API, link `<a href download>`, zero własnego JS. |
-| AD-2 | tak | tak | Nasłuch na `127.0.0.1` warto przypiąć w `appsettings.json` (`Kestrel:Endpoints` / `Urls`), nie w `launchSettings.json`, które może być pominięte. Hasło bazy: patrz B3.3. |
-| AD-3 | tak | tak | Dobra, konkretna, testowalna reguła. Braki: (a) testy integracyjne przez `WebApplicationFactory` uruchomią krok 2 (`docker exec` na nieistniejącym kontenerze). Potrzebny jest przełącznik w konfiguracji albo wydzielenie kroków startu. (b) `docker` musi być w `PATH`. (c) Nie ma żadnej kontroli, że zrzut da się odtworzyć (B3.4). |
-| AD-4 | tak (przegląd kodu) | tak | Bez uwag. |
-| AD-5 | tak | **częściowo** | AD-9 daje `ReportGrid` „stałe grupowanie… z sumą w nagłówku grupy”. Ogólny komponent z funkcją sumowania kusi, żeby liczył sumy sam, co daje drugą implementację, którą AD-5 ma wykluczyć. Reguła powinna brzmieć: *`ReportGrid` nigdy nie sumuje; sumy grup przyjmuje jako dane od ekranu*. Wyjątek R8 (suma Listy) warto też przypisać do jednego miejsca (zapytanie albo `Reporting/`). |
-| AD-6 | tak | tak | Należy dodać: „dziś” = `DateOnly.FromDateTime(DateTime.Now)`. Brakuje funkcji formatu i parsowania `h:mm` (B1.2). Nazwy miesięcy z `pl-PL` są małą literą. Nagłówek arkusza „Wrzesień 2026” i „RAZEM WRZESIEŃ 2026” wymagają jawnej zmiany wielkości liter. To szczegół historii, ale dobrze go wskazać. |
-| AD-7 | tak | tak | `lower(name)` dla polskich znaków zależy od `LC_CTYPE` bazy. Domyślny obraz `postgres` (`en_US.utf8`) działa poprawnie, ale warto przypiąć to w `docker-compose.yml`. Rozpoznawanie duplikatu po `SqlState 23505` i nazwie indeksu warto ująć w jednej funkcji pomocniczej, nie w każdym ekranie osobno. |
-| AD-8 | częściowo | częściowo | „Podpięty do formularza Fluent UI” nie mówi jak. FluentValidation nie ma natywnego mostu do `EditContext`. Trzeba wybrać jedną paczkę (np. Blazored.FluentValidation) albo własny komponent `FluentValidationValidator` w `Shared/`. Bez tego każdy z trzech formularzy podepnie walidację inaczej. |
-| AD-9 | częściowo | tak | Zakres v1 jest niejasny w dwóch punktach. Wyszukiwarka we wszystkich kolumnach (memlog l.30) ani nie jest w v1, ani nie trafiła do Deferred. Sortowanie jednokolumnowe przez użytkownika też nie jest rozstrzygnięte (odłożone jest tylko wielokolumnowe). R8 wymaga sortowania od najnowszej daty, czyli stałego sortowania zadanego przez ekran. Nie ustalono, czy filtrowanie jest w pamięci, czy w zapytaniu. Zakres dat R8 (domyślnie bieżący Miesiąc) to filtr zapytania, a filtr wartości kolumny to filtr w pamięci; to dwa różne mechanizmy. Nie ustalono też stabilności Fluent UI 5 (memlog l.19: data wydania niepotwierdzona). Warto mieć plan B (4.x) zapisany jako ryzyko. |
-| AD-10 | **nie w pełni** | częściowo | „Operacje istotne → `MessageBox`” nie jest rozstrzygalne bez listy operacji. Należy wymienić je wprost i zapisać, że zapis Wpisu w Sesji wpisywania **nie** wymaga potwierdzenia (R16). Skali „automatycznie według szerokości okna” nie da się sprawdzić bez progów (np. punkty przełamania CSS). |
-| AD-11 | słabo | tak | Brak mechanizmu sprawdzenia. Proponowany test: brak `http(s)://` w `wwwroot` i w `App.razor`, a w testach bUnit/E2E brak żądań poza `127.0.0.1`. „Telemetria .NET wyłączona” dotyczy CLI (`DOTNET_CLI_TELEMETRY_OPTOUT`), nie aplikacji. Warto to doprecyzować, żeby nikt nie szukał nieistniejącego przełącznika w kodzie. |
-| AD-12 | **nie w obecnym brzmieniu** | częściowo | (a) ASP.NET Core **nie ładuje** `appsettings.Local.json` domyślnie. Potrzebne jest `builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true)`, inaczej konfiguracja „działa” tylko u tego, kto to dopisze. (b) Sprzeczność: katalog kopii jest „tylko w Local”, a jednocześnie ma „domyślny katalog poza repo”. Skąd ta wartość domyślna, skoro `appsettings.json` ma tylko bezpieczne wartości? (c) Hasło w `docker-compose.yml` (B3.3). |
-| AD-13 | tak | tak | Mechanizm pobrania: patrz AD-1. Komunikat zamiast pliku dla pustego Miesiąca (R13) jest prostszy przy endpoincie, jeśli ekran sprawdzi liczbę Wpisów przed nawigacją. |
+### M-4 — Skąd `CurrentUser` bierze Usera w obwodzie, w endpoincie i na stronach SSR (medium)
 
-### B3. Czy coś w Deferred pozwala dwóm jednostkom się rozjechać?
+- **Gdzie:** AD-16 („`UserDbContextFactory` (scoped w obwodzie)”), AD-17, AD-14.
+- **Problem:** w obwodzie User pochodzi z `AuthenticationStateProvider`, w endpoincie Minimal API z `HttpContext.User` (tam `AuthenticationStateProvider` nie jest wiarygodny). Reguła nie mówi, jak jedna klasa obsłuży oba hosty, więc endpoint Zestawienia (epik 4) i ekrany (epik 1–3) mogą zbudować dwie wersje `CurrentUser`.
+- **Poprawka:** zapisać źródło: `CurrentUser` czyta `AuthenticationStateProvider` w komponentach i `IHttpContextAccessor` poza obwodem (albo endpoint woła wariant z jawnym `ClaimsPrincipal`); oba ścieżki sprawdzają `status` tak samo.
 
-| Pozycja Deferred | Ryzyko rozjazdu | Ocena |
-|---|---|---|
-| Grupowanie użytkownika, sortowanie wielokolumnowe, wybór kolumn w `ReportGrid` | Jeden komponent, więc rozjazd jest mały. Brakuje rozstrzygnięcia wyszukiwarki i sortowania jednokolumnowego (B2, AD-9). | niskie |
-| **Wygląd ekranów — „decyduje historia”** | **Tak.** Obejmuje formularz Wpisu, który jest wspólny dla epików 2, 3 i Listy (B1.1), a także wpisywanie Czasu i obsługę klawiatury (R16). Kolumny jednego ekranu mogą być w historii, ale wspólny formularz nie. | **wysokie** |
-| Szczegóły Testcontainers — „pierwszy epik z testami zapisu” | Epik 1 (Słowniki) pierwszy zapisze do bazy, więc pierwszy też zdecyduje. Rozjazd tylko wtedy, gdy historie biegną równolegle. Dodatkowo trzeba wyłączyć krok kopii w testach (AD-3). | niskie / średnie |
-| Wdrożenie poza komputer Autora, konta, HTTPS | Zgodne z Boundaries ticketu. | brak ryzyka |
-| Odtwarzanie z Kopii — ręcznie, README „przy epiku startu” | Nie ma „epiku startu” na ścieżce z ticketu (B1.4). Procedura nie ma właściciela ani testu. | średnie (operacyjne) |
+### M-5 — `/konto/wyloguj`: POST w AD-11, przejście nawigacją w AD-17 (medium)
 
-### B4. Kopert operacyjny: czy każdy wymiar jest rozstrzygnięty, odłożony albo otwarty?
+- **Gdzie:** AD-11 (Wyloguj = formularz POST), AD-17 („UI przechodzi na `/konto/wyloguj`”).
+- **Problem:** z obwodu nie da się wysłać POST bez JS ani formularza; `NavigateTo(..., forceLoad)` wysyła GET. Nie ustalono, czy `/konto/wyloguj` obsługuje GET (np. strona z automatycznym formularzem lub wylogowanie na GET dla Konta nieaktywnego). Dwie historie zrobią to różnie albo wcale nie zadziała.
+- **Poprawka:** dopisać do AD-15/AD-17: Konto nieaktywne przechodzi na GET `/konto/zablokowane` (statyczna, wylogowuje w odpowiedzi HTTP) albo wprost: `/konto/wyloguj` przyjmuje GET i POST, z antiforgery na POST.
 
-| Wymiar | Status w spine | Uwagi |
-|---|---|---|
-| Środowisko docelowe | **rozstrzygnięty** | Windows, komputer Autora, Docker Desktop, `127.0.0.1` (AD-2, Structural Seed). |
-| Środowiska (Development/Production) | **otwarty, nienazwany** | `dotnet run` domyślnie uruchamia w `Development` (strona wyjątków dewelopera, szczegółowe błędy obwodu, `appsettings.Development.json`). Do prawdziwych rozliczeń od stycznia trzeba zdecydować: `dotnet run -c Release` z `ASPNETCORE_ENVIRONMENT=Production`, `dotnet publish` + plik `.exe`, czy świadomie `Development`. To też wpływa na to, czy działa `appsettings.Local.json` (B2, AD-12). |
-| Start | **rozstrzygnięty** | AD-3, kolejność i komunikaty. Otwarte: polityka `restart:` w `docker-compose.yml` wobec ograniczenia „bez autostartu” (NFR-4). Docker Desktop startujący z Windows plus `restart: unless-stopped` daje autostart bazy. |
-| Zatrzymanie / praca ciągła | **pominięty** | Ctrl+C dla aplikacji. Czy kontener zostaje włączony (`docker compose stop`?). Drobne, ale warto jedno zdanie. |
-| Konfiguracja i sekrety | **częściowo** | AD-12, z lukami z B2 (ładowanie pliku, hasło w compose). |
-| Hasło bazy w `docker-compose.yml` (B3.3) | **otwarty** | Compose potrzebuje `POSTGRES_PASSWORD`. AD-12 kładzie hasło w `appsettings.Local.json`, którego compose nie czyta. Bez decyzji (np. plik `.env` w `.gitignore` z `.env.example` w repo) hasło trafi do `docker-compose.yml` w gicie. |
-| Kopia bazy | **rozstrzygnięty** | AD-3: dobra reguła, zgodna z R14 (poza zmianą rozszerzenia). |
-| Odtwarzanie (B3.4) | **odłożony, słabo** | Ręczny `psql` + README, bez właściciela i bez próby odtworzenia. Kopia, której nikt nie odtworzył, jest niesprawdzona. Rekomendacja: jeden test integracyjny (Testcontainers) dump → restore → porównanie liczby Wpisów albo przynajmniej krok w README sprawdzony przy Teście wrześniowym. Zrzut w formacie plain `.sql` warto robić z `--clean --if-exists`, żeby odtworzenie na istniejącą bazę było deterministyczne. |
-| Migracje | **rozstrzygnięty** | `Database.Migrate()` po kopii. Brak konwencji tworzenia migracji między epikami (B1.3). |
-| Aktualizacja PostgreSQL (18 → 19) | **pominięty** | Zmiana wersji głównej wymaga dump/restore. Wystarczy jedno zdanie w Deferred („aktualizacja wersji głównej przez Kopię bazy”). |
-| Logi / obserwowalność | **rozstrzygnięty** | Konsola, bez zewnętrznych ujść. Dla lokalnej aplikacji wystarczy. |
-| Kolizje portów | **pominięty** | `5432` może być zajęty przez inny lokalny PostgreSQL. Port powinien być w konfiguracji (compose + connection string). Niska waga. |
-| Bezpieczeństwo sieci | **rozstrzygnięty** | `127.0.0.1` po obu stronach (AD-2), HTTPS świadomie odłożony. |
+### M-6 — Brakujące pozycje w Stack (medium)
 
----
+- **Gdzie:** Stack, AD-19 (`PersistKeysToDbContext`), AD-20 (budowanie obrazu).
+- **Problem:** `PersistKeysToDbContext` wymaga pakietu `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore` (10.0.x), którego nie ma w tabeli; brak też obrazu budującego `mcr.microsoft.com/dotnet/sdk:10.0` (wieloetapowy Dockerfile). Agent dobierze wersję sam.
+- **Poprawka:** dopisać oba wiersze z wersjami zgodnymi z linią 10.0.14.
 
-## Rekomendacje (kolejność)
+### M-7 — NFR-8 przekazuje wartości bezpieczeństwa architekturze, a kręgosłup je odkłada (medium)
 
-1. **Nowe AD: Formularz Wpisu i Sesja wpisywania** (R5, R6, R7, R8, R9, R16). Jeden komponent w `Features/Wpisy`, otwierany z menu, Listy i Widoku. Data Sesji w usłudze `Scoped` (na obwód). Callback „zmieniono” dla wywołującego, który wywołuje ponowne `MonthReport.Build`. Czas jako pole tekstowe `h:mm`. Kolejność fokusu, Enter zapisuje, po zapisie fokus wraca na Projekt. Zapis Wpisu nigdy nie otwiera `MessageBox`.
-2. **AD-13 + AD-1:** pobranie przez endpoint minimal API (`GET /zestawienie/{rok}/{miesiac}`), bez własnego JS. Doprecyzować AD-1 („poza `blazor.web.js` i Fluent UI”).
-3. **AD-6 rozszerzyć:** jedno miejsce formatu i parsowania `h:mm` oraz konwersji na godziny dziesiętne (np. `Reporting/Czas`). „Dziś” jako czas lokalny.
-4. **AD-7 rozszerzyć o R2:** kolumna `is_active`. Reguła list wyboru „aktywne + bieżąca wartość” (edycja) / „aktywne, inaczej puste” (Kopia). Widok, Lista i eksport nigdy nie filtrują po aktywności. Atrybuty encji w diagramie ER. Konwencja migracji.
-5. **AD-12 + koperta:** jawne ładowanie `appsettings.Local.json`, `.env` dla compose w `.gitignore`, wybór środowiska uruchomieniowego, `restart: "no"` w compose, port w konfiguracji.
-6. **AD-9 / AD-5:** `ReportGrid` nie sumuje. Rozstrzygnąć wyszukiwarkę i sortowanie jednokolumnowe. Filtr zakresu dat R8 w zapytaniu, filtr wartości w pamięci.
-7. **AD-10:** lista operacji „istotnych”. Lokalizacja Fluent UI w `Shared/`. `ErrorBoundary` w `MainLayout`.
-8. **Własność:** scaffold, `Startup/`, `ReportGrid` i README odtwarzania przypisać do epiku 1. Dodać test odtworzenia kopii.
-9. **Ticket:** przekazać Sofii/Johnowi listę z A2.
+- **Gdzie:** Deferred („Wartości limitów prób rejestracji i logowania, reguły długości hasła, czas życia sesji”), AD-15, NFR-8 („progi, reguły haseł i czas sesji to bezpieczne wartości domyślne z architektury”).
+- **Problem:** ticket oczekuje wartości z architektury; kręgosłup oddaje je historii. Ryzyko rozjazdu jest małe (jedno miejsce konfiguracji), ale wymaganie formalnie nie jest pokryte, a weryfikacja historii nie ma progu odniesienia.
+- **Poprawka:** wpisać wartości do AD-15 (np. limiter: 5 prób/min na IP dla logowania, 3/godz. dla rejestracji; hasło: domyślne Identity z `RequiredLength = 10`; ciasteczko 8 h z przesuwnym wygaśnięciem) albo podnieść to jako jawne pytanie do Autora i poprawić NFR-8.
+
+### M-8 — Luki w otoczeniu operacyjnym (medium)
+
+- **Gdzie:** AD-19, AD-20, Consistency Conventions (Logi), Deferred.
+- **Problem:** decyzje są, ale brakuje kilku elementów, które historie wdrożenia ustalą osobno:
+  - rotacja logów Dockera (domyślny `json-file` bez limitu zapełni dysk małego Dropletu);
+  - kto i kiedy tworzy rolę bazy tylko do odczytu (migracja, skrypt w `docs/admin/`, ręcznie);
+  - okno oczekiwania na `/health` po `up -d` (migracje trwają; bez ponawiania potok będzie fałszywie czerwony) i czy `/health` jest wołane przez Caddy po HTTPS, czy lokalnie na Droplecie;
+  - aktualizacje systemu i Dockera na Droplecie (np. `unattended-upgrades`) — decyzja albo jawne odłożenie;
+  - czy aplikacja łączy się z bazą jako superużytkownik `POSTGRES_USER`, czy osobną rolą właściciela schematu.
+- **Poprawka:** dopisać do AD-19/AD-20: `logging: max-size/max-file` w `deploy/compose.yml`; właściciel roli tylko do odczytu; `/health` z ponawianiem do N sekund; pozostałe jako Deferred z właścicielem `docs/admin/`.
+
+### L-1 — Rationale w regułach (low)
+
+- AD-15 „bo tylko odpowiedź HTTP ustawia ciasteczko”, AD-19 „więc wdrożenie nie wylogowuje”, AD-21 „Dzięki temu poprzedni obraz działa na nowszym schemacie i rollback nie cofa bazy”, Deferred „odłożone przez Autora”. Uzasadnienia są w memlogu; w kręgosłupie wystarczy reguła. Drobne, nie blokuje.
+
+### L-2 — `last_login_at` i `registered_at`: kto zapisuje (low)
+
+- AD-7 definiuje kolumny, AD-15 nie mówi, że strona logowania ustawia `last_login_at` po udanym logowaniu, a rejestracja i pierwszy Administrator — `registered_at`. Jedno zdanie w AD-15.
+
+### L-3 — Równoległe wdrożenia (low)
+
+- AD-20 nie ustala `concurrency` dla workflow wdrożenia; dwa szybkie merge'e lub merge z rollbackiem mogą się przeplatać. Dopisać „jedna grupa `concurrency` dla wdrożenia i rollbacku, bez anulowania trwającego”.
+
+### L-4 — Endpoint Zestawienia dla pustego Miesiąca (low)
+
+- AD-14 każe ekranowi sprawdzić Wpisy przed pokazaniem linku, ale nie mówi, co zwraca endpoint wywołany bezpośrednio dla pustego Miesiąca (pusty plik, 404, przekierowanie). Jedno słowo w regule.
+
+### L-5 — Region Dropletu a R16 (low)
+
+- R16 (10 s na Wpis przez internet) zależy od opóźnienia obwodu Blazor Server; Deferred wymienia rozmiar Dropletu, nie region. Dopisać „region UE (FRA1/AMS3)” do decyzji Autora w `docs/admin/`.
+
+### L-6 — Capability Map bez NFR-2…NFR-9 (low)
+
+- Mapa ma tylko NFR-1; NFR-2 (AD-13, AD-20), NFR-7 (AD-6), NFR-8 (AD-15, AD-19), NFR-9 (AD-7, AD-21) są pokryte w regułach, ale nie w mapie.
+
+### L-7 — Nieaktualne ograniczenie w tickecie (low, do Sofii)
+
+- `initiative-rejestr-czasu.md`, Constraints: „kręgosłup … (AD-1…AD-14) wiąże każdy epik, poza AD-2 i AD-3, które PRD … zastępuje do czasu aktualizacji architektury” oraz notatka „Architecture invalidated (31.10.2026)”. Po tej aktualizacji ograniczenie i notatka są nieaktualne (AD-1…AD-22, AD-3 wycofane). To poprawka ticketu, nie kręgosłupa.
+
+## Sprawdzenia, które przeszły
+
+- **Pokrycie ticketu:** `binds` obejmuje R1–R31 bez R14; każde R ma AD w regułach lub w mapie; NFR-1 (AD-12, AD-19), NFR-2 (AD-13), NFR-4 (AD-2, AD-19), NFR-5/7 (AD-6), NFR-6 (AD-11), NFR-8 (AD-15, AD-19 — z zastrzeżeniem M-7), NFR-9 (AD-7, AD-21). Granice (brak e-maila, kodu kopii, CSV, środowiska przedprodukcyjnego) są zachowane.
+- **Egzekwowalność:** AD-5, AD-6, AD-7 (złożone klucze obce, indeksy), AD-9, AD-10, AD-12 (lista zakazanych komponentów), AD-16 (dwa nazwane miejsca `IgnoreQueryFilters` z testami), AD-21 (kontrola migracji w PR) dają się sprawdzić testem, grepem lub w przeglądzie.
+- **Deferred:** żadna pozycja nie pozwala dwóm jednostkom rozjechać się w kodzie (wygląd ekranów spinają AD-9/10/11/22; wartości bezpieczeństwa mają jedno miejsce — zob. M-7 co do pokrycia).
+- **Wersje:** wszystkie pozycje Stack mają wpis weryfikacji z 31.10.2026 w memlogu; brownfield (`RejestrCzasu.csproj`, testy) używa tych samych wersji (EF/Identity 10.0.14, Npgsql 10.0.3, NamingConventions 10.0.1, Fluent UI 5.0.1, bUnit 2.13.3, xunit.v3 4.0.2, Testcontainers 4.16.0).
+- **Brownfield ratyfikowany:** `docker-compose.yml` (`postgres:18`, nazwany wolumen na `/var/lib/postgresql`, `127.0.0.1:${POSTGRES_PORT}`), `appsettings.Local.json` ładowany jawnie, kultura `pl-PL`, `TimeProvider`, CSP `script-src 'self'` na każdej odpowiedzi, kolejność startu z wyjściem kodem 1, `AddDbContextFactory`, normalizacja kodu w `SaveChanges`, indeks `lower(name)` SQL-em, `RESTRICT`, testy Testcontainers z `Migrate()` — zgodne z AD-1, AD-2, AD-6, AD-7, AD-12, AD-13, AD-21. Przepisanie `Initial` (AD-7) jest stwierdzone jawnie. Wyjątki: M-1 (układ katalogów i opcje), H-3 (`Urls` na `127.0.0.1`).
+- **Otoczenie operacyjne:** środowiska (lokalne + serwer, bez przedprodukcji), infrastruktura (Droplet, Cloud Firewall, Caddy, GHCR), sekrety (`.env` 600, GitHub Secrets), kopie (kopie Dropletu, odtworzenie na nowy Droplet, ćwiczenie w Deferred z właścicielem), obserwowalność (konsola + `/health`, monitoring jawnie poza v1) — zdecydowane lub jawnie odłożone; luki w H-3, H-4, M-8.
