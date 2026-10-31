@@ -76,7 +76,7 @@ context:
 **Acceptance Criteria:**
 - Given lokalne drzewo, when `dotnet build` i `dotnet test`, then 0 ostrzeżeń i wszystkie testy zielone, w tym kontrola migracji.
 - Given wypchnięta gałąź i PR do `main`, when workflow się wykona, then job `build-and-test` jest zielony, a log nie zawiera haseł. Sprawdza Autor na GitHubie.
-- Given ochrona `main` ustawiona według `docs/admin/README.md`, when PR ma czerwony test, then PR pokazuje nieudane wymagane sprawdzenie `build-and-test`. Sprawdza Autor, krok człowieka. Blokada scalenia działa dopiero w repozytorium publicznym albo z GitHub Pro; do tego czasu obowiązuje zasada ręczna z `docs/admin/README.md` (decyzja Autora 2026-10-31, prywatne repo na planie Free).
+- Given ochrona `main` ustawiona według `docs/admin/README.md`, when PR ma czerwony test, then GitHub nie pozwala go scalić. Sprawdza Autor, krok człowieka.
 
 ## Verification
 
@@ -86,7 +86,7 @@ context:
 - `dotnet ef migrations has-pending-model-changes --project src/RejestrCzasu` -- expected: brak zmian
 
 **Manual checks (if no CLI):**
-- Na GitHubie: job `build-and-test` zielony na PR tej gałęzi. Reguła ochrony `main` ustawiona (status Not enforced na prywatnym repo Free); PR z czerwonym testem pokazuje nieudany `build-and-test`.
+- Na GitHubie: job `build-and-test` zielony na PR tej gałęzi. Po ustawieniu ochrony `main` przycisk scalenia zablokowany dla PR z czerwonym testem.
 
 ## Review Triage Log
 
