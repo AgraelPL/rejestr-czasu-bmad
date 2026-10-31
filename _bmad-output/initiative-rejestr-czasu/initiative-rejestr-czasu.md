@@ -68,7 +68,7 @@ Autor wysyła Odbiorcy miesięczne Zestawienie prosto z eksportu na serwerze, pr
 - prd NFR-8: limity prób rejestracji i logowania; baza niedostępna z internetu; dostęp administracyjny do serwera i bazy tylko szyfrowanym kanałem z kluczem, do bazy na co dzień tylko do odczytu; progi, reguły haseł i czas sesji to bezpieczne wartości domyślne z architektury.
 - prd NFR-9, addendum: migracja `Initial` zostaje przepisana z `UserId` przed pierwszym wdrożeniem na serwer; od tego wdrożenia zmiany schematu tylko dodają i są stosowane przy starcie.
 - architecture AD-1, prd addendum: .NET 10, Blazor Web App Interactive Server, Fluent UI Blazor 5, EF Core 10, PostgreSQL 18 w Dockerze; lokalnie `docker compose up -d`, potem `dotnet run`; serwer, CI/CD i kopie według addendum PRD.
-- architecture: kręgosłup `architecture-rejestr-czasu.md` (AD-1…AD-14) wiąże każdy epik, poza AD-2 i AD-3, które PRD z 31.10.2026 zastępuje do czasu aktualizacji architektury.
+- architecture: kręgosłup `architecture-rejestr-czasu.md` (AD-1…AD-22, wersja 31.10.2026; AD-3 wycofane) wiąże każdy epik.
 - prd SM-4, SM-C1: cały kod piszą agenci BMad, a zmiany na serwerze idą tylko przez potok wdrożenia (wyjątek: jednorazowe przygotowanie serwera i ćwiczenia z instrukcji administratora); przy zderzeniu z terminem wygrywa metoda.
 - prd SM-C2: nic poza zakresem ustalonym 31.10.2026 nie wchodzi przed Testem wrześniowym.
 - prd §3: terminy z `glossary.md` obowiązują dosłownie.
@@ -118,4 +118,5 @@ Autor wysyła Odbiorcy miesięczne Zestawienie prosto z eksportu na serwerze, pr
 - Decision (31.10.2026): zmiana własnego hasła w Ustawieniach konta należy do epiku Widok miesiąca i Zestawienie (właściciel ekranu), żeby epik Administracja Kont i pomoc zależał tylko od epiku Konta i wdrożenie.
 - Decision (31.10.2026): instrukcja administratora powstaje razem z infrastrukturą w epiku Konta i wdrożenie; strona o odtwarzaniu z Kopii serwera i ćwiczenie odtworzenia należą do epiku Administracja Kont i pomoc.
 - Decision (31.10.2026): odrzucona sugestia dodania forge chmura-konta-wdrożenie do `sources:` — PRD go destyluje.
-- Architecture invalidated (31.10.2026): AD-2 i AD-3 nieaktualne; brak decyzji o Identity, globalnym filtrze po `UserId`, sprawdzaniu stanu Konta w obwodzie, CI/CD, wdrożeniu i konwencji stron pomocy. Historie epiku Konta i wdrożenie planowane po aktualizacji przez `bmad-architecture`.
+- Architecture invalidated (31.10.2026): AD-2 i AD-3 nieaktualne; brak decyzji o Identity, globalnym filtrze po `UserId`, sprawdzaniu stanu Konta w obwodzie, CI/CD, wdrożeniu i konwencji stron pomocy. Rozwiązane tego samego dnia: architektura zaktualizowana do AD-1…AD-22 (commit 7fdf616).
+- Decision (31.10.2026): zmiana własnego hasła (dobrowolna i wymuszona) tylko na statycznej `/konto/zmiana-hasla` (AD-15), budowanej w epiku Konta i wdrożenie; ekran Ustawienia konta z epiku Widok miesiąca i Zestawienie do niej linkuje. R25 bez zmiany treści, zmienia się podział (decyzja Autora w architekturze).

@@ -38,7 +38,7 @@ Autor po zalogowaniu na serwerze wpisuje swoje 7 Projektów i 2 Typy pracy na li
 - prd NFR-4: przeglądarka na komputerze, bez układu pod telefon; interfejs tylko po polsku.
 - prd NFR-5: Czas liczony w minutach całkowitych; konwersja na godziny dziesiętne dopiero w Zestawieniu.
 - prd NFR-6: belka górna z Pomocą `?`, Ustawieniami konta i Wyloguj; menu: Nowy wpis; Rejestr (Widok miesiąca, Lista wpisów, Eksport); Słowniki (Projekty, Typy pracy); Administracja (Użytkownicy) tylko dla Administratora.
-- architecture AD-1: .NET 10, Blazor Interactive Server, Fluent UI Blazor 5, EF Core 10, PostgreSQL 18 w Dockerze; lokalnie `docker compose up -d`, potem `dotnet run`. AD-2 i AD-3 nieaktualne (PRD 31.10.2026).
+- architecture AD-1: .NET 10, Blazor Interactive Server, Fluent UI Blazor 5, EF Core 10, PostgreSQL 18 w Dockerze; lokalnie `docker compose up -d`, potem `dotnet run`.
 - architecture AD-12: zakaz komponentów Fluent UI ładujących skrypty z unpkg: `FluentNumberInput`, pola z `MaskPattern`, `FluentSortableList`.
 - prd §3: terminy z `glossary.md` obowiązują dosłownie.
 
@@ -61,7 +61,7 @@ Autor po zalogowaniu na serwerze wpisuje swoje 7 Projektów i 2 Typy pracy na li
 ## References
 
 - parent — _bmad-output/initiative-rejestr-czasu/initiative-rejestr-czasu.md, Requirements R1–R3, R15, R17, R19, R26, R31
-- architecture — _bmad-output/initiative-rejestr-czasu/architecture-rejestr-czasu/architecture-rejestr-czasu.md, AD-1, AD-4, AD-6–AD-13 (AD-2, AD-3 nieaktualne)
+- architecture — _bmad-output/initiative-rejestr-czasu/architecture-rejestr-czasu/architecture-rejestr-czasu.md, AD-1, AD-2, AD-4, AD-6–AD-13, AD-16, AD-17, AD-22 (wersja 31.10.2026)
 - glossary — _bmad-output/initiative-rejestr-czasu/glossary.md
 
 ## Notes

@@ -4,8 +4,8 @@
 id = 4
 slug = "epic-konta-i-wdrozenie"
 title = "Konta i wdrożenie"
-description = "Każda propozycja zmiany przechodzi build i testy, a merge do gałęzi głównej wdraża aplikację na serwer pod subdomeną z HTTPS; rollback jest przećwiczony. Przepisany schemat Initial ma UserId z globalnym filtrem i testami oddzielenia danych oraz dane Konta (stan, data rejestracji, ostatnie logowanie, licznik nieudanych prób); działa rejestracja (Konto Oczekuje), logowanie z blokadą po 5 próbach, wylogowanie, role User i Administrator, pierwszy Administrator z sekretu i sprawdzanie stanu Konta przy każdej akcji. Buduje na zrobionej historii 1.1 z epiku 1 (scaffold, docker compose, Testcontainers). Daje epikowi 1 UserId z filtrem, logowanie, role, autoryzację tras, układ dla niezalogowanych i potok wdrożenia; epikowi 5 stan Konta, jego dane i sprawdzanie stanu. R15 tu: konfiguracja i sekrety na serwerze i w potoku. R19 tu: logowanie, komunikaty o stanie, blokada po 5 próbach, wylogowanie. R24 tu: globalny filtr i testy automatyczne; próba na dwóch Kontach w epiku 5. R27 tu: strony docs/admin/ o serwerze, domenie, sekretach, SSH, dostępie do bazy, wdrożeniu i rollbacku."
-covers = ["R15", "R18", "R19", "R20", "R24", "R27", "R28", "R29", "R30"]
+description = "Każda propozycja zmiany przechodzi build i testy, a merge do gałęzi głównej wdraża aplikację na serwer pod subdomeną z HTTPS; rollback jest przećwiczony. Przepisany schemat Initial ma UserId z globalnym filtrem i testami oddzielenia danych oraz dane Konta (stan, data rejestracji, ostatnie logowanie, licznik nieudanych prób); działa rejestracja (Konto Oczekuje), logowanie z blokadą po 5 próbach, wylogowanie, role User i Administrator, pierwszy Administrator z sekretu i sprawdzanie stanu Konta przy każdej akcji. Buduje na zrobionej historii 1.1 z epiku 1 (scaffold, docker compose, Testcontainers). Daje epikowi 1 UserId z filtrem, logowanie, role, autoryzację tras, układ dla niezalogowanych i potok wdrożenia; epikowi 5 stan Konta, jego dane i sprawdzanie stanu. R15 tu: konfiguracja i sekrety na serwerze i w potoku. R19 tu: logowanie, komunikaty o stanie, blokada po 5 próbach, wylogowanie. R24 tu: globalny filtr i testy automatyczne; próba na dwóch Kontach w epiku 5. R25 tu: statyczna strona /konto/zmiana-hasla (wymuszona i dobrowolna z podaniem obecnego hasła). R27 tu: strony docs/admin/ o serwerze, domenie, sekretach, SSH, dostępie do bazy, wdrożeniu i rollbacku."
+covers = ["R15", "R18", "R19", "R20", "R24", "R25", "R27", "R28", "R29", "R30"]
 
 [[epic]]
 id = 1
@@ -27,11 +27,12 @@ after = [{ epic = 1, needs = "Domain/Czas, PolishCalendar, YearMonth, Dictionary
 id = 3
 slug = "epic-miesiac-i-zestawienie"
 title = "Widok miesiąca i Zestawienie"
-description = "Na serwerze User sprawdza Miesiąc w siatce grupowanej Tydzień → Dzień i pobiera Zestawienie xlsx we wspólnym układzie (endpoint /zestawienie, ekran Eksport) z prefiksem nazwy z Ustawień konta; Test wrześniowy przechodzi lokalnie. Epik posiada MonthEntriesQuery i MonthReport.Build, jedyne źródło sum (AD-5), oraz ekran Ustawienia konta z prefiksem i zmianą własnego hasła. R17 tu: filtr kolumn i licznik w Widoku miesiąca; filtr nie zmienia sum z MonthReport. R26 tu: strony pomocy ekranów Widok miesiąca, Eksport i Ustawienia konta."
+description = "Na serwerze User sprawdza Miesiąc w siatce grupowanej Tydzień → Dzień i pobiera Zestawienie xlsx we wspólnym układzie (endpoint /zestawienie, ekran Eksport) z prefiksem nazwy z Ustawień konta; Test wrześniowy przechodzi lokalnie. Epik posiada MonthEntriesQuery i MonthReport.Build, jedyne źródło sum (AD-5), oraz ekran Ustawienia konta z prefiksem i linkiem do zmiany hasła (R25 tu: prefiks i link; strona zmiany hasła z epiku 4). R17 tu: filtr kolumn i licznik w Widoku miesiąca; filtr nie zmienia sum z MonthReport. R26 tu: strony pomocy ekranów Widok miesiąca, Eksport i Ustawienia konta."
 covers = ["R9", "R10", "R11", "R12", "R13", "R17", "R25", "R26"]
 after = [
   { epic = 1, needs = "ReportGrid ze stałym grupowaniem, Domain/Czas, PolishCalendar, YearMonth, mechanizm pomocy, link Ustawienia konta w belce, Notify i Confirm" },
   { epic = 2, needs = "EntryForm w oknie dialogowym i DeleteEntry dla ikon w wierszach" },
+  { epic = 4, needs = "strona /konto/zmiana-hasla i wiersz account_settings tworzony z Kontem" },
 ]
 
 [[epic]]

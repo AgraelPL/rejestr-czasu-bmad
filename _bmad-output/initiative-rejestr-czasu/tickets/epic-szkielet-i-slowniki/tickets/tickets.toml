@@ -34,7 +34,7 @@ covers = ["R19", "R26", "R31"]
 after = [1, "epic-konta-i-wdrozenie"]
 hitl = false
 risk = "low"
-references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11"]
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-17", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-22"]
 
 [[entry]]
 id = 4
