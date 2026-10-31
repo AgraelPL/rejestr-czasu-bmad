@@ -61,6 +61,7 @@ after = [4]
 hitl = false
 risk = "medium" # kolejność potoku i zaufane proxy łatwo pomylić, ale wszystko sprawdzalne lokalnie
 references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-19", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-20", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-6", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-13"]
+notes = ["Obraz budujący (jeśli wieloetapowy) używa mcr.microsoft.com/dotnet/sdk w wersji z global.json (10.0.403), tej samej co CI z historii 1 (przegląd historii 1, 31.10.2026)."]
 
 [[entry]]
 id = 8
@@ -73,7 +74,7 @@ after = [1, 5]
 hitl = true # Autor zakłada Droplet z kopiami, Cloud Firewall, klucz SSH, rekord DNS, .env na serwerze, GitHub Secrets i przełącza pakiet GHCR na publiczny według docs/admin/
 risk = "high" # pierwszy kontakt z serwerem, DNS, certyfikatem i SSH z potoku; kroki człowieka w ustalonej kolejności
 references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-19", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-20", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-13", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-2", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-21"]
-notes = ["Subdomena: czas-pracy.kandula-consulting.pl (domena kandula-consulting.pl kupiona przez Autora).", "Dodatkowe sprawdzenie: nmap lub test portów z zewnątrz pokazuje tylko 22, 80 i 443."]
+notes = ["Subdomena: czas-pracy.kandula-consulting.pl (domena kandula-consulting.pl kupiona przez Autora).", "Dodatkowe sprawdzenie: nmap lub test portów z zewnątrz pokazuje tylko 22, 80 i 443.", "Po zamrożeniu Initial kontrola migracji z historii 1 ma rozpoznawać Initial po identyfikatorze z [Migration] jako najwcześniejszą i wykrywać zmianę jej pliku (np. przypięty skrót); dziś pomija ją po nazwie klasy, a has-pending-model-changes nie widzi zmiany jej Up (przegląd historii 1, 31.10.2026)."]
 
 [[entry]]
 id = 6

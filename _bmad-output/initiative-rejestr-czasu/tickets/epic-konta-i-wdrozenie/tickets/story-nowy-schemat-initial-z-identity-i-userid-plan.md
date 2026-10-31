@@ -3,7 +3,7 @@ title: 'Nowy schemat Initial z Identity i UserId'
 type: 'feature'
 ticket: '2'
 created: '2026-10-31'
-status: 'built'
+status: done
 baseline_revision: '4034a504018ffeadb3792c8700b3feb1365aad1b'
 route: 'full'
 route_source: 'auto'
