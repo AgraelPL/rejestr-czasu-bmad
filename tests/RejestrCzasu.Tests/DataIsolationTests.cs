@@ -183,7 +183,7 @@ public sealed class DataIsolationTests(PostgresFixture postgres) : IAsyncLifetim
     [Fact]
     public async Task UserContext_CannotBeBoundTwice_OrToInvalidUser()
     {
-        var factory = new UserDbContextFactory(postgres.ContextFactory);
+        var factory = postgres.CreateUserDbContextFactory();
         await using var db = await factory.CreateDbContextAsync(_userA, Ct);
         Assert.Equal(_userA, db.CurrentUserId);
 
@@ -440,13 +440,14 @@ public sealed class DataIsolationTests(PostgresFixture postgres) : IAsyncLifetim
         Assert.Contains("user_id", ex.MessageText);
     }
 
-    /// <summary>A role for User A, a claim, a login, a token, a role claim and a Data Protection key (system mode).</summary>
+    /// <summary>
+    /// The seeded Administrator role for User A, a claim, a login, a token, a role claim and a Data Protection key
+    /// (system mode).
+    /// </summary>
     private async Task<int> SeedIdentityDataAsync()
     {
         await using var db = postgres.CreateContext();
-        var role = new IdentityRole<int> { Name = "Administrator", NormalizedName = "ADMINISTRATOR" };
-        db.Roles.Add(role);
-        await db.SaveChangesAsync(Ct);
+        var role = await db.Roles.SingleAsync(r => r.Name == AppRoles.Administrator, Ct);
         db.UserRoles.Add(new IdentityUserRole<int> { UserId = _userA, RoleId = role.Id });
         db.UserClaims.Add(new IdentityUserClaim<int> { UserId = _userA, ClaimType = "test", ClaimValue = "a" });
         db.UserLogins.Add(new IdentityUserLogin<int> { UserId = _userA, LoginProvider = "test", ProviderKey = "a" });

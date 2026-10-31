@@ -1,6 +1,9 @@
 using System.Globalization;
+using Microsoft.AspNetCore.Components.Server;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using RejestrCzasu.Accounts;
 using RejestrCzasu.Data;
 using RejestrCzasu.Options;
 using Testcontainers.PostgreSql;
@@ -68,7 +71,14 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     /// <summary>A User-mode context, created the only allowed way: through <see cref="UserDbContextFactory"/>.</summary>
     public Task<AppDbContext> CreateUserContextAsync(int userId) =>
-        new UserDbContextFactory(ContextFactory).CreateDbContextAsync(userId);
+        CreateUserDbContextFactory().CreateDbContextAsync(userId);
+
+    /// <summary>
+    /// <see cref="UserDbContextFactory"/> on the container database with a <see cref="CurrentUser"/> outside any
+    /// request or circuit (nobody logged in); tests pass the User to the internal overload.
+    /// </summary>
+    public UserDbContextFactory CreateUserDbContextFactory() =>
+        new(ContextFactory, new CurrentUser(new HttpContextAccessor(), new ServerAuthenticationStateProvider()));
 
     /// <summary>Creates an active Account with a fictional login and returns its id.</summary>
     public async Task<int> CreateUserAsync(string userName)
@@ -87,7 +97,10 @@ public sealed class PostgresFixture : IAsyncLifetime
         return user.Id;
     }
 
-    /// <summary>Removes all data (every table except the migration history) and restarts identity sequences.</summary>
+    /// <summary>
+    /// Removes all data and restarts identity sequences: every table except the migration history and <c>roles</c>,
+    /// whose rows are schema data seeded by the Initial migration (AD-15).
+    /// </summary>
     public async Task ResetAsync()
     {
         await using var connection = new NpgsqlConnection(DatabaseOptions.BuildConnectionString());
@@ -95,7 +108,7 @@ public sealed class PostgresFixture : IAsyncLifetime
         var tables = new List<string>();
         await using (var list = new NpgsqlCommand(
             "SELECT quote_ident(table_name) FROM information_schema.tables " +
-            "WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name <> '__EFMigrationsHistory';",
+            "WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name NOT IN ('__EFMigrationsHistory', 'roles');",
             connection))
         await using (var reader = await list.ExecuteReaderAsync())
         {

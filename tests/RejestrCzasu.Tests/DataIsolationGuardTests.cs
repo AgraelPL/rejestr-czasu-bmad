@@ -1,8 +1,11 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using RejestrCzasu.Accounts;
 using RejestrCzasu.Data;
 using RejestrCzasu.Options;
 
@@ -26,6 +29,10 @@ public sealed partial class DataIsolationGuardTests
         var services = new ServiceCollection();
         services.AddOptions<DatabaseOptions>();
         services.AddAppDatabase();
+        // UserDbContextFactory takes the User from CurrentUser (registered by AddAccounts in the application).
+        services.AddHttpContextAccessor();
+        services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
+        services.AddScoped<CurrentUser>();
         await using var provider = services.BuildServiceProvider(validateScopes: true);
 
         Assert.DoesNotContain(services, s => s.ServiceType.Name.Contains("Pool", StringComparison.Ordinal)

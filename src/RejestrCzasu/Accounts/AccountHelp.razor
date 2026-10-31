@@ -1,0 +1,12 @@
+@using Microsoft.AspNetCore.Components.Sections
+@* Declares the help topic of a /konto page; AccountLayout renders the Pomoc link (AD-11, AD-22). *@
+<SectionContent SectionName="@AccountLayout.HelpSection">
+    <a class="account-help" href="@Href">Pomoc</a>
+</SectionContent>
+
+@code {
+    /// <summary>Help topic key (AD-22), e.g. <c>logowanie</c>; without it the link goes to the help index.</summary>
+    [Parameter] public string? Topic { get; set; }
+
+    private string Href => string.IsNullOrEmpty(Topic) ? "/pomoc" : $"/pomoc/{Topic}";
+}

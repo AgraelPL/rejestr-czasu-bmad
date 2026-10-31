@@ -78,6 +78,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             role.ToTable("roles");
             role.HasIndex(r => r.NormalizedName).HasDatabaseName("ix_roles_normalized_name");
+            // The roles are schema data (AD-15): seeded here, never created at runtime.
+            role.HasData(AppRoles.Seed);
         });
         modelBuilder.Entity<IdentityUserRole<int>>().ToTable("user_roles");
         modelBuilder.Entity<IdentityUserClaim<int>>().ToTable("user_claims");

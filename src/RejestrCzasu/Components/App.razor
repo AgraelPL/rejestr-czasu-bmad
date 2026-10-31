@@ -10,12 +10,22 @@
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["RejestrCzasu.styles.css"]" />
     @* No <ImportMap />: it renders an inline script blocked by CSP script-src 'self' (AD-12). *@
-    <HeadOutlet @rendermode="InteractiveServer" />
+    <HeadOutlet @rendermode="PageRenderMode" />
 </head>
 
 <body>
-    <Routes @rendermode="InteractiveServer" />
+    <Routes @rendermode="PageRenderMode" />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>
 
 </html>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    // Static /konto pages ([ExcludeFromInteractiveRouting]) render without a circuit: only an HTTP response
+    // sets the login cookie (AD-15). Every other page is Interactive Server.
+    private IComponentRenderMode? PageRenderMode =>
+        HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
+}

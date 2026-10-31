@@ -1,0 +1,25 @@
+@* Error and state messages of the static /konto forms (AD-11): a Fluent UI message bar, no circuit needed. *@
+@if (Messages.Count > 0)
+{
+    <FluentMessageBar Intent="@Intent" AllowDismiss="false" class="account-message">
+        @if (Messages.Count == 1)
+        {
+            @Messages[0]
+        }
+        else
+        {
+            <ul>
+                @foreach (var message in Messages)
+                {
+                    <li>@message</li>
+                }
+            </ul>
+        }
+    </FluentMessageBar>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<string> Messages { get; set; } = [];
+
+    [Parameter] public MessageBarIntent Intent { get; set; } = MessageBarIntent.Error;
+}
