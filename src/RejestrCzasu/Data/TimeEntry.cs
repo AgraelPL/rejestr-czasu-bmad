@@ -1,8 +1,11 @@
 namespace RejestrCzasu.Data;
 
-public class TimeEntry
+public class TimeEntry : IUserOwned
 {
     public int Id { get; set; }
+
+    /// <summary>Owner; assigned by <see cref="AppDbContext"/> in User mode (AD-16). Part of both dictionary foreign keys.</summary>
+    public int UserId { get; set; }
 
     public DateOnly Date { get; set; }
 

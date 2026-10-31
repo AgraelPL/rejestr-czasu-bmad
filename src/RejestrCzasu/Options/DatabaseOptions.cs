@@ -2,7 +2,7 @@ using Npgsql;
 
 namespace RejestrCzasu.Options;
 
-/// <summary>Connection parameters for the local PostgreSQL container (section <c>Database</c>).</summary>
+/// <summary>Connection parameters for PostgreSQL (section <c>Database</c>).</summary>
 public sealed class DatabaseOptions
 {
     public const string SectionName = "Database";
@@ -12,7 +12,6 @@ public sealed class DatabaseOptions
     public string Name { get; set; } = "rejestr";
     public string User { get; set; } = "rejestr";
     public string Password { get; set; } = "";
-    public string ContainerName { get; set; } = "rejestr-czasu-db";
 
     /// <summary>Builds the Npgsql connection string; the single source of connection parameters.</summary>
     public string BuildConnectionString(int? timeoutSeconds = null)

@@ -26,8 +26,6 @@ z portem wystawionym tylko na `127.0.0.1`.
 2. Ustaw własne hasło bazy: `POSTGRES_PASSWORD` w `.env` i to samo w `Database:Password`
    w `appsettings.Local.json`. Użytkownik i nazwa bazy w `.env` (`POSTGRES_USER`, `POSTGRES_DB`) muszą się zgadzać
    z `Database:User` i `Database:Name` (domyślnie `rejestr` w `appsettings.json`).
-   W `appsettings.Local.json` ustaw też `Backup:Directory` (katalog kopii poza repozytorium i poza folderami
-   synchronizowanymi z chmurą) oraz `Export:Prefix`.
 
    Hasło z `.env` jest używane tylko przy pierwszym utworzeniu wolumenu bazy; późniejsza zmiana w `.env` nie zmienia hasła
    istniejącej bazy.
@@ -86,6 +84,17 @@ dotnet tool restore
 dotnet ef migrations add <Nazwa> --project src/RejestrCzasu --output-dir Data/Migrations
 ```
 
-## Kopia bazy
+Migracja `Initial` została wygenerowana od nowa (schemat z kontami Userów, tabele Identity, `user_id`).
+Lokalna baza utworzona starą migracją `Initial` nie przejdzie startu — wolumen trzeba założyć od nowa
+(usuwa wszystkie dane lokalnej bazy):
 
-<!-- Sekcja uzupełniana w historii 2 „Kopia bazy”: katalog kopii, nazwy plików, rotacja, odtworzenie przez psql. -->
+```powershell
+docker compose down -v
+docker compose up -d
+```
+
+Odśwież też własny `appsettings.Local.json` na podstawie `appsettings.Local.example.json` — klucze `Backup`, `Export`
+i `Database:ContainerName` nie są już używane.
+
+Po pierwszym wdrożeniu na serwer `Initial` jest zamrożona: kolejne zmiany schematu tylko nową migracją,
+która wyłącznie dodaje (AD-21).

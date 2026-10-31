@@ -1,0 +1,3 @@
+- source_plan: `_bmad-output/initiative-rejestr-czasu/tickets/epic-konta-i-wdrozenie/tickets/story-nowy-schemat-initial-z-identity-i-userid-plan.md`
+  summary: Tworzenie wiersza account_settings przy rejestracji i przy pierwszym Administratorze koliduje z regułą AD-16, że tryb systemowy nie zapisuje encji IUserOwned.
+  evidence: AccountSettings implementuje IUserOwned (historia 4.2), ApplyUserOwnership rzuca w trybie systemowym, a AD-7 i AD-21 każą tworzyć ten wiersz w Accounts/ i Startup/ (tryb systemowy); trzeba nazwać trzecie miejsce w AD-16 (np. Accounts wiąże kontekst z nowym Kontem) przed planowaniem historii 4.3.
