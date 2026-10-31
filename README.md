@@ -7,7 +7,7 @@ z portem wystawionym tylko na `127.0.0.1`.
 ## Wymagania
 
 - Docker Desktop (Windows), polecenie `docker` w `PATH`.
-- .NET SDK 10.0.401 (wersja przypięta w `global.json`).
+- .NET SDK 10.0.403 (wersja przypięta w `global.json`).
 - Wyłączona telemetria .NET CLI — raz, jako zmienna użytkownika (PowerShell):
 
   ```powershell

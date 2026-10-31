@@ -2,12 +2,15 @@
 
 Źródło: prd-rejestr-czasu §3. Terminy obowiązują dosłownie w ticketach i kodzie (nazwy w UI).
 
-- **Autor** — jedyny użytkownik aplikacji.
-- **Odbiorca** — osoba, która dostaje Zestawienie; nie korzysta z aplikacji.
+- **Autor** — twórca aplikacji; ma Konto z rolami User i Administrator.
+- **User** — rola: prowadzi własne Słowniki, Wpisy i Zestawienia.
+- **Administrator** — rola: zatwierdza, blokuje i usuwa Konta, ustawia hasła; nie widzi w aplikacji treści danych innych Userów (wyjątek: logowanie hasłem, które sam ustawił).
+- **Konto** — login i hasło jednej osoby, bez e-maila. Stan: **Oczekuje** (po rejestracji, do zatwierdzenia), **Aktywne**, **Zablokowane**.
+- **Odbiorca** — osoba, której User wysyła Zestawienie e-mailem; nie korzysta z aplikacji.
 - **Projekt** — pozycja Słownika: kod (np. `RDZ`, unikalny bez względu na wielkość liter, zapisywany wielkimi literami) i nazwa. Ma flagę aktywności.
 - **Typ pracy** — pozycja Słownika: nazwa (np. `Development`). Ma flagę aktywności. Niezależny od Projektu.
-- **Słownik** — lista Projektów albo lista Typów pracy prowadzona w aplikacji.
-- **Sesja wpisywania** — jedno uruchomienie aplikacji (zwykle 1–2 h co kilka dni), w którym Autor przenosi notatki z kilku dni do Wpisów.
+- **Słownik** — lista Projektów albo lista Typów pracy prowadzona przez Usera; każdy User ma własne Słowniki.
+- **Sesja wpisywania** — jedno posiedzenie (zwykle 1–2 h co kilka dni), w którym User przenosi notatki z kilku dni do Wpisów.
 - **Wpis** — jeden zarejestrowany odcinek pracy: data, dokładnie jeden Projekt, dokładnie jeden Typ pracy, opis, Czas.
 - **Czas** — długość Wpisu w formacie `h:mm`, wielokrotność 15 minut, od `0:15` do `24:00`. W Zestawieniu jako godziny dziesiętne (`1:30` → 1,5).
 - **Miesiąc** — miesiąc kalendarzowy; jednostka Widoku miesiąca i Zestawienia.
@@ -17,5 +20,5 @@
 - **Lista wpisów** — ekran wyszukiwania Wpisów z filtrami i sumą.
 - **Zestawienie** — plik xlsx za jeden Miesiąc w układzie Odbiorcy (export-layout.md).
 - **Wiersz zestawienia** — wiersz Zestawienia ze złączenia Wpisów z tego samego dnia o tym samym Projekcie i Typie pracy.
-- **Kopia bazy** — plik z kopią danych aplikacji, tworzony przy każdym uruchomieniu.
+- **Kopia serwera** — kopia całego serwera z aplikacją i bazą, robiona automatycznie przez dostawcę chmury. Pojęcie Kopia bazy wycofane 31.10.2026.
 - **Test wrześniowy** — ręczne, lokalne wpisanie 28 Wpisów z września 2026 i porównanie sum Zestawienia z oryginałem.

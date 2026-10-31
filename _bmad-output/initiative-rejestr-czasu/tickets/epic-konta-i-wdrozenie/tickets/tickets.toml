@@ -1,0 +1,99 @@
+# Historie epiku Konta i wdrożenie, w kolejności budowy.
+
+[[entry]]
+id = 2
+type = "story"
+title = "Nowy schemat Initial z Identity i UserId"
+description = "Usuwa migrację Initial z historii 1.1 i tworzy nową z całym schematem AD-7: tabele Identity z kluczami int i nazwami snake_case nadanymi jawnie, użytkownik z kolumnami status, registered_at, last_login_at, must_change_password, tabele account_settings i data_protection_keys, Project, WorkType i TimeEntry z user_id, indeksy (user_id, code) i (user_id, lower(name)), złożone klucze obce Wpisu ze Słownikami i klucze obce do users z RESTRICT. Wprowadza Data/IUserOwned, dwa tryby AppDbContext (Usera i systemowy) i Data/UserDbContextFactory przyjmującą UserId (źródło Usera, Accounts/CurrentUser, dokłada historia 3). Usuwa BackupOptions i ExportOptions oraz klucz Urls z appsettings.json (port lokalny w launchSettings.json). Daje historii 3 schemat i fabrykę kontekstu, historii 5 tabelę data_protection_keys, a epikom 1–3 i 5 oddzielenie danych."
+verify = "Po docker compose down -v, docker compose up -d i dotnet run baza ma tabele z nowej Initial; testy na Testcontainers z fabryką ustawioną na dwa różne UserId pokazują, że Userzy nie widzą swoich Projektów, Typów pracy i Wpisów, Wpis z cudzym Projektem odrzuca baza, kontekst systemowy nie widzi i nie zapisuje encji IUserOwned, a każda encja z kolumną user_id implementuje IUserOwned."
+covers = ["R24"]
+after = []
+hitl = false
+risk = "high" # pierwsze użycie Identity z kluczami int i jawnymi nazwami snake_case; złożone klucze obce w EF Core
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-7", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-16", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-21", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-4"]
+notes = ["Dodatkowe sprawdzenie: dotnet ef migrations script na nowej Initial przejrzany pod kątem nazw tabel Identity i kluczy złożonych."]
+
+[[entry]]
+id = 1
+type = "story"
+title = "CI na PR z kontrolą migracji i ochroną gałęzi main"
+description = "Workflow .github/workflows/pr.yml uruchamiany na każdy PR do main: actions/setup-dotnet z global.json, dotnet build, dotnet test z Testcontainers na ubuntu-latest, dotnet ef migrations has-pending-model-changes i kontrola migracji dodających z AD-21 (pomija Initial; odrzuca usuwanie lub zmianę nazwy tabeli albo kolumny, zmianę typu, nowy indeks unikalny i migrationBuilder.Sql), DOTNET_CLI_TELEMETRY_OPTOUT=1, bez wypisywania sekretów. global.json przypięty na SDK 10.0.403. Pierwsza strona docs/admin/ opisuje ustawienie ochrony main (wymagane zielone sprawdzenia i aktualność gałęzi względem main). Daje historii 2 działający potok z kontrolą migracji, a historii 8 wzorzec workflow."
+verify = "PR z celowo czerwonym testem i PR z testową migracją usuwającą kolumnę pokazują nieudane sprawdzenie i GitHub nie pozwala ich scalić; po wycofaniu obu zmian sprawdzenia są zielone i scalenie jest możliwe; log workflow nie zawiera haseł."
+covers = ["R27", "R28"]
+after = []
+hitl = true # Autor włącza ochronę gałęzi main w ustawieniach repozytorium według docs/admin/
+risk = "low" # standardowy workflow GitHub Actions; jedyna własna część to skrypt kontroli migracji
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-20", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-21", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-1"]
+
+[[entry]]
+id = 3
+type = "story"
+title = "Rejestracja, logowanie i wylogowanie"
+description = "Używa schematu i UserDbContextFactory z historii 2. Statyczne strony /konto/logowanie, /konto/rejestracja, /konto/wyloguj (tylko POST z antyforgery) i /konto/brak-dostepu w Accounts/AccountLayout; App.razor wybiera tryb przez HttpContext.AcceptsInteractiveRouting(); passkeys z szablonu usunięte. Konfiguracja Identity z AD-15: login unikalny bez względu na wielkość liter, bez e-maila (IEmailSender bez wysyłki), hasło minimum 6 znaków bez klas, lockout 5 prób / 15 min z lockoutOnFailure: true, ciasteczko 14 dni z przedłużaniem, LoginPath i AccessDeniedPath. Accounts/CurrentUser z dwoma źródłami (AuthenticationStateProvider w obwodzie, HttpContext.User w żądaniu HTTP, UserId z NameIdentifier) zasila UserDbContextFactory. Rejestracja tworzy Konto pending z rolą User i wierszem account_settings oraz pokazuje zdanie o dostępie Administratora przez bazę. Logowanie najpierw sprawdza hasło, potem stan (CanSignInAsync), zapisuje last_login_at. Limit 10 POST/min/IP na rejestracji i logowaniu, polski IdentityErrorDescriber, polska odpowiedź limitera i polskie teksty Fluent UI przez IFluentLocalizer (AD-6). Jeden mechanizm autoryzacji: [Authorize] w _Imports.razor, RequireAuthorization() na endpointach, NotAuthorized w Routes. Link Pomoc w AccountLayout prowadzi do /pomoc/<temat>, a do historii 1.3 do polskiej strony „nie znaleziono”. Daje historii 4 strony i konfigurację Identity, historii 5 limiter prób (stawiany za UseForwardedHeaders), historii 1.3 IFluentLocalizer i POST /konto/wyloguj dla przycisku Wyloguj, a epikowi 1 CurrentUser."
+verify = "Lokalnie: rejestracja tworzy Konto, a druga rejestracja tym samym loginem innymi wielkościami liter jest odrzucona; formularz rejestracji pokazuje zdanie o dostępie Administratora przez bazę; Konto Oczekuje i Konto z status=blocked nie logują się z komunikatem o stanie dopiero przy poprawnym haśle, a przy złym zawsze „Nieprawidłowy login lub hasło”; po ustawieniu status=active w bazie logowanie działa i zapisuje last_login_at; 5 złych haseł blokuje logowanie na 15 minut; POST na /konto/wyloguj kończy sesję, a GET nie wylogowuje; wejście na stronę aplikacji bez logowania przekierowuje na /konto/logowanie; testy na Testcontainers i bUnit pokrywają te ścieżki i limit prób; nagłówek CSP jest na stronach /konto."
+covers = ["R18", "R19"]
+after = [2]
+hitl = false
+risk = "medium" # szablon Identity trzeba przyciąć (passkeys, e-mail) i połączyć ze statycznym trybem stron
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-15", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-16", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-6", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-12"]
+
+[[entry]]
+id = 4
+type = "story"
+title = "Pierwszy Administrator, stan Konta w sesji i zmiana hasła"
+description = "Używa stron i konfiguracji Identity z historii 3. Startup krok 3 z AD-21: gdy nie ma Administratora, powstaje Konto active z rolami Administrator i User i wierszem account_settings z FirstAdmin__UserName i FirstAdmin__Password; gdy jest, konfiguracja ignorowana; brak Administratora i brak konfiguracji kończy start czytelnym komunikatem. Stan Konta w sesji z AD-17: OnValidatePrincipal na każdym żądaniu HTTP (status, must_change_password, security stamp; jedyne kasowanie ciasteczka poza wylogowaniem), CurrentUser rzuca AccountInactiveException i PasswordChangeRequiredException, RevalidatingServerAuthenticationStateProvider co 1 minutę. Statyczna /konto/zmiana-hasla w dwóch trybach (wymuszona i dobrowolna z obecnym hasłem) kończona RefreshSignInAsync; middleware przekierowuje na nią przy must_change_password, z wyjątkami po metadanych endpointu. Daje historii 1.3 wyjątki stanu Konta do obsługi w MainLayout, historii 5 listę wyjątków przekierowania po metadanych endpointu, historii 8 pierwszego Administratora, epikowi 3 stronę zmiany hasła, a epikowi 5 mechanizm, który zmienia tylko stan i hasło."
+verify = "Lokalnie: pusty schemat + dotnet run z FirstAdmin w appsettings.Local.json tworzy Konto Administratora z obiema rolami, drugi start nic nie zmienia, a start bez Administratora i bez FirstAdmin kończy się komunikatem; po ustawieniu status=blocked w bazie zalogowany User traci dostęp przy następnym żądaniu HTTP albo najpóźniej po minucie i trafia na logowanie, a wyjątki CurrentUser w obwodzie pokrywa test; po ustawieniu must_change_password każda strona prowadzi na /konto/zmiana-hasla, a zasoby statyczne nadal się ładują; dobrowolna zmiana hasła nie wylogowuje (User zalogowany po 2 minutach)."
+covers = ["R19", "R20", "R25"]
+after = [3]
+hitl = false
+risk = "high" # stan Konta w obwodzie Blazor Server i walidacja ciasteczka to najsłabiej udokumentowana część Identity
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-15", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-17", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-21", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-13"]
+notes = ["Dodatkowe sprawdzenie: test, że zmiana security stamp innego Usera nie wylogowuje bieżącego."]
+
+[[entry]]
+id = 5
+type = "story"
+title = "Obraz aplikacji gotowy do pracy za proxy"
+description = "Dockerfile z mcr.microsoft.com/dotnet/aspnet:10.0 (ICU i tzdata, ASPNETCORE_HTTP_PORTS=8080); aplikacja czyta tag obrazu ze zmiennej APP_IMAGE_TAG. UseForwardedHeaders (XForwardedFor, XForwardedProto) jako pierwszy element potoku, przed middleware CSP z historii 1.1 i limiterem z historii 3, z zaufaną podsiecią z klucza konfiguracji ForwardedHeaders__KnownNetwork w KnownIPNetworks. Klucze Data Protection w tabeli data_protection_keys z historii 2 (PersistKeysToDbContext, stały SetApplicationName). /health z AddDbContextCheck, [AllowAnonymous], zwraca tag obrazu, dodany do wyjątków przekierowania wymuszonej zmiany hasła z historii 4. Daje historii 8 obraz do wdrożenia oraz umowę: zmienne APP_IMAGE_TAG i ForwardedHeaders__KnownNetwork."
+verify = "Lokalnie: docker build i docker run obrazu z bazą z docker compose daje stronę logowania na :8080; /health odpowiada 200 z tagiem obrazu; po restarcie kontenera zalogowany User nadal jest zalogowany; żądanie z nagłówkiem X-Forwarded-For z sieci zaufanej liczy limit prób dla adresu klienta, a z niezaufanej jest ignorowane; TimeZoneInfo Europe/Warsaw i kultura pl-PL działają w kontenerze."
+covers = ["R15", "R29"]
+after = [4]
+hitl = false
+risk = "medium" # kolejność potoku i zaufane proxy łatwo pomylić, ale wszystko sprawdzalne lokalnie
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-19", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-20", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-6", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-13"]
+
+[[entry]]
+id = 8
+type = "story"
+title = "Wdrożenie na Droplet pod czas-pracy.kandula-consulting.pl"
+description = "Używa obrazu z historii 5, workflow z historii 1 i pierwszego Administratora z historii 4. deploy/compose.yml (sieć compose 172.30.0.0/24, caddy:2.11, app z GHCR po APP_IMAGE_TAG z przekazanymi APP_IMAGE_TAG i ForwardedHeaders__KnownNetwork=172.30.0.0/24, postgres:18 na dysku Dropletu z portem tylko na 127.0.0.1, rotacja logów), deploy/Caddyfile z SITE_DOMAIN. Workflow .github/workflows/deploy.yml po merge do main: obraz do GHCR z tagiem pełnego skrótu commita, kopiowanie deploy/ na Droplet, ustawienie APP_IMAGE_TAG, docker compose pull && up -d, czekanie do 60 s na /health. Instrukcja docs/admin/: założenie Dropletu (FRA1) z kopiami, Cloud Firewall 80/443/22, SSH kluczem, DNS subdomeny, .env z kontraktem nazw z AD-13 (chmod 600), GitHub Secrets, rola rejestr_ro i dostęp do bazy tunelem SSH, przebieg wdrożenia w kolejności: pierwszy workflow, przełączenie pakietu GHCR na publiczny, ponowne uruchomienie workflow. To pierwsze wdrożenie: zamraża Initial z historii 2. Daje historii 6 krok wdrożenia z deploy.yml do uruchomienia ręcznego z tagiem, a historiom 1.3 i 1.7 aplikację na serwerze do ich sprawdzeń."
+verify = "Merge do main kończy workflow na zielono, https://czas-pracy.kandula-consulting.pl pokazuje stronę logowania z ważnym certyfikatem, a /health odpowiada 200 z pełnym skrótem tego commita; na serwerze Autor loguje się kontem pierwszego Administratora, a zapytanie rolą rejestr_ro według docs/admin/ pokazuje u niego role Administrator i User; nowa rejestracja daje Konto Oczekuje, 5 złych haseł blokuje logowanie, dobrowolna zmiana hasła nie wylogowuje; port 5432 nie odpowiada z internetu; ćwiczenie z docs/admin/ (docker compose stop db przez SSH, ponowne uruchomienie workflow) kończy workflow na czerwono, a na serwerze zostaje nowy tag bez automatycznego powrotu; po docker compose start db /health znowu odpowiada 200; log workflow nie zawiera sekretów; docs/admin/ pozwala przejść przygotowanie serwera od zera."
+covers = ["R15", "R27", "R29"]
+after = [1, 5]
+hitl = true # Autor zakłada Droplet z kopiami, Cloud Firewall, klucz SSH, rekord DNS, .env na serwerze, GitHub Secrets i przełącza pakiet GHCR na publiczny według docs/admin/
+risk = "high" # pierwszy kontakt z serwerem, DNS, certyfikatem i SSH z potoku; kroki człowieka w ustalonej kolejności
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-19", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-20", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-13", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-2", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-21"]
+notes = ["Subdomena: czas-pracy.kandula-consulting.pl (domena kandula-consulting.pl kupiona przez Autora).", "Dodatkowe sprawdzenie: nmap lub test portów z zewnątrz pokazuje tylko 22, 80 i 443."]
+
+[[entry]]
+id = 6
+type = "story"
+title = "Rollback do wskazanej wersji"
+description = "Ten sam krok wdrożenia z deploy.yml z historii 8 uruchamiany ręcznie (workflow_dispatch) z tagiem wcześniejszego obrazu, z plikami deploy/ z commita tego tagu; strona docs/admin/ o rollbacku i jego ograniczeniu (migracje tylko dodające). Ćwiczenie na serwerze."
+verify = "Autor uruchamia rollback z tagiem poprzedniego obrazu, workflow kończy się na zielono, a /health na serwerze pokazuje ten tag i odpowiada 200; ponowne wdrożenie z main przywraca bieżący tag."
+covers = ["R27", "R30"]
+after = [8]
+hitl = true # Autor przeprowadza ćwiczenie rollbacku na serwerze
+risk = "medium" # krok wdrożenia już działa; nowe są tylko parametr tagu i pliki deploy/ ze starego commita
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-20", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-21"]
+
+[[entry]]
+id = 7
+type = "story"
+title = "Refactor sweep"
+description = "Porządki odłożone w planach i przeglądach historii 1–6 i 8; zakres ustalany na starcie tej historii, wyłącznie sprzątanie."
+verify = "Workflow PR przechodzi bez ostrzeżeń builda; lista odłożonych uwag z planów historii 1–6 i 8 jest zamknięta albo przeniesiona do nowych historii."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 8]
+hitl = false
+risk = "low" # wyłącznie sprzątanie bez nowego zakresu

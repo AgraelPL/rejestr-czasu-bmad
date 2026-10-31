@@ -1,195 +1,191 @@
 ---
 type: review
 lens: adversary (pary niekompatybilne)
-target: architecture-rejestr-czasu.md (AD-1..AD-13, status draft)
-date: 2026-10-30
+target: architecture-rejestr-czasu.md (AD-1..AD-22, status draft, updated 2026-10-31)
+date: 2026-10-31
 ---
 
-# Przegląd adwersarza: spine „Rejestr czasu pracy”
+# Przegląd adwersarza: spine „Rejestr czasu pracy” (po zmianie: Konta i wdrożenie)
 
 ## Werdykt
 
-Spine dobrze zamyka stos, start i jedno źródło sum, ale zostawia otwarte **kształty danych na szwach między epikami**: wejście i wyjście `MonthReport`, schemat encji, sposób hostowania formularza Wpisu, kontrakt `ReportGrid<T>` i mechanizm pobrania pliku. Dwóch agentów, z których każdy przestrzega AD co do litery, zbuduje w tych miejscach rzeczy, które się nie złożą albo złożą się z cichą rozbieżnością sum (R10). Poniżej 10 par; pary 1–4 są blokujące przed rozpisaniem epików.
+**Nie gotowy do budowy epiku 4 bez poprawek.** Spine po zmianie dobrze nazywa *co* ma powstać (kontekst Usera, stan Konta, statyczne strony `/konto`, migracje dodające, pomoc), ale prawie nigdzie nie ustala *kontraktu na szwie* między epikiem 4 (który buduje fundament Kont) a epikami 1, 2, 3 i 5, które go używają. Najgroźniejsze dziury są w trzech miejscach: (1) skąd `CurrentUser` bierze Usera w obwodzie, w statycznym SSR i w endpoincie Minimal API, (2) jak `AppDbContext` zachowuje się bez Usera (Identity, Data Protection, `/health`, `Startup`) i (3) jak sprawdzanie stanu Konta, wymuszona zmiana hasła i wylogowanie współgrają z obwodem Blazora, w którym nie da się ustawić ani skasować ciasteczka. Każdą z par poniżej da się zbudować zgodnie z literą AD, a wynik się nie złoży albo złoży się z cichym błędem bezpieczeństwa.
 
-Założone epiki: **E1** Słowniki + szkielet/start/kopia, **E2** Wpisy + Sesja wpisywania, **E3** Lista wpisów + Widok miesiąca, **E4** Zestawienie + Test wrześniowy. Paradygmat (komponenty → `IDbContextFactory`, czysty `MonthReport`) przyjmuję jako dany; poprawki go nie podważają, tylko ustalają kontrakty na granicach.
+Oznaczenia jednostek: **E4** epic-konta-i-wdrozenie, **E1** epic-szkielet-i-slowniki (historie 1.x z `tickets.toml` epiku), **E2** epic-wpisy-i-lista, **E3** epic-miesiac-i-zestawienie, **E5** epic-administracja-kont-i-pomoc. Historie E4, E2, E3, E5 nie są jeszcze rozpisane, więc jednostką jest „historia E-n, która buduje X” zgodnie z opisem epiku.
 
-Skala: **Wysoka** — nie złoży się albo złamie R10/R11 bez błędu kompilacji; **Średnia** — rozjazd zachowania/UI lub duplikacja logiki, wykrywalna przy integracji; **Niska** — kosmetyka lub koszt przeróbki.
+Skala: **Krytyczna** — przeciek danych między Userami albo aplikacja nie startuje/nie działa dla nikogo; **Wysoka** — funkcja z wymagania nie działa lub obchodzi zabezpieczenie, wykrywalne dopiero przy integracji epików; **Średnia** — dwie implementacje tej samej rzeczy, przeróbka współdzielonego komponentu, rozjazd zachowania; **Niska** — koszt, kosmetyka, niejasność do domknięcia w historii.
 
----
-
-## Para 1 — Dwóch właścicieli `MonthReport` i nieustalony kształt wejścia/wyjścia — **Wysoka**
-
-**Jednostka A (E3, Widok miesiąca):** tworzy `Reporting/MonthReport.Build(int year, int month, IEnumerable<Entry> entries)`, gdzie `Entry` to `record(int Id, DateOnly Date, string ProjectCode, string WorkTypeName, string Description, int Minutes)`. Wynik: dni z listą Wpisów (z `Id`, bo R9 wymaga edycji/kopii/usunięcia z widoku), Suma dnia, Suma tygodnia, suma Miesiąca. Złączania nie robi — Widok miesiąca pokazuje Wpisy, nie Wiersze zestawienia. Zapytanie sortuje wejście po `date`.
-
-**Jednostka B (E4, Zestawienie):** AD-5 mówi, że złączanie Wpisów w Wiersze zestawienia liczy „wyłącznie `MonthReport.Build`”, więc rozszerza go: zmienia sygnaturę na `Build(DateOnly month, IReadOnlyList<ReportEntry> entries)`, wprowadza własny typ wejściowy z polem `Sequence` (R11: „opisy w kolejności dodania”) i zwraca `IReadOnlyList<ReportRow>`. Kolejność dodania bierze z nowej kolumny `created_at`, którą dodaje własną migracją.
-
-**Dlaczego obaj są zgodni z AD:** AD-5 nazywa funkcję, ale nie jej typy ani właściciela; diagram mówi o „typach domeny: Czas, Wpis (bez EF)”, lecz struktura katalogów nie ma `Domain/`, a konwencja nazewnicza każe pisać po angielsku (`TimeEntry` jest już zajęte przez encję). „Kolejność dodania” nie ma zdefiniowanego nośnika (id z sekwencji? `created_at`? kolejność w zapytaniu?).
-
-**Skutek:** E4 łamie kompilację E3 albo powstają dwa przeciążenia `Build` z dwiema implementacjami sum tygodnia (dokładnie to, czemu AD-5 miało zapobiec). Dodatkowo: dwa zapytania „Wpisy Miesiąca” (jedno w `Features/Miesiac`, drugie w `Features/Zestawienie`) z różnym sortowaniem → przy złączaniu opisy w różnej kolejności niż w Widoku miesiąca; edycja Wpisu z `created_at` vs `id` daje różną kolejność opisów.
-
-**Proponowany AD (nowy):**
-
-> ### AD-14 — Kontrakt `MonthReport`
-> - **Binds:** R9, R10, R11, R12
-> - **Prevents:** dwóm sygnaturom i dwóm właścicielom rdzenia raportowego; różnej kolejności opisów.
-> - **Rule:** `Reporting/` zawiera typy wejścia i wyjścia rdzenia i nic więcej o nich nie decyduje: wejście `ReportEntry(int Id, DateOnly Date, string ProjectCode, string WorkTypeName, string Description, int Minutes)`; wynik `MonthReport` z polami `Month` (typ `YearMonth`, AD-18), `Weeks` (każdy: `Index` 1..n w Miesiącu, `Minutes`, `Days`), każdy dzień: `Date`, `DayName`, `Minutes`, `Entries` (lista `ReportEntry` w kolejności wyświetlania Widoku miesiąca) i `Rows` (Wiersze zestawienia: `ProjectCode`, `WorkTypeName`, `Descriptions` w kolejności dodania, `Minutes`), oraz `TotalMinutes`. Kolejność dodania = rosnące `Id` Wpisu (sekwencja); edycja Wpisu jej nie zmienia; kolumny `created_at` nie ma. `MonthReport` sam sortuje wejście — kolejność argumentu nie ma znaczenia. Wpisy Miesiąca ładuje jedna funkcja `Features/Miesiac/MonthEntriesQuery.LoadAsync(AppDbContext, YearMonth)` zwracająca `IReadOnlyList<ReportEntry>`; eksport wywołuje tę samą funkcję. Całość `MonthReport` (sumy i złączanie) powstaje w jednej historii przed pierwszym ekranem, który go używa; późniejsze epiki go nie rozszerzają bez zmiany tego AD.
+| Waga | Liczba |
+| --- | --- |
+| Krytyczna | 2 |
+| Wysoka | 9 |
+| Średnia | 8 |
+| Niska | 4 |
+| **Razem** | **23** |
 
 ---
 
-## Para 2 — `ReportGrid<T>` liczy sumy i filtruje sam, a Widok miesiąca/Lista wpisów liczą gdzie indziej — **Wysoka**
+## Krytyczne
 
-**Jednostka A (E1, Słowniki — pierwszy użytkownik siatki, więc ją buduje):** AD-9 każe dać „stałe grupowanie zadane przez ekran z sumą w nagłówku grupy” i „filtr wartości w każdej kolumnie”. Agent robi to generycznie: parametr `GroupBy: Func<T,object>`, `SumOf: Func<T,int>`, a siatka po zastosowaniu filtrów kolumn liczy w pamięci sumę pozycji widocznych w grupie i licznik pozycji. Dane: `IQueryable<T> Items` (bo `FluentDataGrid` to przyjmuje).
+### D1 — Dwa (trzy) sposoby ustalenia bieżącego Usera — **Krytyczna**
 
-**Jednostka B (E3, Widok miesiąca i Lista wpisów):** AD-5 zabrania sumowania poza `MonthReport`, więc przekazuje gotowe sumy z `MonthReport` do nagłówków (szablon nagłówka grupy). Na Liście wpisów suma R8 (dopuszczony wyjątek AD-5) jest liczona zapytaniem SQL po filtrach R8 (zakres dat, Projekt, Typ pracy).
+**Jednostka A (E4, historia „UserId z globalnym filtrem”):** implementuje `Accounts/CurrentUser` przez `AuthenticationStateProvider.GetAuthenticationStateAsync()` i `ClaimTypes.NameIdentifier`. W obwodzie Interactive Server działa; bUnit też (fake `AuthenticationStateProvider`).
 
-**Dlaczego obaj są zgodni z AD:** AD-9 wymaga sumy w nagłówku grupy, ale nie mówi, kto ją liczy; AD-5 zakazuje sumowania „komponentom”, a `ReportGrid` jest w `Shared/`, nie w ekranie. AD-9 każe dać filtr wartości „w każdej kolumnie” każdego raportu — także Widoku miesiąca.
+**Jednostka B (E3, historia „endpoint `/zestawienie`”):** zgodnie z AD-14 wywołuje `MonthEntriesQuery`, która tworzy kontekst przez `UserDbContextFactory` → `CurrentUser`. W endpoincie Minimal API `AuthenticationStateProvider` nie jest zasilony stanem (zasila go dopiero endpoint komponentów Razor), więc `GetAuthenticationStateAsync` rzuca albo zwraca anonima → AD-16 „brak Usera = wyjątek” → 500 przy każdym eksporcie. Odwrotny wariant: A używa `IHttpContextAccessor` (żeby endpoint działał) — wtedy w obwodzie `HttpContext` jest `null` albo jest kontekstem żądania, które otworzyło obwód; po `Wyloguj`/zalogowaniu na inne Konto w tej samej karcie (nowy obwód, ale ten sam wzorzec) agent „naprawiający” to przez cache w polu singletonu daje przeciek Usera.
 
-**Skutek:**
-- Autor filtruje kolumnę Projekt w Widoku miesiąca: wiersze zawężone, a Suma dnia/tygodnia w nagłówku nadal z `MonthReport` (całość) — albo, gdy siatka liczy sama, inna niż w Zestawieniu (łamie R10 po cichu).
-- Lista wpisów: licznik pozycji siatki (po filtrach kolumn w pamięci) ≠ „liczba Wpisów” i suma R8 (z SQL, bez filtrów kolumn).
-- `IQueryable` z kontekstu utworzonego `await using` w `OnInitializedAsync` jest wykonywany przez siatkę po `Dispose` → `ObjectDisposedException` (AD-4 łamie nie ekran, lecz kontrakt siatki).
-- Dwie implementacje sumy minut (siatka + `MonthReport`).
+**Trzeci sposób (E3 Ustawienia konta, E5 Użytkownicy):** `UserManager.GetUserAsync(principal)` / `FindByNameAsync(User.Identity.Name)` — po loginie zamiast po `Id`; zmiana loginu (dozwolona przez `UserManager`) albo różnica normalizacji daje innego Usera niż `CurrentUser`.
 
-**Proponowany AD (zaostrzenie AD-9, tekst do dopisania):**
+**Dlaczego zgodne z AD:** AD-16 mówi „`UserId` zalogowanego Usera z `Accounts/CurrentUser`”, AD-17 „i w endpoincie Zestawienia”, ale żaden AD nie mówi, *skąd* `CurrentUser` czyta tożsamość w trzech hostach (obwód, statyczny SSR, Minimal API) ani jaki claim jest kluczem.
 
-> - **Rule (dopisek):** `ReportGrid<T>` przyjmuje wyłącznie zmaterializowaną `IReadOnlyList<T>` i nigdy nie liczy agregatów: zawartość nagłówka grupy i stopki (sumy, liczby) dostarcza ekran jako gotowe wartości lub szablon. Licznik pozycji pokazuje liczbę pozycji po filtrach kolumn. Na ekranach z sumą biznesową (Widok miesiąca, Lista wpisów) filtry wartości kolumn są wyłączone — zawężanie odbywa się tylko filtrami ekranu (R8) albo wyborem Miesiąca, a suma i liczba Wpisów dotyczą dokładnie pokazanych wierszy. Suma pod Listą wpisów to `Sum(Minutes)` w tym samym zapytaniu, które zwraca wiersze, nie osobne zapytanie. Siatka zachowuje kolejność wejścia; sortowanie przez kliknięcie nagłówka jest wyłączone na Widoku miesiąca (kolejność należy do `MonthReport`). Przycisk Odśwież wywołuje `OnRefresh` ekranu, który ponownie ładuje dane z bazy.
+**Nowa reguła (AD-16, doprecyzowanie):** `CurrentUser` (scoped) ma jedno źródło tożsamości na host: w obwodzie `AuthenticationStateProvider` (ustawiany przez `RevalidatingServerAuthenticationStateProvider`), w żądaniu HTTP (statyczny SSR, endpoint) `HttpContext.User` przez `IHttpContextAccessor` — wybór robi sam `CurrentUser` (gdy obwód: `HttpContext` nie jest używany nigdy). `UserId` = `int.Parse(claim NameIdentifier)`; zakaz ustalania Usera po loginie. Nikt poza `CurrentUser` nie czyta `AuthenticationState`/`HttpContext.User` w celu ustalenia Id (wyjątek: `AuthorizeView` do renderowania menu). E4 dostarcza testowy `CurrentUser` dla bUnit i Testcontainers oraz test, że endpoint Zestawienia i ekran danych widzą tego samego Usera.
 
----
+### D2 — `AppDbContext` „bez Usera”: Identity, Data Protection, `/health`, `Startup` kontra „brak Usera = wyjątek” — **Krytyczna**
 
-## Para 3 — Formularz Wpisu: strona vs dialog i dwie ścieżki odświeżenia po zmianie — **Wysoka**
+**Jednostka A (E4, historia filtra):** aby spełnić AD-16 „brak zalogowanego, Aktywnego Usera = wyjątek, nie pusty wynik” do litery, `AppDbContext` dostaje w konstruktorze `ICurrentUser` i rzuca, gdy brak Usera (albo `SaveChanges` rzuca, gdy `UserId == null`).
 
-**Jednostka A (E2, Wpisy + Sesja wpisywania):** formularz to strona `/wpisy/nowy` (przycisk „Nowy wpis” w menu), po zapisie zostaje otwarty z tą samą datą (R5). Edycja: `/wpisy/{id}`. Usunięcie: przycisk „Usuń” na stronie edycji z `MessageBox`, po usunięciu nawigacja do `/wpisy/nowy`.
+**Jednostka B (E4, historie wdrożenia / logowania, i E5):** `AddEntityFrameworkStores<AppDbContext>()`, `PersistKeysToDbContext<AppDbContext>()`, `AddDbContextCheck<AppDbContext>()` dla `/health`, `Startup` (migracje, pierwszy Administrator) — wszystkie rozwiązują `AppDbContext` z DI, bez Usera (logowanie z definicji jest przed zalogowaniem). Wynik: logowanie, `/health` po wdrożeniu (AD-20) i odczyt kluczy DP padają. Wariant odwrotny: A robi filtr `user_id = UserId` z `UserId == null` → kontekst systemowy po cichu widzi zero wierszy, a `SaveChanges` nadaje `user_id = null`/0 — `Accounts/DeleteAccount` bez `IgnoreQueryFilters()` w jednym zapytaniu usuwa „nic” i potem pada na FK `RESTRICT` (albo, gdy ktoś dopisze `IgnoreQueryFilters()` „bo nie działało”, powstaje trzecie, nienazwane miejsce omijające filtr).
 
-**Jednostka B (E3, Lista wpisów + Widok miesiąca):** R6/R7/R9 wymagają edycji, kopii i usunięcia z obu ekranów i „przeliczenia sum od razu”. Agent otwiera `EntryForm` w `FluentDialog` (żeby nie tracić kontekstu Miesiąca), kopię przekazuje przez parametr dialogu z obiektem Wpisu, usuwa z wiersza siatki własnym `MessageBox` i po usunięciu wyjmuje wiersz z listy w pamięci i przelicza `MonthReport` lokalnie.
+**Dlaczego zgodne z AD:** AD-16 każe rzucać bez Usera, AD-19 każe trzymać klucze DP w tym samym `AppDbContext`, AD-15 każe używać Identity na tym kontekście; żaden AD nie rozróżnia trybu systemowego.
 
-**Dlaczego obaj są zgodni z AD:** AD-10 ustala tylko MessageBar/MessageBox i układ; spine w „Deferred” oddaje wygląd ekranów historiom. Nic nie mówi, czy Wpis edytuje się na stronie czy w dialogu, jak przekazuje się kopię, dokąd wraca się po zapisie ani jak ekran odświeża stan po mutacji.
-
-**Skutek:** dwa hosty jednego formularza (strona z logiką „zostań z datą” i dialog, który musi ją wyłączyć), dwie ścieżki usuwania z różnymi tekstami potwierdzenia, dwie ścieżki odświeżenia (reload z bazy vs łatanie listy w pamięci). Łatanie w pamięci rozjeżdża się z bazą przy zmianie daty Wpisu na inny Miesiąc lub przy zmianie Projektu (kod w wierszu nieaktualny). Kopia przekazywana obiektem omija regułę R7 „nieaktywny Projekt → pole puste”, jeśli tę regułę zaimplementowano tylko w ścieżce `?kopia=`.
-
-**Proponowany AD (nowy):**
-
-> ### AD-15 — Jeden formularz Wpisu i ścieżka mutacji
-> - **Binds:** R5, R6, R7, R8, R9, R16
-> - **Prevents:** dwóm hostom formularza Wpisu, dwóm ścieżkom usuwania i odświeżania.
-> - **Rule:** Wpis tworzy się, edytuje i kopiuje wyłącznie na stronie `Features/Wpisy/EntryPage.razor` pod adresami `/wpisy/nowy`, `/wpisy/{id:int}` i `/wpisy/nowy?kopia={id:int}`; opcjonalny parametr `powrot` (lokalny adres względny) wskazuje stronę, na którą wraca zapis edycji, kopii i usunięcie. Bez `powrot` strona działa jako Sesja wpisywania (R5). Regułę R7 (nieaktywny Projekt/Typ pracy → puste pole) stosuje tylko ta strona przy wczytaniu `kopia`. Usunięcie Wpisu ma jedną implementację `Features/Wpisy/DeleteEntry` (potwierdzenie `MessageBox` + usunięcie) wywoływaną z siatek i ze strony edycji. Po każdej mutacji ekran ponownie ładuje dane z bazy i ponownie wywołuje `MonthReport.Build`; zakaz modyfikowania załadowanych list w pamięci jako zamiennika ponownego odczytu. Dialogi nie hostują formularzy edycji.
-
-(Jeżeli Autor woli dialog — reguła ma brzmieć analogicznie z jednym `EntryDialog`; ważne, by był dokładnie jeden host.)
+**Nowa reguła (AD-16):** `AppDbContext` ma dwa jawne tryby: *użytkownika* (tylko przez `UserDbContextFactory`, `UserId` ustawiony) i *systemowy* (rejestracja DI, dla Identity, DP, health-check, `Startup`, `Accounts/`). W trybie systemowym filtr na encjach z `user_id` daje `false` (zero wierszy), a `SaveChanges` rzuca przy dodaniu/zmianie takiej encji; tabele `users`/`roles`/`data_protection_keys` nie mają filtra. Konstruktor nie rzuca nigdy; wyjątek „brak Usera” rzuca `UserDbContextFactory`. Test: tryb systemowy nie zwraca wierszy z `time_entry` i odrzuca ich zapis.
 
 ---
 
-## Para 4 — Eksport: mechanizm pobrania i punkt wejścia — **Wysoka**
+## Wysokie
 
-**Jednostka A (E3, Widok miesiąca):** R12 mówi „jedno kliknięcie w Widoku miesiąca”, więc agent dodaje przycisk „Eksport” w nagłówku Widoku miesiąca. Pozycja menu „Eksport” (AD-10) prowadzi do `/miesiac`.
+### D3 — Lista tabel z `user_id` wpisana na sztywno w trzech miejscach — **Wysoka**
 
-**Jednostka B (E4, Zestawienie):** AD-10 wymienia w menu osobną pozycję „Eksport”, a AD-13 każe dać „pobranie w przeglądarce”. Agent tworzy stronę `/eksport` z wyborem Miesiąca. Plik przesyła do przeglądarki przez `DotNetStreamReference` + funkcję JS `downloadFileFromStream` (standardowy przepis Microsoftu dla Blazor Server).
+**A (E4):** globalny filtr dokładnie na czterech encjach wymienionych w AD-16; `DeleteAccount` (E5, AD-18) usuwa dokładnie: Wpisy → Słowniki → `account_settings` → Konto.
+**B (E3 lub E5 po pierwszym wdrożeniu):** dodaje nową tabelę per User (np. zapamiętany ostatni Miesiąc eksportu, preferencje widoku) nową migracją dodającą (AD-21 to dopuszcza). Tabela nie jest na liście AD-16 → bez filtra (przeciek), a `DeleteAccount` jej nie zna → FK `RESTRICT` blokuje usunięcie Konta albo, bez FK, zostają sieroty. Po rollbacku (AD-20) stary obraz w ogóle nie zna nowej tabeli i jego `DeleteAccount` pada na FK.
+**Reguła:** każda encja z `user_id` implementuje `IUserOwned`; filtr i nadawanie `user_id` stosowane w `OnModelCreating`/`SaveChanges` po interfejsie, nie po liście; `DeleteAccount` usuwa wszystkie `IUserOwned` w kolejności zależności FK wyliczonej z modelu; test potoku: każda encja z kolumną `user_id` jest `IUserOwned` i jest objęta testem oddzielenia. Nowe tabele per User po pierwszym wdrożeniu mają FK do `users` z `ON DELETE RESTRICT` (zgodnie z AD-18) i wymagają wpisu w teście usuwania Konta.
 
-**Dlaczego obaj są zgodni z AD (prawie):** AD-13 nie mówi jak; AD-1 zakazuje JavaScriptu poza Fluent UI, więc przepis Microsoftu jest de facto zakazany — agent B albo łamie AD-1, albo utyka, albo wymyśla trzeci sposób (data-URI w `NavigationManager`, endpoint). R13 („Miesiąc bez Wpisów → komunikat zamiast pliku”) przy zwykłym linku do endpointu nie ma gdzie pokazać `MessageBar`.
+### D4 — `UserManager` w obwodzie = długo żyjący `AppDbContext`; `DeleteAccount` na dwóch kontekstach — **Wysoka**
 
-**Skutek:** dwa punkty wejścia z różnym wyborem Miesiąca; ryzyko JS w repo; komunikat R13 zaimplementowany raz w stronie `/eksport`, a przycisk w Widoku miesiąca pobiera pusty plik lub stronę błędu 404.
+**A (E5, ekran Użytkownicy):** AD-17 każe zmieniać stan „przez `UserManager`”, więc komponent wstrzykuje `UserManager<User>`. `UserManager` jest scoped, a scope w Interactive Server = cały obwód → jego `AppDbContext` żyje tyle co karta. Szybkie dwa kliknięcia „Zatwierdź” → „A second operation was started on this context”; po zmianie z innej karty (drugi Administrator, `psql`) ekran pracuje na śledzonych, nieaktualnych encjach — dokładnie to, czemu zapobiega AD-4, ale AD-4 obejmuje tylko `UserDbContextFactory`.
+**B (E5, `Accounts/DeleteAccount`):** usuwa Wpisy kontekstem z `IDbContextFactory` (krótko żyjący, `IgnoreQueryFilters`), a Konto przez `UserManager.DeleteAsync` (kontekst obwodu). Dwa połączenia → „jedna transakcja, wszystko albo nic” z AD-18 nie zachodzi.
+**To samo w E3:** zmiana własnego hasła w Ustawieniach konta przez wstrzyknięty `UserManager`.
+**Reguła (AD-4 + AD-15):** każda operacja na Kontach w obwodzie tworzy nowy scope (`IServiceScopeFactory.CreateAsyncScope()`) i bierze z niego `UserManager`/`SignInManager`; operacje żyją w `Accounts/` (`AccountAdmin`, `AccountSettingsOps`, `DeleteAccount`), komponent nigdy nie wstrzykuje `UserManager`. `DeleteAccount` używa `AppDbContext` z tego samego scope co `UserManager` i jednej `BeginTransactionAsync` na nim.
 
-**Proponowany AD (zaostrzenie AD-13, tekst do dopisania):**
+### D5 — Zmiana własnego hasła w obwodzie wylogowuje Usera po minucie — **Wysoka**
 
-> - **Rule (dopisek):** pobranie realizuje endpoint Minimal API `GET /zestawienie/{rok:int}/{miesiac:int}` zdefiniowany w `Features/Zestawienie/`, zwracający `Results.File` z nazwą wg R13 (nagłówek z `filename*` UTF-8); ładuje dane przez `MonthEntriesQuery` (AD-14) i `IDbContextFactory`. Przycisk „Eksport” w nagłówku Widoku miesiąca to zwykły odnośnik do tego endpointu dla wyświetlanego Miesiąca — bez JavaScriptu i bez `DotNetStreamReference`. Gdy `MonthReport` wyświetlanego Miesiąca jest pusty, Widok miesiąca zamiast odnośnika pokazuje `MessageBar` R13; endpoint dla pustego Miesiąca zwraca 404 jako zabezpieczenie. Pozycja menu „Eksport” prowadzi do Widoku miesiąca bieżącego Miesiąca; osobnej strony eksportu nie ma.
+**A (E3, Ustawienia konta, R25):** interaktywny formularz (AD-8 każe go walidować Blazillą — więc jest interaktywny), `ChangePasswordAsync` → zgodnie z AD-15 aktualizuje security stamp.
+**B (E4, AD-17):** `RevalidatingServerAuthenticationStateProvider` co minutę porównuje stamp z ciasteczka z bazą → stamp się różni → obwód traci uwierzytelnienie, następne żądanie HTTP z ciasteczkiem też (gdy włączony `SecurityStampValidator`). User zmienia hasło i jest wylogowany. W obwodzie nie da się wywołać `RefreshSignInAsync` (brak odpowiedzi HTTP, AD-15 sam to mówi). Ten sam błąd w E4 na statycznej `/konto/zmiana-hasla`, jeśli historia zapomni `RefreshSignInAsync` po zdjęciu `must_change_password`.
+**Reguła (AD-15):** każda zmiana *własnego* hasła (wymuszona i z Ustawień konta) odbywa się na statycznej stronie SSR pod `/konto/...` (np. `/konto/zmiana-hasla` w dwóch trybach: wymuszona / dobrowolna z obecnym hasłem) i kończy się `RefreshSignInAsync`; Ustawienia konta pokazują tylko link do niej. Ustawienia konta w AD-8 obejmują tylko prefiks. Test: po zmianie hasła User po 2 minutach jest dalej zalogowany.
 
----
+### D6 — Wymuszona zmiana hasła: przekierowanie bez nazwanego mechanizmu i z niepełną listą wyjątków — **Wysoka**
 
-## Para 5 — Schemat encji i migracje mają dwóch autorów — **Wysoka/Średnia**
+**A (E4):** middleware po `UseAuthentication`: gdy `must_change_password`, każde żądanie poza `/konto/zmiana-hasla` i `/konto/wyloguj` → 302. Do litery AD-15 przekierowuje też `/_framework/blazor.web.js`, `/_content/Microsoft.FluentUI...` (CSS strony zmiany hasła), `/favicon`, `/_blazor` i **`/pomoc/zmiana-hasla`** — temat, który E5 pisze (R26) i który AD-22 każe udostępnić bez logowania. Strona zmiany hasła renderuje się bez stylów, a pomoc do niej jest nieosiągalna.
+**B (E1, MainLayout, albo E4 przez `CurrentUser`):** drugi mechanizm — sprawdzenie w `MainLayout`/`Routes` i `NavigateTo`. Nawigacja wewnątrz obwodu nie robi żądania HTTP, więc middleware A jej nie widzi; mechanizm B z kolei nie działa dla endpointu Zestawienia. Każdy epik dopisuje swój.
+**Reguła (AD-15):** jeden mechanizm: middleware dla żądań HTTP *stron i endpointów* (rozpoznanie po metadanych endpointu, nie po ścieżce: zasoby statyczne `MapStaticAssets`, `/_framework`, `/_blazor`, `/health` i trasy `[AllowAnonymous]` — w tym anonimowe tematy pomocy — są wyłączone) plus kontrola `CurrentUser` w operacjach (AD-17), która w obwodzie robi `NavigateTo("/konto/zmiana-hasla", forceLoad: true)`. Lista wyjątków w AD z nazwy; test na każdą pozycję listy.
 
-**Jednostka A (E1, Słowniki):** tworzy `Project(Id, Code, Name, IsActive)`, `WorkType(Id, Name, IsActive)` i pierwszą migrację. Kod zamienia na wielkie litery w komponencie przed zapisem (`model.Code.ToUpperInvariant()`). R3 (liczba Wpisów) wymaga `TimeEntry`, więc dokłada minimalną encję `TimeEntry(Id, Date, ProjectId, WorkTypeId)` z FK RESTRICT.
+### D7 — AD-17 „UI przechodzi na `/konto/wyloguj`” kontra wylogowanie tylko POST i zakaz JS; co zwraca endpoint — **Wysoka**
 
-**Jednostka B (E2, Wpisy):** tworzy własną `TimeEntry(Id, EntryDate, ProjectId, WorkTypeId, Description, Minutes, CreatedAt)` z migracją `AddTimeEntries`. Flagę aktywności czyta jako `Active`/`DeactivatedAt` z własnego założenia.
+**A (E4, `/konto/wyloguj`):** zgodnie z AD-11 statyczna strona/endpoint przyjmujący POST z antyforgery (jak w szablonie Identity).
+**B (E4/E1, reakcja na zablokowane Konto w obwodzie, AD-17):** `NavigateTo("/konto/wyloguj", forceLoad: true)` → GET → 405 albo strona „czy wylogować?” wymagająca kliknięcia (auto-submit wymagałby JS, zabroniony w AD-1). Jeśli A doda obsługę GET, powstaje wylogowanie przez CSRF (`<img src=/konto/wyloguj>`). Z obwodu nie da się skasować ciasteczka, więc zablokowany User po przeładowaniu dalej ma ważne ciasteczko do czasu rewalidacji.
+**C (E3, endpoint Zestawienia):** „stan Konta sprawdzany jak w AD-17” — ale AD-17 opisuje reakcję UI, nie HTTP; jedna historia zwróci 403 (cookie auth przekieruje na domyślne `/Account/AccessDenied` → 404), inna 500 z wyjątku `UserDbContextFactory`, inna pusty plik.
+**Reguła (AD-17):** stan Konta i security stamp sprawdza na każdym żądaniu HTTP `CookieAuthenticationEvents.OnValidatePrincipal` (odczyt `status`, `must_change_password`, stamp; przy niezgodności `RejectPrincipal` + `SignOutAsync`) — to jedyne miejsce, które kasuje ciasteczko. W obwodzie `CurrentUser` przy niepowodzeniu rzuca `AccountInactiveException`, a `MainLayout` (E1) łapie ją i robi `NavigateTo("/konto/logowanie?powod=<stan>", forceLoad: true)`; walidator kasuje ciasteczko na tym żądaniu. `/konto/wyloguj` przyjmuje wyłącznie POST z antyforgery. Endpoint Zestawienia dla nieaktywnego Konta zwraca to samo co dla anonima: 302 na `/konto/logowanie`.
 
-**Dlaczego obaj są zgodni z AD:** AD-7 ustala indeksy i FK, AD-6 nazwę kolumny `minutes`, konwencje — `snake_case` i `int id`. Żaden AD nie podaje pełnej listy encji i pól, właściciela encji ani zasady migracji; AD-7 mówi „kod zapisywany wielkimi literami”, ale nie gdzie (komponent? walidator? konwerter?). Zamiana naruszenia indeksu na `MessageBar` (AD-7) — każdy ekran sam rozpoznaje `PostgresException` 23505 i nazwę ograniczenia, której nikt nie ustalił.
+### D8 — Domyślna autoryzacja: `FallbackPolicy` kontra `[Authorize]` w `_Imports`; ścieżki logowania i treść „brak dostępu” — **Wysoka**
 
-**Skutek:** konflikt w `AppDbContextModelSnapshot`, podwójna encja lub migracja zmieniająca nazwę kolumny; ścieżka zapisu omijająca komponent (dane testowe, seed Testu wrześniowego) zapisze `rdz` obok `RDZ` — indeks na `code` (nie na `lower(code)`) duplikatu nie złapie; dwie wersje rozpoznawania 23505.
+**A (E4):** „domyślnie każda trasa wymaga zalogowania” realizuje `AuthorizationOptions.FallbackPolicy`. Polityka obejmuje też endpointy `MapStaticAssets` i hub `/_blazor` → anonim nie dostaje CSS Fluent UI na stronie logowania i nie zestawi obwodu dla anonimowych tematów pomocy (AD-22). Ciasteczko bez skonfigurowanych `LoginPath`/`AccessDeniedPath` przekierowuje na `/Account/Login`.
+**B (E1/E5):** `[Authorize]` w `_Imports.razor` + `AuthorizeRouteView`; zalogowany User bez roli wchodzi na `/uzytkownicy` (link z pomocy, zakładka) → `<NotAuthorized>` w `Routes` napisany przez E4 jako `RedirectToLogin` → strona logowania dla zalogowanego, pętla albo angielskie „Not authorized”. Dla `/pomoc/administracja` to samo.
+**Reguła (konwencja „Autoryzacja”):** jeden mechanizm: `[Authorize]` w głównym `_Imports.razor` stron + `RequireAuthorization()` na każdym endpoincie poza `/health`; bez `FallbackPolicy` (albo z jawnym `.AllowAnonymous()` na `MapStaticAssets` i `/_blazor` — wybrać jedno). `LoginPath=/konto/logowanie`, `AccessDeniedPath=/konto/brak-dostepu` (nowa trasa w konwencji Tras). `<NotAuthorized>` w `Routes`: anonim → przekierowanie z `forceLoad` na logowanie z `ReturnUrl`; zalogowany bez roli → polska treść „brak dostępu” w `MainLayout`.
 
-**Proponowany AD (nowy):**
+### D9 — Link do Zestawienia przechwytuje router Blazora — **Wysoka**
 
-> ### AD-16 — Schemat i właściciel danych
-> - **Binds:** R1, R2, R3, R4, R11
-> - **Prevents:** dwóm definicjom encji, konfliktom migracji i różnym ścieżkom normalizacji.
-> - **Rule:** encje i ich pola są stałe: `Project(Id, Code, Name, IsActive)`, `WorkType(Id, Name, IsActive)`, `TimeEntry(Id, Date, ProjectId, WorkTypeId, Description, Minutes)`; nazwy kolumn `snake_case` (`is_active`, `project_id`…). Wszystkie trzy encje, indeksy (`ux_project_code`, `ux_work_type_name_lower`) i FK RESTRICT tworzy pierwsza historia szkieletu w jednej migracji `Initial`; późniejsze historie dodają encję lub kolumnę tylko po zmianie tego AD i każda dodaje dokładnie jedną nową migrację (nigdy nie edytuje istniejącej). Normalizacja kodu Projektu (trim, wielkie litery `ToUpperInvariant`) i trim nazw dzieje się w jednym miejscu: w `AppDbContext.SaveChanges[Async]` dla zmienionych encji. Naruszenia ograniczeń tłumaczy jedna funkcja `Data/DbErrors.TryGetViolation(DbUpdateException, out string constraint)`; ekrany mapują nazwę ograniczenia na tekst `MessageBar`.
+**A (E3, AD-14):** „Ekran Eksport i przycisk w Widoku miesiąca to zwykły link do endpointu”: `<a href="/zestawienie/2026/9">`.
+**B (E1, AD-11, `Routes`/`NotFound`):** w trybie globalnym Interactive Server router przechwytuje kliknięcia linków wewnętrznych; `/zestawienie/...` nie jest komponentem → router renderuje polską stronę „nie znaleziono” zamiast pobrać plik. Obie jednostki dosłownie zgodne z AD-11 i AD-14.
+**Reguła (AD-14):** link do endpointu ma atrybut `download` (router go nie przechwytuje) — albo komponent `Shared/DownloadLink`, który to gwarantuje; test bUnit sprawdza atrybut. Zakaz `NavigateTo` do endpointu.
 
----
+### D10 — Pomoc: jedna trasa `/pomoc/{temat}` z różnym dostępem per wartość parametru; strony `/konto` bez belki — **Wysoka**
 
-## Para 6 — Czas, nazwy dni i miesięcy formatowane w czterech miejscach — **Średnia**
+**A (E1, historia 1.3):** jeden komponent `@page "/pomoc/{temat}"` + `HelpTopics` (klucz → typ komponentu treści przez `DynamicComponent`). Atrybut `[Authorize]`/`[AllowAnonymous]` działa na komponent, nie na wartość `{temat}`, więc albo wszystkie tematy wymagają logowania (łamie AD-22 dla `/pomoc/logowanie`), albo wszystkie są anonimowe, a `/pomoc/administracja` chroni tylko `if` w kodzie, którego E1 nie ma powodu napisać (temat dopisuje E5).
+**B (E5):** dopisuje `/pomoc/logowanie` i `/pomoc/administracja` jako osobne `@page` z atrybutami → dwie trasy dla tego samego tematu, spis z `HelpTopics` i trasy literalne się rozjeżdżają; albo dodaje klucz `Logowanie`, a E1 użył `logowanie` / `konto-logowanie` (konwencja klucza nieustalona).
+**C (E4, `AccountLayout`):** AD-11 każe statycznym `/konto/...` mieć „prosty układ bez menu” — bez belki, więc bez ikony `?`, a AD-22 każe ikonie `?` w belce otwierać temat bieżącego ekranu. Strony logowania/rejestracji nie mają jak otworzyć pomocy. Anonim na `/pomoc/logowanie` dostaje `MainLayout` z menu Rejestr/Słowniki i przyciskiem Wyloguj.
+**Reguła (AD-22):** jedna trasa `/pomoc/{temat}` oznaczona `[AllowAnonymous]`; o dostępie decyduje sam komponent według `HelpTopics.Access` (Anonim / Zalogowany / Administrator), brak dostępu → ten sam widok co D8. Klucz tematu = segment trasy ekranu w kebab-case (`projekty`, `typy-pracy`, `wpisy-nowy`, `logowanie`, `rejestracja`, `zmiana-hasla`, `administracja`), stałe w `HelpTopics`, zakaz osobnych `@page "/pomoc/..."`. `AccountLayout` ma link „Pomoc” do tematu strony. Tematy anonimowe renderują się w `AccountLayout` (bez menu), pozostałe w `MainLayout`.
 
-**Jednostka A (E2):** pole Czas jako tekst `h:mm`, parser w walidatorze (`"1:30"` → 90, akceptuje też `"1,5"`). Formatowanie w Liście wpisów: `TimeSpan.FromMinutes(m).ToString(@"h\:mm")`.
+### D11 — Migracje równoległych epików po pierwszym wdrożeniu — **Wysoka**
 
-**Jednostka B (E3/E4):** Widok miesiąca formatuje sumy tygodnia tym samym `TimeSpan` → dla 30 h wychodzi `6:00` (godziny modulo 24) albo `1.06:00`; Zestawienie liczy godziny dziesiętne `m / 60.0` i nazwę dnia `date.ToString("dddd")` → „środa” małą literą, nazwę arkusza z `MonthNames` (mianownik) a nazwę pliku z `MonthGenitiveNames` albo z polskimi znakami „wrzesień” vs „wrzesien”.
-
-**Dlaczego zgodni z AD:** AD-6 ustala `int` minut i `pl-PL`, konwencja — „formatowanie `h:mm` w UI”, ale nie ma jednego formatera ani parsera, a diagram wspomina typ domeny `Czas` bez lokalizacji. Kultura `pl-PL` daje nazwy małą literą — układ wymaga „Środa”, „Wrzesień 2026”, „RAZEM WRZESIEŃ 2026”.
-
-**Skutek:** Suma tygodnia 30 h pokazana jako `6:00` (Test wrześniowy porównuje 30/16/18/25/14); różne nazwy dni w Widoku miesiąca i w xlsx; nazwa pliku niezgodna z R13; parser w walidatorze akceptuje formaty, których kopia (R7) nie potrafi wypisać.
-
-**Proponowany AD (zaostrzenie AD-6, tekst do dopisania):**
-
-> - **Rule (dopisek):** jedyne miejsca konwersji Czasu i nazw kalendarza to statyczne `Reporting/Czas` (`TryParse("h:mm") → int`, `Format(int) → "h:mm"` bez zawijania doby, np. `30:00`; `ToDecimalHours(int) → decimal`) i `Reporting/PolishCalendar` (`DayName(DateOnly)` z wielkiej litery, `MonthName(YearMonth)` w mianowniku z wielkiej litery, `FileMonthName(YearMonth)` małą literą z polskimi znakami). Pole Czas w formularzu to tekst przyjmujący wyłącznie `h:mm` (oraz `hh:mm`). Zakaz `TimeSpan` i format stringów `dddd`/`MMMM` w kodzie ekranów i eksportu.
-
----
-
-## Para 7 — Identyfikator Miesiąca i adresy ekranów — **Średnia**
-
-**A (E3):** Widok miesiąca pod `/miesiac?rok=2026&m=9`, typ `DateOnly` (pierwszy dzień). **B (E4/E2):** `MonthReport.Build(int year, int month)`, Lista wpisów `?od=2026-09-01&do=2026-09-30`, `powrot` z E2 zakłada inny format. Nawigacja „wróć po edycji do tego samego Miesiąca” i odnośnik eksportu składają adresy po swojemu.
-
-**Proponowany AD (nowy, krótki):**
-
-> ### AD-18 — Miesiąc i adresy
-> - **Rule:** Miesiąc w kodzie to `Reporting/YearMonth(int Year, int Month)`. Adresy: Widok miesiąca `/miesiac/{rok:int}/{miesiac:int}` (bez parametrów → bieżący), Lista wpisów `/wpisy?od=RRRR-MM-DD&do=RRRR-MM-DD&projekt={id}&typ={id}`, Wpis wg AD-15, Zestawienie wg AD-13. „Dziś” pochodzi z wstrzykiwanego `TimeProvider` (czas lokalny), nigdy z `DateTime.Now`.
-
----
-
-## Para 8 — Komunikaty: host `MessageBar`, Toast i treść potwierdzeń — **Średnia**
-
-**A (E1):** `MessageBar` jako globalny pasek w `MainLayout` sterowany usługą (`IMessageService` Fluent UI), potwierdzenia `MessageBox` z przyciskami „Tak/Nie”. **B (E2):** inline `<FluentMessageBar>` nad formularzem, sukces zapisu w Sesji wpisywania jako `Toast` (nie objęty AD-10, więc „dozwolony”), potwierdzenie usunięcia „Usuń/Anuluj” z fokusem na „Usuń” (Enter od razu kasuje — ryzyko przy pracy klawiaturą R16).
-
-**Proponowany AD (zaostrzenie AD-10, tekst do dopisania):**
-
-> - **Rule (dopisek):** `MessageBar` wyświetla się w jednym miejscu: w obszarze komunikatów pod nagłówkiem strony z `MainLayout`, przez jedną usługę `Shared/Notify` (`Info`, `Success`, `Warning`, `Error`); komunikaty walidacji pól — przy polach (FluentValidation). Potwierdzenia przez jedną funkcję `Shared/Confirm.AskAsync(tytuł, treść, przyciskAkcji)` z przyciskami „<akcja>” / „Anuluj” i domyślnym fokusem na „Anuluj”. Toastów i `alert` się nie używa.
+**A (E5, „może iść równolegle z epikami 1–3”):** dodaje migrację (np. kolumnę do notatki odrzucenia, indeks na `status`).
+**B (E2/E3 w tym samym czasie):** dodaje własną migrację. Obie gałęzie zmieniają `AppDbContextModelSnapshot.cs`; git scala go tekstowo „czysto” albo z konfliktem, a plik `.Designer.cs` każdej migracji zawiera model bez zmian drugiej. Następne `migrations add` generuje fantomowe zmiany; EF Core 9+ przy `Migrate()` zgłasza `PendingModelChangesWarning` jako błąd → start pada na serwerze (AD-21 krok 2), workflow kończy się błędem `/health`. Obie gałęzie przechodzą PR osobno, bo kontrola migracji z AD-20 sprawdza tylko „czy dodająca”.
+**Także w E4:** AD-7 mówi „przepisuje migrację `Initial`”, AD-21 „od pierwszego wdrożenia tylko dodające” — jeśli historia wdrożenia w E4 idzie przed historią rejestracji/`must_change_password`, `Initial` jest już na serwerze, a schemat jeszcze niepełny; „pierwsze wdrożenie” nie jest zdefiniowane.
+**Reguła (AD-21):** (1) `Initial` jest zamrożona w historii E4, która jako pierwsza uruchamia workflow wdrożenia, i ta historia zawiera *cały* schemat z AD-7; (2) potok PR uruchamia `dotnet ef migrations has-pending-model-changes` i sprawdza, że gałąź jest aktualna względem `main` w części `Data/Migrations` (wymóg „branch up to date” w ochronie `main`); przy konflikcie migracja jest usuwana i generowana od nowa na `main`; (3) `migrationBuilder.Sql(...)` po `Initial` zakazane albo oznaczone komentarzem do ręcznego przeglądu, bo kontrola „tylko dodające” nie parsuje SQL; (4) nowy indeks unikalny na istniejących danych liczy się jako zmiana ryzykowna (może wywrócić start).
 
 ---
 
-## Para 9 — Listy wyboru Projektu/Typu pracy i ich nieaktywne pozycje — **Średnia**
+## Średnie
 
-**A (E2):** formularz Wpisu ładuje aktywne Projekty `ORDER BY name`, pokazuje „Nazwa (KOD)” w `FluentSelect`; przy edycji Wpisu z nieaktywnym Projektem pole jest puste (pozycji brak na liście) — R2 łamany przy zapisie. **B (E3):** filtr Listy wpisów ładuje wszystkie Projekty `ORDER BY code` w `FluentCombobox` z etykietą „KOD — Nazwa” i dopiskiem „(nieaktywny)”. Każdy ekran ma własne zapytanie i własną etykietę; kolejność w Widoku miesiąca (AD-14: wg kodu porównywanego w `MonthReport`) różni się od kolejności z PostgreSQL (`ORDER BY code` z kolacją bazy).
+### D12 — Nagłówek treści, temat pomocy i „Odśwież”: brak kontraktu ekran ↔ `MainLayout` — **Średnia**
 
-**Proponowany AD (nowy):**
+**A (E1, 1.3):** `MainLayout` renderuje tytuł, podtytuł, okruszki, `Odśwież` i `?` na podstawie mapy „trasa → tytuł/temat” w `MainLayout`.
+**B (E2, Lista wpisów):** renderuje własny nagłówek w treści i własny `Odśwież` (bo tylko ekran wie, co przeładować), a temat pomocy ustawia przez scoped serwis. Trasy z parametrami (`/miesiac/{rok}/{miesiac}`) nie pasują do mapy A → `?` otwiera spis tematów zamiast tematu ekranu.
+**Reguła (AD-11 + AD-22):** `Shared/PageHeader` (Title, Subtitle, Breadcrumbs, HelpTopic, OnRefresh) — jedyny sposób, w jaki ekran zgłasza nagłówek; przekazuje dane do `MainLayout` przez kaskadowy `PageContext`; `?` i `Odśwież` w belce/nagłówku czytają z niego. Ekran bez `PageHeader` nie przechodzi testu bUnit szablonu ekranu.
 
-> ### AD-17 — Wybór pozycji Słownika
-> - **Binds:** R2, R7, R8, R16
-> - **Rule:** listy wyboru Projektu i Typu pracy dostarcza jedna funkcja `Features/Slowniki/DictionaryOptions.LoadAsync(AppDbContext, includeInactive, ensureIds)`; formularz Wpisu woła ją z `includeInactive: false` i `ensureIds` = pozycje edytowanego Wpisu, filtry z `includeInactive: true`. Etykieta: Projekt `KOD — nazwa`, Typ pracy `nazwa`, nieaktywne z dopiskiem „(nieaktywny)”. Kolejność: Projekty wg kodu, Typy pracy wg nazwy, porównanie `StringComparer.Create(pl-PL, ignoreCase: true)` w pamięci — to samo porównanie stosuje `MonthReport`. Kontrolka: `FluentCombobox`/autouzupełnianie z wpisywaniem z klawiatury (R16), ta sama w formularzu i filtrach.
+### D13 — Klucze Data Protection: kolejność względem migracji i rejestracja kontekstu — **Średnia**
+
+**A (E4, `Startup`):** migracje i pierwszy Administrator jako `IHostedService` („przed przyjęciem pierwszego żądania” — AD-21 to dopuszcza).
+**B (E4, AD-19):** `PersistKeysToDbContext<AppDbContext>()`; `DataProtectionHostedService` startuje wcześniej i na świeżej bazie czyta nieistniejącą tabelę → błąd w logu i klucz w pamięci, a po wdrożeniu na pustej bazie (odtworzenie na nowy Droplet, AD-19) pierwsze ciasteczka są szyfrowane kluczem, który nie trafił do bazy → po restarcie wszyscy wylogowani; w testach Testcontainers losowe błędy przy pierwszym teście. Dodatkowo `PersistKeysToDbContext` wymaga `AppDbContext` w DI (wiąże się z D2) i że `DbSet<DataProtectionKey>` nie jest objęty filtrem.
+**Reguła (AD-21 + AD-19):** kroki 1–3 wykonywane synchronicznie w `Program.cs` po `Build()`, przed `app.Run()`; zakaz `IHostedService` dla migracji. Tabela `data_protection_keys` w `Initial`, bez filtra, poza `IUserOwned`; test: dwa kolejne starty aplikacji na tej samej bazie odczytują to samo ciasteczko.
+
+### D14 — `account_settings`: dwie ścieżki tworzenia wiersza i brak wiersza dla pierwszego Administratora — **Średnia**
+
+**A (E4, rejestracja):** tworzy wiersz `account_settings` razem z Kontem (pusty prefiks).
+**B (E3, Ustawienia konta):** przy zapisie robi `Add` nowego wiersza, gdy go „nie ma w kontekście” → naruszenie unikalności `user_id` dla Kont z rejestracji; endpoint Zestawienia (E3) zakłada istnienie wiersza → `NullReferenceException` dla pierwszego Administratora, którego tworzy `Startup` (AD-21) bez rejestracji. Klucz tabeli (osobne `id` czy `user_id`) nieustalony.
+**Reguła (AD-7):** `account_settings` ma klucz główny `user_id` (1:1), wiersz opcjonalny; jedyny odczyt to `AccountSettingsQuery.GetAsync()` zwracający wartości domyślne przy braku wiersza; jedyny zapis to upsert w Ustawieniach konta. Ani rejestracja, ani `Startup` nie tworzą wiersza.
+
+### D15 — `DictionaryOptions` nie zna trybu kopii; Lista wpisów potrzebuje nieaktywnych — **Średnia**
+
+**A (E1, 1.9):** `DictionaryOptions.LoadAsync(TimeEntry? editedEntry)` — „aktywne plus bieżąca wartość edytowanego Wpisu”.
+**B (E2, kopia z R7):** `EntryForm` w trybie kopii przekazuje oryginalny Wpis (bo z niego bierze pola) → nieaktywny Projekt pojawia się w opcjach i zostaje zapisany w nowym Wpisie; R7 wymaga pustego pola. Drugi wariant: E2 do filtrów Listy wpisów (R8: „także nieaktywnych”) bierze `DictionaryOptions`, bo to „jedyne źródło opcji” wg AD-10 → filtr bez nieaktywnych.
+**Reguła (AD-10):** sygnatura `DictionaryOptions.LoadAsync(int? keepProjectId, int? keepWorkTypeId)`; tryb kopii i nowy Wpis przekazują `null` i czyszczą pole, gdy wartość nie jest w opcjach; filtry raportów biorą wszystkie pozycje Usera z osobnego `DictionaryOptions.LoadAllAsync()` (bez filtra aktywności).
+
+### D16 — Kontrakt akcji w `ReportGrid`: trzy stałe ikony kontra akcje Konta zależne od stanu — **Średnia**
+
+**A (E1, 1.5):** `ReportGrid<T>` z parametrami `OnEdit`, `OnCopy`, `OnDelete` (`EventCallback<T>`) — opis historii wymienia tylko te trzy.
+**B (E5):** potrzebuje Zatwierdź/Odrzuć (tylko `pending`), Zablokuj (`active`), Odblokuj (`blocked`), Ustaw hasło, Usuń (`blocked`), ukrytych dla własnego wiersza. Dopisuje `OnApprove`, `OnBlock`... i predykaty widoczności → przeróbka komponentu z epiku 1 w epiku równoległym (konflikt z E2/E3, którzy w tym czasie go używają).
+**Reguła (AD-9):** akcje wiersza to `IReadOnlyList<RowAction<T>>` (ikona, etykieta po polsku, `Func<T,bool> Visible`, `Func<T,Task> Execute`); edycja/kopia/usunięcie to gotowe fabryki w `Shared/`. Historia 1.5 buduje ten kontrakt od razu.
+
+### D17 — Operacje Administratora rozproszone po ekranie; `Accounts/` omija kontrolę stanu — **Średnia**
+
+**A (E5):** AD-17 każe „zmieniać `status`, hasło i stamp przez `UserManager`”, AD-18 każe „sprawdzać w operacji” blokadę własnego Konta — ale jedyną nazwaną operacją jest `DeleteAccount`. Zatwierdź/Zablokuj/Odblokuj/Ustaw hasło trafiają do handlerów w `Features/Uzytkownicy` — kontrola „nie własne Konto” i aktualizacja stampa są w czterech miejscach albo w żadnym.
+**B (E4, AD-17):** kontrola stanu bieżącego Usera siedzi w `UserDbContextFactory`; ekran Użytkownicy i Ustawienia konta (hasło) nie używają tej fabryki, więc zablokowany w międzyczasie Administrator (drugi Administrator go zablokował) dalej zatwierdza Konta z otwartego obwodu do minuty.
+**Reguła (AD-17 + AD-18):** `Accounts/AccountAdmin` z metodami `ApproveAsync`, `RejectAsync`, `BlockAsync`, `UnblockAsync`, `SetPasswordAsync` (ustawia `must_change_password`, czyści lockout, aktualizuje stamp) — każda zaczyna od `CurrentUser.RequireActiveAsync(role: Administrator)`, odrzuca własne Konto i działa w świeżym scope (D4). Ustawienie hasła na własnym Koncie też zabronione (przez ekran Użytkownicy).
+
+### D18 — `DbErrors` zależy od nazw ograniczeń wybranych w innym epiku; normalizacja kodu tylko w `SaveChanges` — **Średnia**
+
+**A (E4, `Initial`):** indeks `(user_id, code)` nazwany konwencją EF (`ix_project_user_id_code`), indeks funkcyjny Typu pracy dodany SQL-em z nazwą wymyśloną w migracji.
+**B (E1, 1.7/1.8):** `Data/DbErrors` tworzony w 1.7 rozpoznaje duplikat po nazwie ograniczenia (żeby odróżnić duplikat kodu od innych naruszeń) z nazwą zgadniętą inaczej → duplikat pokazany jako ogólny błąd. Do tego weryfikacja 1.7 mówi o unikalności `(user_id, lower(code))`, a AD-7 o `(user_id, code)` z normalizacją w `SaveChanges`; polecenie `psql INSERT` z README (w weryfikacji 1.7, a w AD-19 dostęp Administratora do bazy) omija `SaveChanges` → `rdz` i `RDZ` współistnieją, łamiąc R1.
+**Reguła (AD-7):** nazwy ograniczeń unikalności i FK jako stałe w `Data/DbConstraints`, użyte w migracji i w `DbErrors`; `DbErrors.IsUniqueViolation(ex, constraint)`. Unikalność kodu: indeks `(user_id, upper(code))` plus `CHECK (code = upper(code))` — baza, nie `SaveChanges`, jest strażnikiem.
+
+### D19 — Limit prób według IP za Caddy — **Średnia**
+
+**A (E4, logowanie):** `[EnableRateLimiting]` z partycją po `RemoteIpAddress`, middleware limitera w kolejności z szablonu.
+**B (E4, wdrożenie, AD-19):** `UseForwardedHeaders` z „zaufaną siecią compose w `KnownIPNetworks`”, ale podsieć sieci compose przydziela Docker losowo; gdy nie pasuje albo `UseForwardedHeaders` stoi za limiterem, wszyscy mają IP Caddy → pięć nieudanych prób kogokolwiek blokuje rejestrację i logowanie wszystkim. Limiter na stronie SSR liczy też GET (samo otwarcie strony).
+**Reguła (AD-19 + AD-15):** `deploy/compose.yml` definiuje sieć z jawną podsiecią, ta sama wartość w konfiguracji `KnownIPNetworks`; `UseForwardedHeaders` jako pierwszy middleware; limiter liczy tylko POST formularzy logowania i rejestracji; test integracyjny z nagłówkiem `X-Forwarded-For`.
 
 ---
 
-## Para 10 — Start, testy i konfiguracja — **Średnia/Niska**
+## Niskie
 
-**A (E1):** kroki AD-3 w `IHostedService`, opcje `Backup:Directory`, `Database:ContainerName`, połączenie w `ConnectionStrings:Default`. **B (E2/E4, pierwsze testy Testcontainers):** w `WebApplicationFactory` hosted service próbuje `docker exec` na nieistniejącym kontenerze i wywala testy, więc agent tworzy schemat przez `EnsureCreated()` (inny schemat niż z migracji — brak indeksu `lower(name)` z surowego SQL) i dodaje `Backup:Enabled=false`. E4 czyta prefiks z `Export:FilePrefix`, a `appsettings.Local.json` Autora ma `Export:Prefix`.
+### D20 — Reprezentacja `status` — **Niska**
 
-**Proponowany AD (zaostrzenie AD-3 i AD-12):**
+E4 mapuje `enum AccountStatus` domyślnie na `int`; E5 w `docs/admin/` (R27) i ćwiczenie odtworzenia opisuje `UPDATE users SET status='active'`, a AD-7 wymienia wartości tekstowe. **Reguła:** `HasConversion<string>()` z małymi literami i `CHECK (status IN ('pending','active','blocked'))` w `Initial`.
 
-> - **AD-3, dopisek:** kroki 1–3 wykonuje `Startup/StartupSequence.RunAsync` wywołane w `Program.cs` po `Build()` i przed `Run()` (nie `IHostedService`); test integracyjny pomija krok 2 przez `Backup:Enabled=false` i zawsze buduje schemat przez `Database.Migrate()`, nigdy `EnsureCreated()`.
-> - **AD-12, dopisek:** klucze konfiguracji są stałe: `ConnectionStrings:Rejestr`; `Backup:Enabled`, `Backup:Directory`, `Backup:ContainerName`, `Backup:Keep` (=10); `Export:FilePrefix`. Klasy opcji `BackupOptions`, `ExportOptions` w `Startup/` i `Features/Zestawienie/`.
+### D21 — `DeleteEntry` i kontrakt `EntryForm` między E2 a E3 — **Niska**
+
+E2 umieszcza `DeleteEntry` i stan „ostatnio ustawionej daty” w `Features/Wpisy`; E3 (`Features/Miesiac`) musi zależeć od innej funkcji, czego diagram zależności nie przewiduje (Features → Shared). `EntryForm` przyjmuje w E2 `EntryId`, a E3 ma pod ręką `MonthEntry`. **Reguła (AD-10):** `DeleteEntry`, `EntrySession` (scoped, ostatnia data) i `EntryForm` w `Shared/`; `EntryForm` w trybie edycji/kopii przyjmuje wyłącznie `EntryId` i sam ładuje Wpis.
+
+### D22 — Suma pod Listą wpisów a filtr kolumn w siatce — **Niska**
+
+AD-5 każe liczyć sumę Listy „z tej samej materializowanej listy co wiersze”, AD-9 mówi, że filtr siatki tylko ukrywa wiersze i siatka nie wystawia przefiltrowanego zbioru. E2 może pokazać sumę całości przy licznikach po filtrze (licznik i suma się nie zgadzają) albo dopisać do `ReportGrid` zdarzenie z widocznymi wierszami. **Reguła:** jawnie: suma Listy wpisów dotyczy wyników filtrów ekranu (zakres dat, Projekt, Typ pracy), nie filtrów kolumn siatki; podpis sumy to mówi.
+
+### D23 — Krok 3 startu w testach i lokalnie; role Autora — **Niska**
+
+AD-21 kończy proces, gdy nie ma Administratora i brak loginu/hasła w konfiguracji → każdy test na `WebApplicationFactory` i pierwszy `dotnet run` po przepisaniu wolumenu pada, dopóki ktoś nie doda sekretów do testów (pokusa wpisania ich do `appsettings.json`, łamie AD-13). R20 wymaga ról User *i* Administrator dla Konta Autora, AD-21 mówi tylko „z rolą Administrator”. **Reguła:** projekt testów ustawia konfigurację Administratora w kodzie; README podaje klucze do `appsettings.Local.json`; Startup nadaje obie role.
 
 ---
 
-## Drobniejsze dziury (bez pary, do dopisania przy okazji)
+## Uwagi poboczne (poza parami)
 
-- **AD-13, typy komórek:** „sumy jako wartości” nie wyklucza zapisu `"1,5"` jako tekstu. Dopisek: „kolumny F, G, H i suma RAZEM jako liczby (`decimal`/`double`), kolumna B jako data Excela z formatem `dd.mm.yyyy`; żadna liczba ani data nie trafia do komórki jako tekst”.
-- **Zależność `Shared → Reporting`** w diagramie sugeruje, że `ReportGrid` zna `MonthReport`. Po AD-9 (dopisek) siatka jest generyczna; strzałka powinna dotyczyć tylko `Reporting/Czas` (formatowanie). Zaostrzyć: „`Shared/` korzysta z `Reporting/` wyłącznie przez `Czas` i `PolishCalendar`”.
-- **AD-8 a R2:** walidator „nie sprawdza bazy”, więc nikt nie blokuje zapisu nowego Wpisu z Projektem dezaktywowanym w innej karcie. Ryzyko niskie (jeden użytkownik) — świadomie zaakceptować w Deferred.
-- **R14 vs AD-3:** inicjatywa nadal mówi `.sqlite` i „ścieżki bazy” — wiadomo z memlogu; dopóki Sofia nie poprawi R14/R15, agent E1 ma dwa sprzeczne źródła. Nie dziura spine, ale blokada.
-
-## Podsumowanie poprawek
-
-| # | Para | Skala | Poprawka |
-| --- | --- | --- | --- |
-| 1 | E3 vs E4: `MonthReport` | Wysoka | nowy AD-14 (typy wejścia/wyjścia, kolejność = `Id`, jedno zapytanie `MonthEntriesQuery`) |
-| 2 | E1 vs E3: `ReportGrid` liczy sumy/filtruje | Wysoka | dopisek AD-9 (siatka bez agregatów, `IReadOnlyList`, filtry kolumn wyłączone przy sumach) |
-| 3 | E2 vs E3: host formularza i odświeżanie | Wysoka | nowy AD-15 (jedna strona Wpisu, `powrot`, jedno `DeleteEntry`, reload po mutacji) |
-| 4 | E3 vs E4: pobranie i wejście eksportu | Wysoka | dopisek AD-13 (endpoint Minimal API, odnośnik bez JS, R13 w Widoku miesiąca) |
-| 5 | E1 vs E2: schemat encji | Wysoka/Średnia | nowy AD-16 (pola encji, migracja `Initial`, normalizacja w `SaveChanges`, `DbErrors`) |
-| 6 | E2 vs E3/E4: formatowanie Czasu i nazw | Średnia | dopisek AD-6 (`Czas`, `PolishCalendar`, zakaz `TimeSpan`/`dddd`) |
-| 7 | E2/E3/E4: Miesiąc i adresy | Średnia | nowy AD-18 (`YearMonth`, trasy, `TimeProvider`) |
-| 8 | E1 vs E2: komunikaty | Średnia | dopisek AD-10 (`Notify`, `Confirm`, fokus na Anuluj, bez Toastów) |
-| 9 | E2 vs E3: listy Słowników | Średnia | nowy AD-17 (`DictionaryOptions`, etykiety, porównanie pl-PL) |
-| 10 | E1 vs testy/E4: start i konfiguracja | Średnia/Niska | dopiski AD-3, AD-12 (klucze, `Migrate()` w testach) |
+- Historia 1.1 w `tickets.toml` epiku 1 nadal odwołuje się do `#ad-3` (wycofane), a historia 1.2 (Kopia bazy) wciąż jest na liście, choć AD-3 i R14 są wycofane — porządek w ticketach, nie w spine.
+- Historia 1.3 weryfikuje „Wyloguj wraca do ekranu logowania”, ale przycisk Wyloguj zależy od kontraktu z D7 (POST + antyforgery w komponencie interaktywnym: `<form method="post" action="/konto/wyloguj">` z `<AntiforgeryToken />` i bez `@onsubmit`); warto to wpisać do AD-11.
