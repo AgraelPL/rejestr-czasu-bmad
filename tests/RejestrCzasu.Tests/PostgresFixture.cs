@@ -20,6 +20,10 @@ public sealed class PostgresFixture : IAsyncLifetime
     private const string UserName = "rejestr_test";
     private const string Password = "test-only-password";
 
+    /// <summary>The first Administrator every application started by the tests creates on an empty database (AD-21).</summary>
+    public const string FirstAdminUserName = "admin.testowy";
+    public const string FirstAdminPassword = "admin-haslo";
+
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:18")
         .WithDatabase(DatabaseName)
         .WithUsername(UserName)
@@ -37,8 +41,8 @@ public sealed class PostgresFixture : IAsyncLifetime
     };
 
     /// <summary>
-    /// Configuration overrides pointing the application at the container (<c>Database:*</c>),
-    /// so the Author's appsettings.Local.json does not leak into tests.
+    /// Configuration overrides pointing the application at the container (<c>Database:*</c>) with a fictional first
+    /// Administrator (<c>FirstAdmin:*</c>), so the Author's appsettings.Local.json does not leak into tests.
     /// </summary>
     public IReadOnlyDictionary<string, string?> ConfigurationOverrides
     {
@@ -52,6 +56,8 @@ public sealed class PostgresFixture : IAsyncLifetime
                 ["Database:Name"] = options.Name,
                 ["Database:User"] = options.User,
                 ["Database:Password"] = options.Password,
+                ["FirstAdmin:UserName"] = FirstAdminUserName,
+                ["FirstAdmin:Password"] = FirstAdminPassword,
             };
         }
     }
@@ -78,7 +84,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// request or circuit (nobody logged in); tests pass the User to the internal overload.
     /// </summary>
     public UserDbContextFactory CreateUserDbContextFactory() =>
-        new(ContextFactory, new CurrentUser(new HttpContextAccessor(), new ServerAuthenticationStateProvider()));
+        new(ContextFactory, new CurrentUser(new HttpContextAccessor(), new ServerAuthenticationStateProvider(), ContextFactory));
 
     /// <summary>Creates an active Account with a fictional login and returns its id.</summary>
     public async Task<int> CreateUserAsync(string userName)

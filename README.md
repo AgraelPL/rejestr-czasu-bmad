@@ -35,7 +35,12 @@ działa w kontenerze Dockera z portem wystawionym tylko na `127.0.0.1`.
    w stanie `Created`, a aplikacja zgłasza błąd hasła 28P01 z cudzego serwera), ustaw inny port, np. `5433`,
    w `POSTGRES_PORT` w `.env` i ten sam w `Database:Port` w `appsettings.Local.json`.
 
-3. Uruchom bazę i aplikację:
+3. Ustaw pierwszego Administratora: `FirstAdmin:UserName` i `FirstAdmin:Password` w `appsettings.Local.json`
+   (hasło co najmniej 6 znaków). Lokalny start wymaga tych ustawień, dopóki w bazie nie ma żadnego Administratora:
+   przy pierwszym starcie na pustej bazie aplikacja zakłada z nich aktywne Konto z rolami Administrator i User.
+   Gdy Administrator już jest, ustawienia są pomijane (zmiana hasła w pliku nie zmienia hasła Konta).
+
+4. Uruchom bazę i aplikację:
 
    ```powershell
    docker compose up -d
@@ -43,11 +48,13 @@ działa w kontenerze Dockera z portem wystawionym tylko na `127.0.0.1`.
    ```
 
    Aplikacja otwiera się na `http://127.0.0.1:5080`. Przy każdym starcie, przed przyjęciem pierwszego żądania,
-   sprawdza połączenie z bazą i stosuje migracje. Przy pierwszym starcie na pustej bazie EF Core może zapisać w konsoli
+   sprawdza połączenie z bazą, stosuje migracje i w razie potrzeby zakłada pierwszego Administratora. Przy pierwszym starcie na pustej bazie EF Core może zapisać w konsoli
    błąd zapytania o tabelę `__EFMigrationsHistory` — to oczekiwane, tabela jest tworzona zaraz potem.
 
    Jeśli kontener nie działa, aplikacja kończy się komunikatem
    „Brak połączenia z bazą: uruchom Docker Desktop i `docker compose up -d`.” bez startu serwera.
+   Tak samo, z polskim komunikatem, kończy się start bez Administratora w bazie i bez ustawień `FirstAdmin`
+   albo z hasłem `FirstAdmin:Password` odrzuconym przez reguły haseł.
 
 ## Codzienna praca
 
@@ -69,7 +76,11 @@ Zamień `rejestr` na wartości `POSTGRES_USER` i `POSTGRES_DB` z `.env`, jeśli 
 
 ## Konto lokalnie
 
-Cała aplikacja wymaga logowania. Konto zakłada się na `/konto/rejestracja`; nowe Konto czeka na zatwierdzenie
+Cała aplikacja wymaga logowania. Po pierwszym starcie logujesz się na `/konto/logowanie` jako Administrator
+z ustawień `FirstAdmin`. Własne hasło zmienia się na `/konto/zmiana-hasla` (inne zalogowane sesje tego Konta
+kończą się). Zablokowanie Konta w trakcie sesji wylogowuje je przy następnym żądaniu.
+
+Kolejne Konta zakłada się na `/konto/rejestracja`; nowe Konto czeka na zatwierdzenie
 (stan Oczekuje). Dopóki nie ma ekranu Użytkownicy, Konto zatwierdza się w bazie:
 
 ```powershell

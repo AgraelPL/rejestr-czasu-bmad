@@ -3,14 +3,14 @@ title: 'Pierwszy Administrator, stan Konta w sesji i zmiana hasła'
 type: 'feature'
 ticket: '4'
 created: '2026-10-31'
-status: 'ready-for-dev'
-baseline_revision: ''
+status: 'built'
+baseline_revision: '4c807aa99c42715c6f098a108b73538d1bea2043'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/_bmad-output/initiative-rejestr-czasu/architecture-rejestr-czasu/architecture-rejestr-czasu.md'
@@ -72,9 +72,9 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `src/RejestrCzasu/Options/FirstAdminOptions.cs`, `Startup/FirstAdministrator.cs`, `Startup/DatabaseStartup.cs`, `appsettings.Local.example.json`, `README.md` -- krok 3 startu -- AD-21, AD-13.
-- [ ] `src/RejestrCzasu/Accounts/` -- walidacja ciasteczka (`OnValidatePrincipal`), `AccountRevalidatingAuthenticationStateProvider`, wyjątki stanu w `CurrentUser`, `ChangePassword.razor` z usługą, middleware przekierowania z metadanymi wyjątków, komunikat `powod` w `Login.razor` -- AD-15, AD-17.
-- [ ] `tests/RejestrCzasu.Tests/` -- każdy wiersz I/O Matrix; start przez proces lub `DatabaseStartup` jak w `DatabaseStartupTests`.
+- [x] `src/RejestrCzasu/Options/FirstAdminOptions.cs`, `Startup/FirstAdministrator.cs`, `Startup/DatabaseStartup.cs`, `appsettings.Local.example.json`, `README.md` -- krok 3 startu -- AD-21, AD-13.
+- [x] `src/RejestrCzasu/Accounts/` -- walidacja ciasteczka (`OnValidatePrincipal`), `AccountRevalidatingAuthenticationStateProvider`, wyjątki stanu w `CurrentUser`, `ChangePassword.razor` z usługą, middleware przekierowania z metadanymi wyjątków, komunikat `powod` w `Login.razor` -- AD-15, AD-17.
+- [x] `tests/RejestrCzasu.Tests/` -- każdy wiersz I/O Matrix; start przez proces lub `DatabaseStartup` jak w `DatabaseStartupTests`.
 
 **Acceptance Criteria:**
 - Given wszystkie zmiany, when `dotnet build` i `dotnet test`, then 0 ostrzeżeń i wszystkie testy zielone.
@@ -90,6 +90,19 @@ context:
 
 ## Implementation Notes
 
+- Krok 3: `Startup/FirstAdministrator` (scoped) wywoływany przez `DatabaseStartup` we własnym scope; rejestracja `AddStartupSequence()` wspólna dla `Program` i testów. `DatabaseStartupException` dostał konstruktor bez `inner`.
+- Stan Konta: `Accounts/AccountState` (odczyt i reguła sesji: `active` + zgodny stamp), wspólny dla `AccountCookieValidator` (zastępuje `SecurityStampValidator` Identity) i `AccountRevalidatingAuthenticationStateProvider`. Walidator zapisuje stan w `HttpContext.Items`, middleware go czyta (bez drugiego zapytania).
+- `CurrentUser.GetActiveUserIdAsync` sprawdza stan tylko w obwodzie (w HTTP robi to walidator ciasteczka); `AccountInactiveException.LoginUrl` daje cel `NavigateTo` dla 1.3.
+- Middleware `PasswordChangeRedirect`: wyjątki po `StaticAssetDescriptor`, znaczniku `[AllowedDuringPasswordChange]` / `.AllowDuringPasswordChange()` oraz wzorcu trasy dopasowanego endpointu `/_blazor*` i `/_framework/` (endpointy frameworka nie przyjmują własnych metadanych).
+- Zmiana wymuszona bez starego hasła: walidatory haseł Identity, potem hash + flaga + nowy stamp jednym `UpdateSecurityStampAsync`. Dobrowolna: `ChangePasswordAsync` (błąd `PasswordMismatch` jako „Obecne hasło jest nieprawidłowe.”), po sukcesie PRG na `?zmieniono=1`.
+- Testy: `PostgresFixture.ConfigurationOverrides` ma fikcyjny `FirstAdmin`, więc każda aplikacja w testach zakłada Administratora; liczniki Kont w `AccountsTests` pomijają go.
+
 ## Plan Change Log
 
 ## Review Triage Log
+
+| # | Lens | Finding | Verdict | Route | Evidence |
+|---|------|---------|---------|-------|----------|
+| 1 | quick | Inne karty tej samej przeglądarki po dobrowolnej zmianie hasła lądują na formularzu logowania mimo ważnego ciasteczka | medium | patch | Obwód trzyma principal ze startu (stary stamp); rewalidacja po ≤1 min daje anonima, `Routes.razor` → `RedirectToLogin` (forceLoad), a `Login.razor` nie przekierowuje zalogowanego. Poprawka: zalogowany na GET `/konto/logowanie` → `LocalUrl.OrHome(ReturnUrl)`. |
+| 2 | quick | `/Error` bez `[AllowedDuringPasswordChange]` — błąd przy wymuszonej zmianie staje się 302, możliwa pętla | medium | patch | `Program.cs` L59 `UseExceptionHandler("/Error")` ponownie przechodzi przez `UsePasswordChangeRedirect`; `Error.razor` ma tylko `[AllowAnonymous]`. |
+| 3 | quick | Obecne hasło na `/konto/zmiana-hasla` można zgadywać bez limitu | medium | patch | `ChangePasswordAsync` nie liczy nieudanych prób; strona nie ma `[EnableRateLimiting(AccountRateLimit.PolicyName)]` w przeciwieństwie do `Login.razor` L5 i `Register.razor` L5. |

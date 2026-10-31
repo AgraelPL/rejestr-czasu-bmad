@@ -32,11 +32,17 @@ public sealed partial class AppClient : IAsyncDisposable
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     /// <summary>Creates an Account through Identity (hashed password, role User) in the given state.</summary>
-    public async Task<int> CreateAccountAsync(string userName, string password, AccountStatus status)
+    public async Task<int> CreateAccountAsync(string userName, string password, AccountStatus status, bool mustChangePassword = false)
     {
         await using var scope = Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-        var user = new AppUser { UserName = userName, Status = status, RegisteredAt = DateTime.UtcNow };
+        var user = new AppUser
+        {
+            UserName = userName,
+            Status = status,
+            RegisteredAt = DateTime.UtcNow,
+            MustChangePassword = mustChangePassword,
+        };
         AssertSucceeded(await userManager.CreateAsync(user, password));
         AssertSucceeded(await userManager.AddToRoleAsync(user, AppRoles.User));
         return user.Id;

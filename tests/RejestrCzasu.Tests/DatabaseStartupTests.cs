@@ -1,7 +1,8 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
+using RejestrCzasu.Accounts;
 using RejestrCzasu.Data;
 using RejestrCzasu.Options;
 using RejestrCzasu.Startup;
@@ -65,17 +66,109 @@ public sealed class DatabaseStartupTests(PostgresFixture postgres) : IAsyncDispo
         Assert.StartsWith("Migracja bazy nie powiodła się", ex.Message);
     }
 
-    private DatabaseStartup CreateStartup(DatabaseOptions options)
+    [Fact]
+    public async Task FirstStart_WithoutAdministrator_CreatesActiveAdministrator_WithRolesAdministratorAndUser()
     {
-        // The application's registration (AddAppDatabase), so the test uses the same, unpooled factory.
+        await postgres.ResetAsync();
+        // A regular Account does not count as an Administrator.
+        var regularUser = await postgres.CreateUserAsync("zwykly");
+
+        await CreateStartup(postgres.DatabaseOptions, FirstAdmin("autor", "haslo-autora")).RunAsync(Ct);
+
+        await using var db = postgres.CreateContext();
+        var admin = await db.Users.SingleAsync(u => u.Id != regularUser, Ct);
+        Assert.Equal("autor", admin.UserName);
+        Assert.Equal(AccountStatus.Active, admin.Status);
+        Assert.False(admin.MustChangePassword);
+        Assert.False(string.IsNullOrEmpty(admin.SecurityStamp));
+        Assert.Equal([AppRoles.Administrator, AppRoles.User], await RolesOfAsync(db, admin.Id));
+
+        // The password is the configured one (hashed by Identity).
+        var hasher = new PasswordHasher<AppUser>();
+        Assert.NotEqual(PasswordVerificationResult.Failed, hasher.VerifyHashedPassword(admin, admin.PasswordHash!, "haslo-autora"));
+
+        // No account_settings row (AD-7).
+        await using var userDb = await postgres.CreateUserContextAsync(admin.Id);
+        Assert.Equal(0, await userDb.AccountSettings.CountAsync(Ct));
+    }
+
+    [Fact]
+    public async Task NextStart_AdministratorExists_IgnoresOtherConfiguration()
+    {
+        await postgres.ResetAsync();
+        await CreateStartup(postgres.DatabaseOptions, FirstAdmin("autor", "haslo-autora")).RunAsync(Ct);
+        string before;
+        await using (var db = postgres.CreateContext())
+        {
+            before = (await db.Users.SingleAsync(Ct)).PasswordHash!;
+        }
+
+        await CreateStartup(postgres.DatabaseOptions, FirstAdmin("ktos-inny", "inne-haslo")).RunAsync(Ct);
+        // Without any configuration the start succeeds as well: an Administrator exists.
+        await CreateStartup(postgres.DatabaseOptions, new FirstAdminOptions()).RunAsync(Ct);
+
+        await using var check = postgres.CreateContext();
+        var admin = await check.Users.SingleAsync(Ct);
+        Assert.Equal("autor", admin.UserName);
+        Assert.Equal(before, admin.PasswordHash);
+    }
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("autor", null)]
+    [InlineData(null, "haslo-autora")]
+    [InlineData("  ", "haslo-autora")]
+    public async Task NoAdministrator_NoConfiguration_FailsWithPolishMessage(string? userName, string? password)
+    {
+        await postgres.ResetAsync();
+
+        var ex = await Assert.ThrowsAsync<DatabaseStartupException>(
+            () => CreateStartup(postgres.DatabaseOptions, FirstAdmin(userName, password)).RunAsync(Ct));
+
+        Assert.Equal(FirstAdministrator.MissingConfigurationMessage, ex.Message);
+        await using var db = postgres.CreateContext();
+        Assert.Equal(0, await db.Users.CountAsync(Ct));
+    }
+
+    [Fact]
+    public async Task NoAdministrator_PasswordRejectedByIdentity_FailsWithPolishIdentityError_WithoutAccount()
+    {
+        await postgres.ResetAsync();
+
+        var ex = await Assert.ThrowsAsync<DatabaseStartupException>(
+            () => CreateStartup(postgres.DatabaseOptions, FirstAdmin("autor", "12345")).RunAsync(Ct));
+
+        Assert.StartsWith(FirstAdministrator.RejectedMessagePrefix, ex.Message);
+        Assert.Contains("Hasło musi mieć co najmniej 6 znaków.", ex.Message);
+        Assert.DoesNotContain("12345", ex.Message);
+        await using var db = postgres.CreateContext();
+        Assert.Equal(0, await db.Users.CountAsync(Ct));
+        Assert.Equal(0, await db.UserRoles.CountAsync(Ct));
+    }
+
+    private static FirstAdminOptions FirstAdmin(string? userName, string? password) =>
+        new() { UserName = userName, Password = password };
+
+    private static async Task<List<string?>> RolesOfAsync(AppDbContext db, int userId)
+    {
+        var roleIds = await db.UserRoles.Where(r => r.UserId == userId).Select(r => r.RoleId).ToListAsync(Ct);
+        return await db.Roles.Where(r => roleIds.Contains(r.Id)).OrderBy(r => r.Id).Select(r => r.Name).ToListAsync(Ct);
+    }
+
+    private DatabaseStartup CreateStartup(DatabaseOptions options, FirstAdminOptions? firstAdmin = null)
+    {
+        // The application's registrations (AddAppDatabase, AddAccounts, AddStartupSequence), so the test uses the same
+        // unpooled factory and the same Identity configuration (password rules, Polish errors).
         var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton(Microsoft.Extensions.Options.Options.Create(options));
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(firstAdmin ?? new FirstAdminOptions()));
         services.AddAppDatabase();
+        services.AddAccounts();
+        services.AddStartupSequence();
         var provider = services.BuildServiceProvider();
         _providers.Add(provider);
-        return new DatabaseStartup(
-            Microsoft.Extensions.Options.Options.Create(options),
-            provider.GetRequiredService<IDbContextFactory<AppDbContext>>(),
-            NullLogger<DatabaseStartup>.Instance);
+        return provider.GetRequiredService<DatabaseStartup>();
     }
 }

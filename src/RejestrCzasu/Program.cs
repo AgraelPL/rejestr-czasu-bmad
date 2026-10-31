@@ -21,6 +21,7 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 
 builder.Services.AddOptions<DatabaseOptions>().Bind(builder.Configuration.GetSection(DatabaseOptions.SectionName));
+builder.Services.AddOptions<FirstAdminOptions>().Bind(builder.Configuration.GetSection(FirstAdminOptions.SectionName));
 
 // System mode (Startup, Identity, Data Protection) and User mode (UserDbContextFactory), without pooling (AD-16).
 builder.Services.AddAppDatabase();
@@ -31,7 +32,7 @@ builder.Services.AddAccounts();
 builder.Services.AddSingleton(TimeProvider.System);
 
 // Startup sequence (AD-21), run below before app.RunAsync().
-builder.Services.AddTransient<DatabaseStartup>();
+builder.Services.AddStartupSequence();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -63,6 +64,8 @@ app.UseRequestLocalization(polish.Name);
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+// A required password change (must_change_password) redirects every page and endpoint to /konto/zmiana-hasla (AD-15).
+app.UsePasswordChangeRedirect();
 // After UseRouting: the limiter reads [EnableRateLimiting] of the selected endpoint.
 app.UseRateLimiter();
 app.UseAntiforgery();
@@ -73,7 +76,7 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode(options => options.ContentSecurityFrameAncestorsPolicy = null);
 app.MapAccountEndpoints();
 
-// Startup sequence (AD-21) before the server starts: connection check, migrations.
+// Startup sequence (AD-21) before the server starts: connection check, migrations, first Administrator.
 try
 {
     await app.Services.GetRequiredService<DatabaseStartup>().RunAsync();
