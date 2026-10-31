@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge: chmura i konta</title>
+<style>
+  :root { --bg:#f6f1e7; --paper:#fffdf8; --ink:#2a2622; --muted:#6b635a; --line:#e2d8c6; --seal:#8f1d1d; --ok:#2f6b3a; --warn:#9a5b00; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1b1916; --paper:#24211d; --ink:#ece6dc; --muted:#a59b8e; --line:#3a352e; --seal:#c94a4a; --ok:#6fbf7d; --warn:#e0a24a; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 Georgia, "Times New Roman", serif; }
+  main { max-width:860px; margin:0 auto; padding:32px 16px 64px; }
+  header { display:flex; gap:24px; align-items:center; flex-wrap:wrap; }
+  header .t { flex:1 1 320px; }
+  h1 { font-size:30px; margin:0 0 6px; }
+  h2 { font-size:20px; margin:32px 0 10px; border-bottom:1px solid var(--line); padding-bottom:6px; }
+  .sub { color:var(--muted); margin:0; }
+  section.card { background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:16px 20px; margin-top:16px; }
+  ul { margin:6px 0; padding-left:20px; }
+  li { margin:4px 0; }
+  code { font-family:Consolas, monospace; font-size:14px; background:var(--bg); padding:1px 5px; border-radius:4px; }
+  .kill li::marker { content:"✕  "; color:var(--seal); }
+  .lock li::marker { content:"🔒 "; }
+  .warn { border-left:4px solid var(--warn); }
+  .people { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px; }
+  .p { background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-size:14px; }
+  .p b { font-size:15px; }
+  .p i { color:var(--muted); }
+  svg { flex:0 0 auto; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <svg width="170" height="170" viewBox="0 0 200 200" role="img" aria-label="Pieczęć HARDENED">
+    <defs><path id="c" d="M100,100 m-70,0 a70,70 0 1,1 140,0 a70,70 0 1,1 -140,0"/></defs>
+    <path d="M100 8 L114 22 L133 14 L140 33 L160 34 L158 54 L176 64 L166 81 L180 96 L166 110 L174 128 L156 136 L156 156 L136 156 L128 174 L110 166 L96 180 L82 166 L64 176 L54 158 L34 160 L33 140 L14 133 L22 114 L8 100 L22 86 L14 67 L33 60 L34 40 L54 42 L64 24 L82 34 Z" fill="var(--seal)"/>
+    <circle cx="100" cy="100" r="78" fill="none" stroke="#ffffff55" stroke-width="2"/>
+    <circle cx="100" cy="100" r="58" fill="none" stroke="#ffffff55" stroke-width="1.5"/>
+    <text fill="#fff" font-size="12" font-family="Georgia" letter-spacing="3"><textPath href="#c">REJESTR CZASU · FORGE · 31.10.2026 ·</textPath></text>
+    <text x="100" y="97" fill="#fff" font-size="21" font-weight="bold" text-anchor="middle" font-family="Georgia">HARDENED</text>
+    <text x="100" y="118" fill="#fff" font-size="11" text-anchor="middle" font-family="Georgia">chmura · konta · CI/CD</text>
+  </svg>
+  <div class="t">
+    <h1>Rejestr czasu w chmurze</h1>
+    <p class="sub">Przeniesienie aplikacji na Droplet DigitalOcean z kontami, rolami, podziałem danych per użytkownik i wdrożeniem przez GitHub Actions. Pomysł wzmocniony i gotowy do aktualizacji PRD i architektury.</p>
+  </div>
+</header>
+
+<h2>Po co</h2>
+<section class="card">
+  <p>Ćwiczenie wdrożenia i CI/CD metodą BMad. Produkt dla kilku osób (Autor i znajomy), używany tylko z komputerów, bez telefonu. Termin bez zmian: pierwszy Miesiąc „na serio” w styczniu 2027.</p>
+</section>
+
+<h2>Zablokowane decyzje</h2>
+<section class="card lock">
+  <b>Konta i dane</b>
+  <ul>
+    <li>Rejestracja otwarta, login i hasło, bez e-maila. Nowe konto czeka na zatwierdzenie przez Administratora.</li>
+    <li>Blokada po 5 nieudanych logowaniach, limit zapytań na rejestracji i logowaniu, pierwszy Administrator tworzony z sekretu przy wdrożeniu.</li>
+    <li>Role User i Administrator. <code>UserId</code> w każdej tabeli z danymi, globalny filtr EF Core bez wyjątków.</li>
+    <li>Per użytkownik: dane i prefiks pliku Zestawienia. Wspólny: jeden układ Zestawienia.</li>
+    <li>Administrator widzi tylko dane konta i liczbę Wpisów. Usunąć można tylko konto zablokowane, kaskadowo, w jednej transakcji.</li>
+  </ul>
+  <b>Infrastruktura</b>
+  <ul>
+    <li>Droplet z docker compose, subdomena, Caddy z Let's Encrypt, Cloud Firewall (80, 443, 22), SSH tylko kluczem.</li>
+    <li>PostgreSQL bez publicznego portu. Administrator łączy się tunelem SSH, na co dzień przez rolę tylko do odczytu.</li>
+    <li>Kopie Dropletu w DigitalOcean zamiast kodu kopii w aplikacji.</li>
+  </ul>
+  <b>CI/CD</b>
+  <ul>
+    <li>PR: build i testy, ochrona <code>main</code>. Merge: obraz w GHCR, wdrożenie przez SSH, sprawdzenie <code>/health</code>.</li>
+    <li>Powrót do poprzedniej wersji przez <code>workflow_dispatch</code>. Tylko migracje dodające.</li>
+  </ul>
+  <b>Dokumentacja</b>
+  <ul>
+    <li>Pomoc w aplikacji pod <code>/pomoc</code>, ikona <code>?</code> otwiera stronę bieżącego ekranu.</li>
+    <li>Instrukcja operacyjna w <code>docs/admin/</code>, dostępna także wtedy, gdy aplikacja nie działa.</li>
+  </ul>
+</section>
+
+<h2>Odrzucone</h2>
+<section class="card kill">
+  <ul>
+    <li>App Platform z Managed DB: Droplet jest tańszy i bliższy obecnemu układowi.</li>
+    <li>Potwierdzanie e-maila: przy dwóch osobach zbędne, a wymaga usługi wysyłki.</li>
+    <li>Wgląd Administratora w treść danych w aplikacji: wymagałby wyjątków w filtrze.</li>
+    <li>Staging: podwaja koszt; środowiskiem testowym jest lokalny docker compose.</li>
+    <li>Historia 1.2 „Kopia bazy przy starcie”: nie działa w tym układzie, wypada z planu.</li>
+    <li>Układy Zestawienia dla różnych Odbiorców: poza zakresem.</li>
+  </ul>
+</section>
+
+<h2>Słaby punkt, który został</h2>
+<section class="card warn">
+  <p><b>Termin.</b> 8 tygodni do Testu wrześniowego (28.12), gotowa jedna z około 25 historii, dochodzi nowy epik, a Autor nie przyjął granicy cięcia. Nadal obowiązuje SM-C1: przy zderzeniu z terminem wygrywa metoda.</p>
+</section>
+
+<h2>Kto sprawdzał pomysł</h2>
+<div class="people">
+  <div class="p"><b>📋 John</b> · PM<br><i>„Jakie zadanie wykonasz w chmurze, którego nie wykonasz u siebie?”</i></div>
+  <div class="p"><b>🏗️ Winston</b> · architekt<br><i>„Prefiks i układ są dziś globalne. Przy kilku osobach to się rozjedzie.”</i></div>
+  <div class="p"><b>🔒 Vex</b> · bezpieczeństwo<br><i>„Każdy wyjątek w filtrze to miejsce wycieku. Port 5432 na świat zostanie znaleziony w kilka godzin.”</i></div>
+  <div class="p"><b>😤 Grumbal</b> · adwersarz<br><i>„Instrukcja awaryjna w aplikacji, która nie startuje?”</i></div>
+  <div class="p"><b>🚢 Dana</b> · pragmatyczka<br><i>„Ile kosztuje najtańsza ochrona?”</i></div>
+  <div class="p"><b>🃏 Wildcard</b> · generator opcji<br><i>„Ćwiczenie masz w formularzu, nie w tym, że każdy może wejść.”</i></div>
+  <div class="p"><b>🎨 Sally</b> · UX<br><i>„Pomoc przy ekranie, na którym ktoś utknął.”</i></div>
+  <div class="p"><b>🪵 Splinter</b> · podważa zgodę<br><i>„A może przesunięcie terminu to decyzja zgodna z regułami?”</i></div>
+  <div class="p"><b>🧾 Halina</b> · Odbiorca (gość)<br><i>„Liczy się tylko poprawny xlsx na koniec miesiąca.”</i></div>
+  <div class="p"><b>🧑‍💻 Tomek</b> · znajomy (gość)<br><i>„Jeśli wszystko jest ustawione pod Ciebie, odpuszczę.”</i></div>
+  <div class="p"><b>👩‍⚖️ Ewa</b> · ochrona danych (gość)<br><i>„Powiedz znajomemu, że widzisz jego dane w bazie.”</i></div>
+  <div class="p"><b>🛠️ Rafał</b> · dyżurny DevOps (gość)<br><i>„Bez powrotu do poprzedniej wersji to automatyczne psucie produkcji.”</i></div>
+</div>
+</main>
+</body>
+</html>

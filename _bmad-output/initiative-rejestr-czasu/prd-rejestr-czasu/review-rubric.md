@@ -1,69 +1,71 @@
-# Ocena jakości PRD — Rejestr czasu pracy
+# Ocena jakości PRD — Rejestr czasu pracy (wersja z 31.10.2026)
 
-Recenzja wg rubryki `.claude/skills/bmad-prd/assets/prd-validation-checklist.md`. Przeczytane: `prd-rejestr-czasu.md`, `addendum.md`. Kalibracja: projekt hobbystyczny/naukowy, jeden użytkownik, PRD celowo krótki (2–3 strony), po polsku; UJ celowo jednozdaniowe; założenia potwierdzone 30.10.2026. Zwięzłości uzasadnionej tą skalą nie zgłaszam.
+Recenzja według rubryki `.claude/skills/bmad-prd/assets/prd-validation-checklist.md`. Przeczytałem `prd-rejestr-czasu.md` i `addendum.md`; dla porównania także `forge-chmura-konta-wdrozenie.md` i `.memlog.md`. Skala: projekt hobbystyczny i naukowy, Autor plus jedno konto znajomego; od tej wersji aplikacja działa publicznie w internecie. Nie zgłaszam zwięzłości, która wynika z tej skali. Bardziej rygorystycznie oceniam tylko to, co dotyka wystawienia aplikacji do internetu i spójności po aktualizacji.
 
 ## Werdykt ogólny
 
-PRD jest dobry i gotowy do architektury: ma jasną tezę (wyeliminować konkretne błędy z września 2026 i dać eksport bez otwierania Excela), wymagania są w większości testowalne aż do poziomu kolumn i formatów, a SM-1 to konkretny test akceptacyjny z liczbami (30/16/18/25/14, RAZEM 103 h). Najsłabsze miejsce to mechanika: tabela w FR-12, najważniejszym wymaganiu dla Zestawienia, ma zdublowany nagłówek, który psuje renderowanie. Do tego dochodzi kilka drobnych luk w warunkach brzegowych (nieudana kopia w trakcie działania, wielkość liter w nazwie Typu pracy). Żadna z nich nie blokuje pracy dalej.
+Rdzeń rejestru (FR-1–FR-13, FR-16) jest nadal bardzo dobry. Wymagania są testowalne, decyzje mają daty, a kompromisy nazwano wprost (FR-1 „Świadoma konsekwencja”, NFR-10, §6.1). Aktualizację wprowadzono starannie: dawne sformułowania o jednym użytkowniku i localhost prawie zniknęły, a numeracja FR jest stała i odsyłacze się rozwiązują. Słabsze są nowe obszary. Konta (FR-17–FR-22) nie mają pełnej maszyny stanów, NFR-8 nie podaje progów, a nie ma reguł dla haseł. Wdrożenie (FR-28, SM-4) nie mówi, co się dzieje po nieudanym sprawdzeniu stanu ani jak przećwiczyć odtworzenie Kopii serwera bez cofnięcia danych produkcyjnych. Do tego dochodzi świadomie przyjęte ryzyko terminu: cały nowy zakres ma powstać przed Testem wrześniowym i nie ma planu awaryjnego. Nic z tego nie blokuje architektury, ale kilka punktów trzeba domknąć, zanim powstaną historie z epiku kont.
 
-## Gotowość do decyzji — mocna
+## Gotowość do decyzji — strong
 
-Decyzje są zapisane jako decyzje, razem z tym, z czego zrezygnowano. FR-6: „v1 nie ma zamykania Miesiąca”. FR-5: „Suma dnia powyżej 24 h nie jest blokowana”. §4.5: sumy zapisywane „jako wartości, nie formuły”. Addendum: „data w B i format F zmienione decyzją autora”, czyli świadome odejście od oryginału. NFR-2 zapisuje decyzję autora o kodach projektów w dokumentach planistycznych z datą. §8 „Otwarte pytania: Brak” jest wiarygodne, bo podaje, co i kiedy rozstrzygnięto (sprawdzenie xlsx 30.10.2026). Przeciwwskaźniki SM-C1 i SM-C2 mówią wprost, co przegrywa w razie konfliktu.
+Decyzje są zapisane jako decyzje z datą i autorem: uchylenie zasady „dane nie opuszczają komputera” (§1), „Autor akceptuje utratę do Miesiąca (31.10.2026)” (§6.1), „nie ma planu awaryjnego (decyzja Autora, 31.10.2026)” (§6.1). Kompromisy podają, z czego zrezygnowano: odtworzenie „cofa cały serwer, wszystkim Userom naraz”, „niezapisany Wpis może przepaść” (NFR-10), Administrator „do chwili zmiany zna hasło, które ustawił” (§6.1). Odrzucone warianty są w addendum z uzasadnieniem. Tak powinna wyglądać szczerość wobec kompromisów.
 
-### Ustalenia
-Brak.
+Jedna rysa: §8 stwierdza „Brak otwartych pytań ani założeń”, a addendum zostawia otwartą decyzję o przepisaniu migracji `Initial` („Decyzja należy do architektury”, K8). Okno na tę decyzję zamyka się z pierwszym wdrożeniem. To prawdziwe otwarte pytanie z terminem, a nie widać go w §8.
 
-## Treść zamiast teatru — mocna
+### Findings
+- **medium** Otwarta decyzja K8 nie figuruje w §8 (§8; addendum „Okno na przepisanie schematu”) — §8 mówi „Brak otwartych pytań”, a decyzja z nieodwracalnym terminem („po wdrożeniu to okno się zamyka”) jest odłożona. *Fix:* dodać do §8 jedną pozycję: „Przepisanie `Initial` czy migracja z `UserId` — decyzja architektury przed pierwszym wdrożeniem (NFR-9)”.
+- **low** Ryzyko terminu nazwane, ale bez sygnału ostrzegawczego (§6.1 „Termin”; SM-1) — brak planu awaryjnego to decyzja Autora i można ją uszanować. Brakuje jednak punktu, w którym Autor dowie się, że termin jest zagrożony. Forge mówi „8 tygodni … 1 z ~25 historii gotowa”. *Fix:* jedno zdanie, np. „jeśli do 30.11 nie działa wdrożenie, Autor wraca do tej decyzji”. Bez zmiany samej decyzji.
 
-Nie ma person (jest Autor i Odbiorca, oba potrzebne). Wizja jest specyficzna dla produktu: wymienia cztery konkretne błędy („złej daty, literówki w kodzie projektu, dwóch projektów w jednym wpisie, ręcznie liczonych sum”), a każdy z nich ma wymaganie, które go zamyka (FR-5 kalendarz i dzień tygodnia, listy wyboru, „dokładnie jeden Projekt”, FR-10/FR-12 sumy liczone przez aplikację). NFR mają progi specyficzne dla produktu (`127.0.0.1`, minuty całkowite, `npm start`), nie ogólniki.
+## Treść zamiast teatru — strong
 
-### Ustalenia
-- **low** Miękki próg w NFR-3 (§5 NFR-3): „zajmuje do ok. 10 sekund”. Słowo „ok.” osłabia jedyny próg wydajności, a warunek „samą klawiaturą” nie mówi, czy chodzi np. o Tab/Enter bez myszy w polach kalendarza i list. *Poprawka:* „do 10 s” i jedno zdanie: „wszystkie pola, w tym data i listy wyboru, obsługiwane klawiaturą; zapis klawiszem Enter”.
+Nie ma tu persony dla ozdoby. Znajomy ma jasno określoną funkcję: „jego konto pokazuje, że rejestracja, zatwierdzanie i oddzielenie danych działają” (§2), bez udawanej osobnej ścieżki. NFR są w większości konkretne: „nie więcej niż 10” s (NFR-3), Europe/Warsaw (NFR-7), „tylko dodają” (NFR-9), lista portów i kanałów jest w addendum. Wizja (§1) dotyczy tego produktu i nie dałoby się jej przenieść do innego PRD.
 
-## Spójność strategiczna — mocna
+### Findings
+- **medium** NFR-8 to jedyny NFR bez progów (§5 NFR-8) — „rejestracja i logowanie mają ograniczenie liczby prób”. Dla logowania próg jest w FR-18 (5 prób / 15 min), dla rejestracji nie ma żadnej liczby. *Fix:* podać limit rejestracji (np. „N rejestracji na adres IP na godzinę”) albo odesłać do FR-18 i wskazać limit dla rejestracji.
+- **low** Tytuł NFR-1 to pozostałość z wersji lokalnej (§5 NFR-1) — „Brak połączeń z zewnątrz” w aplikacji publicznie dostępnej z internetu można odczytać odwrotnie, a treść mówi o połączeniach *wychodzących*. Sformułowanie „a polityka CSP na to nie pozwala” jest niejasne, bo nie wiadomo, do czego odnosi się „to”. *Fix:* „NFR-1 Brak połączeń wychodzących” oraz „polityka CSP blokuje zasoby spoza aplikacji”.
 
-Teza z §1 przekłada się na zakres: funkcje §4 służą albo wpisowi (UJ-1), albo zamknięciu miesiąca (UJ-2), albo prostemu pytaniu o godziny (UJ-3). Kryteria sukcesu sprawdzają tezę, nie aktywność: SM-1 to odtworzenie realnego miesiąca z wynikiem liczbowym, SM-2 to brak równoległych notatek, SM-3 to przyjęcie pliku bez poprawek. Są przeciwwskaźniki. Rodzaj MVP (rozwiązanie problemu) zgadza się z logiką zakresu. Cel osobny (nauka BMad, SM-4) jest oddzielony od celu produktowego i nie miesza priorytetów.
+## Spójność strategiczna — adequate
 
-### Ustalenia
-Brak.
+Teza jest jasna: dwa równorzędne cele, narzędzie i nauka BMad (§1, §7). Nowy zakres ma zakotwiczenie: wdrożenie i CI/CD obsługuje SM-4, a konta wynikają z decyzji, że aplikacja jest dla „kilku osób”. Przeciwwskaźniki istnieją i robią swoje. SM-C1 obejmuje teraz „ręczne poprawki na serwerze”, a SM-C2 ma nowy sens.
 
-## Jasność „gotowe” — mocna, z drobnymi lukami
+Najsłabsze ogniwo: konta i role (FR-17–FR-24) to największy przyrost zakresu, a żaden SM ich nie waliduje. SM-1 waliduje FR-5 i FR-9–FR-12, SM-3 FR-11–FR-13, SM-4 FR-28 i FR-29. UJ-4 opisuje scenariusz ze znajomym, ale sukces nie ma kryterium. Druga sprawa: SM-C2 („nic poza zakresem ustalonym 31.10.2026 nie wchodzi przed SM-1”) w praktyce oznacza, że cały nowy epik ma powstać przed 28.12. To świadoma decyzja (K14), ale razem z brakiem planu awaryjnego czyni SM-1 najbardziej zagrożonym kryterium w dokumencie.
 
-Większość FR ma sprawdzalne skutki: FR-1 (wielkość liter, zapis wielkimi literami), FR-5 (zakres i krok Czasu), FR-10 (identyczność sum), FR-11 (reguła złączenia i kolejność), FR-12 (kolumna po kolumnie, wiersz RAZEM, nazwa arkusza), FR-13 (wzorzec nazwy, zachowanie dla pustego Miesiąca), FR-14 (moment, nazwa, rotacja, zachowanie przy błędzie startowym). Brakuje kilku warunków brzegowych.
+### Findings
+- **medium** Brak kryterium sukcesu dla kont i oddzielenia danych (§7; FR-17–FR-24; §2 „Znajomy”) — teza „oddzielenie danych działa” nie ma miary, a FR-23 to wymaganie o najwyższej stawce w nowym zakresie. *Fix:* dopisać do SM-4 albo jako SM-5: „Znajomy przeszedł UJ-4 na serwerze i nie widzi żadnych danych Autora; test izolacji (addendum: zapytanie omijające filtr) jest w potoku”.
 
-### Ustalenia
-- **medium** Nieudana kopia w trakcie działania nie ma określonego zachowania (§4.6 FR-14). Opisana jest tylko „nieudana kopia przy starcie”. Dla kopii „co najmniej raz na dobę” nie wiadomo, czy aplikacja ma działać dalej, czy pokazać komunikat, czy ponowić próbę. Nie wiadomo też, czy przy rotacji usunąć starą kopię przed sprawdzeniem, że nowa jest poprawna. Kopia bazy to jedyna ochrona danych (§6 „Brak synchronizacji”), więc warto to domknąć. *Poprawka:* dopisać np. „Nieudana kopia w trakcie działania nie przerywa pracy; Autor widzi ostrzeżenie w interfejsie. Rotacja usuwa najstarszą kopię dopiero po udanym zapisie nowej.”
-- **low** Unikalność nazwy Typu pracy bez reguły wielkości liter (§4.1 FR-2). FR-1 mówi jasno „bez względu na wielkość liter” dla kodu Projektu, a FR-2 tylko „unikalna”. Implementujący zgadnie różnie. *Poprawka:* „unikalna bez względu na wielkość liter; zapisywana tak, jak wpisano”.
-- **low** Kolejność Wpisów w obrębie dnia w Widoku miesiąca (§4.4 FR-9). Dni są „chronologicznie”, a w Zestawieniu kolejność wierszy dnia określa FR-11. Dla Widoku miesiąca nie jest określona, a FR-10 zakłada, że Autor porównuje oba widoki. *Poprawka:* „Wpisy jednego dnia w kolejności dodania” albo „jak w Zestawieniu (FR-11)”.
-- **low** Brak domyślnego prefiksu (§4.5 FR-13). Nie wiadomo, co się dzieje, gdy prefiks nie jest skonfigurowany (błąd, nazwa bez prefiksu?). *Poprawka:* jedno zdanie, np. „bez prefiksu nazwa zaczyna się od `Zestawienie-…`”.
+## Jasność ukończenia — adequate
 
-## Uczciwość zakresu — mocna
+Rdzeń jest wzorcowy: FR-5, FR-9, FR-11–FR-13 i FR-22 („potwierdzenie wpisaniem jego loginu”, „albo wszystko, albo nic”) dają się przełożyć na kryteria akceptacji bez interpretacji. Nowe FR mają jednak luki, które wyjdą na jaw dopiero przy pisaniu historii.
 
-§6 „Poza celem” wykonuje realną pracę: wyklucza timer, import, CSV, zamykanie Miesiąca, przypomnienia, autostart i synchronizację, czyli rzeczy, które ktoś mógłby przyjąć za oczywiste. Ryzyko braku kopii poza dyskiem jest nazwane jako przyjęte w briefie. Liczba otwartych elementów wynosi zero, co pasuje do PRD gotowego do budowy, a §9 wyjaśnia, dokąd trafiło osiem założeń.
+### Findings
+- **high** Niepełna maszyna stanów Konta (§3 „Konto”; FR-20, FR-22) — zdefiniowano stany Oczekuje / Aktywne / Zablokowane, ale nie przejścia. Nie wiadomo, czy Konto w stanie Oczekuje można odrzucić. FR-22 pozwala usunąć tylko Zablokowane, więc jedyną drogą jest zablokowanie, a FR-20 nie mówi, czy wolno zablokować Konto Oczekuje. Nie wiadomo też, czy Administrator może zablokować lub usunąć samego siebie, co przy jedynym Administratorze odcina dostęp do ekranu Użytkownicy. *Fix:* krótka tabela przejść (Oczekuje→Aktywne, Oczekuje→Zablokowane, Aktywne↔Zablokowane, Zablokowane→usunięte) i reguła „Administrator nie może zablokować ani usunąć własnego Konta”.
+- **medium** Brak reguł hasła i sesji (FR-17, FR-21, FR-24; NFR-8) — aplikacja jest publiczna, a PRD nie podaje minimalnej długości hasła ani czasu życia sesji logowania. Identity ma domyślne wartości, ale wtedy wymagania ustali przypadkowa konfiguracja, a nie Autor. *Fix:* jedno zdanie w NFR-8, np. „hasło min. 12 znaków, bez innych reguł; sesja wygasa po N dniach bez aktywności”, albo jawnie „domyślne ustawienia ASP.NET Core Identity”.
+- **medium** FR-28 nie mówi, co po nieudanym sprawdzeniu stanu (§4.8 FR-28) — „nieudane sprawdzenie kończy wdrożenie błędem widocznym dla Autora”. Nie wiadomo, czy serwer zostaje z nową, zepsutą wersją (i trzeba ręcznie użyć FR-29), czy wraca automatycznie do poprzedniej. Od tego zależy, czy aplikacja może leżeć w środku miesiąca. Nie wiadomo też, co oznacza „sprawdza swój stan” (addendum: `/health`, bez treści). *Fix:* dopisać „wersja pozostaje / poprzednia wersja jest przywracana automatycznie” oraz minimum, które sprawdza `/health` (np. „aplikacja odpowiada i łączy się z bazą”).
+- **low** FR-25 „zgodną z jego aktualnym działaniem” — samo w sobie trudne do zweryfikowania. Ratuje je reguła Definition of Done w addendum. *Fix:* przenieść tę regułę do FR-25 jako kryterium („historia zmieniająca ekran zmienia jego stronę pomocy”).
+- **low** FR-18: komunikat o stanie Konta (§4.6 FR-18) — nie wiadomo, czy komunikat „Oczekuje/Zablokowane” pojawia się dopiero po poprawnym haśle, czy dla samego loginu. To drobna kwestia ujawniania informacji przy publicznym adresie. *Fix:* „po poprawnym haśle”.
 
-### Ustalenia
-Brak.
+## Uczciwość zakresu — strong
 
-## Użyteczność dla kolejnych etapów — adekwatna
+§6 został przepisany pod nową rzeczywistość: „Nie jest to narzędzie zespołowe”, „Brak e-maila … bez samodzielnego resetu hasła”, „Brak … osobnego środowiska przedprodukcyjnego”. §6.1 to dobrze napisana sekcja ryzyk przyjętych świadomie. Założenia zostały potwierdzone i opisane w §8. Brakuje tylko kilku drobnych wyłączeń, które czytelnik mógłby przyjąć milcząco.
 
-PRD zasila architekturę i historie, więc ten wymiar się liczy. Słownik jest obecny i stosowany konsekwentnie (wielkie litery dla terminów: Wpis, Czas, Zestawienie). Identyfikatory są ciągłe: FR-1…FR-15, NFR-1…5, UJ-1…3, SM-1…4, SM-C1…C2. Sekcje §4 wskazują UJ, które realizują, a SM wskazują FR, które walidują. Obniża ocenę błąd w tabeli FR-12 i kolizja nazw opisane niżej.
+### Findings
+- **medium** Ćwiczenie odtworzenia Kopii serwera koliduje z danymi produkcyjnymi (§7 SM-4; §6.1; NFR-4) — SM-4 wymaga „odtworzenie z Kopii serwera przećwiczone co najmniej raz”, a §6.1 mówi, że odtworzenie „cofa cały serwer, wszystkim Userom naraz”. Nie ma środowiska przedprodukcyjnego (NFR-4). Ćwiczenie na produkcji kosztuje dane od ostatniej kopii, a PRD nie mówi, czy chodzi o odtworzenie na nowy Droplet, czy ćwiczenie przed pierwszymi prawdziwymi danymi. *Fix:* doprecyzować w SM-4: „na nowy Droplet z kopii, bez zastępowania produkcji” albo „przed SM-2, gdy na serwerze nie ma prawdziwych danych”.
+- **low** Brakujące wyłączenia dla ról (§6) — PRD nie mówi, że nie ma nadawania roli Administrator innym Kontom, kilku Administratorów ani samodzielnego usunięcia Konta przez Usera. Wynika to z FR-19 i FR-22, ale tylko pośrednio. *Fix:* jedna linia w §6.
 
-### Ustalenia
-- **medium** Zdublowany nagłówek tabeli kolumn (§4.5 FR-12, linie tabeli 1–4). Tabela zaczyna się od `| Kolumna | Zawartość |` + `|---|---|`, a zaraz potem jest drugi nagłówek `| Kolumna (nagłówek) | Zawartość |` + `|---|---|`. Po renderowaniu drugi nagłówek staje się wierszem danych, a drugi separator wierszem z treścią „---”. FR-12 jest najważniejszą specyfikacją dla SM-1 i SM-3, a agent wyciągający tabelę może potraktować te wiersze jako kolumny. *Poprawka:* usunąć pierwsze dwie linie tabeli i zostawić nagłówek „Kolumna (nagłówek) | Zawartość”.
-- **low** Termin „Słownik” w dwóch znaczeniach (§0, §3, §4.1). §0 odsyła do „Słownika (§3)” jako glosariusza dokumentu, a §3 definiuje **Słownik** jako „lista Projektów albo lista Typów pracy” (domena), której używa §4.1 „Słowniki” i FR-3/FR-4. Definicja Projektu mówi „pozycja słownika” małą literą. *Poprawka:* nazwać §3 „Pojęcia” (lub „Glosariusz”) i poprawić odwołanie w §0; w definicjach Projektu i Typu pracy pisać „pozycja Słownika”.
+## Użyteczność dla kolejnych kroków — strong
 
-## Dopasowanie kształtu — mocne
+Słownik pojęć (§3) jest kompletny i ma moc wiążącą (§0: „Terminy z §3 Pojęcia obowiązują dosłownie”). Nowe pojęcia (User, Administrator, Konto ze stanami, Kopia serwera) są używane spójnie w FR-17–FR-29 i w §6.1. Numeracja FR-1–FR-29 jest ciągła, a usunięty FR-14 oznaczono zgodnie z regułą z §0. Wszystkie odsyłacze (FR-13↔FR-24, FR-20↔FR-21/22, FR-9↔FR-11/16, SM-4↔FR-28/29, §4 → FR-23) rozwiązują się poprawnie. Każda UJ ma bohatera. Sofia może cytować FR bez przeróbek. Uwagi mechaniczne są niżej.
 
-Narzędzie dla jednego operatora, hobby: PRD ma kształt specyfikacji funkcji, a trzy jednozdaniowe UJ wystarczają (każde ma bohatera, Autora, i jest powiązane z sekcją §4). Nie ma nadmiaru formalizmu (brak person, brak sekcji innowacji, brak macierzy śledzenia). Szczegóły techniczne są w addendum, nie w PRD. Poziom rygoru w FR-12 jest wyższy niż reszta, i słusznie, bo zgodność z oczekiwanym układem Odbiorcy to kryterium SM-3.
+## Dopasowanie kształtu — strong
 
-### Ustalenia
-Brak.
+Kształt pasuje do skali: spec możliwości z pięcioma jednozdaniowymi UJ, a nowe UJ-4 i UJ-5 są tak samo krótkie jak dotychczasowe. PRD nie jest przeformalizowany: nie dodano persony dla znajomego (K11), techniczne szczegóły trafiły do addendum. Ponieważ PRD zasila architekturę i historie, przy kontach przydałoby się trochę więcej precyzji. To jest już opisane w „Jasności ukończenia”.
 
 ## Uwagi mechaniczne
 
-- Tabela FR-12: zdublowany nagłówek i separator (patrz wyżej).
-- „Słownik” jako nazwa sekcji §3 i jako termin domenowy (patrz wyżej).
-- Indeks założeń: brak znaczników `[ASSUMPTION]` w treści, a §9 wymienia 8 potwierdzonych pozycji (FR-1, FR-3, FR-5 ×2, FR-7, FR-11, FR-13, FR-14), czyli liczba się zgadza. Rundy nie da się sprawdzić bez poprzedniej wersji; to akceptowalne.
-- Spójność liczb: SM-1 (tygodnie 30/16/18/25/14, 103 h) zgadza się z addendum (5 tygodni: H2+H6+H11+H18+H26; wrzesień 2026 zaczyna się we wtorek, więc ma 5 tygodni pn–nd w obrębie Miesiąca). 28 Wpisów w SM-1 zgadza się z 28 wierszami danych w oryginale.
-- Odwołania krzyżowe rozwiązują się poprawnie: FR-12 w Słowniku (Zestawienie), SM-1 w Słowniku (Test wrześniowy), UJ w opisach §4.
-- Addendum odwołuje się do `docs/projekt-testowy-material.md` jako lokalnego źródła. Recenzja go nie otwierała (dane prywatne), więc zgodność opisu oryginału przyjęto na podstawie addendum.
+- **Pozostałości po wersji jednoosobowej i lokalnej:** praktycznie brak. Jedyną pozostałością jest tytuł NFR-1 (wyżej). FR-15 o OneDrive/`Documents` jest nadal zasadne, bo opisuje środowisko lokalne. §3 „Odbiorca — osoba, której *Autor* wysyła Zestawienie” jest zdefiniowany tylko dla Autora, a §1 mówi o „układzie, którego oczekuje Odbiorca” dla wszystkich Userów. To akceptowalne, bo §6 wyklucza układy per Odbiorca, ale definicję można uogólnić na „osobę, której User wysyła Zestawienie”.
+- **Rozjazdy w słowniku:** „Konto” jest pojęciem z §3, a w §2 („drugie konto”, „jego konto”) i UJ-4 („zakłada konto”, „zatwierdza konto”) pisane małą literą. W UJ-4 „Oczekuje na zatwierdzenie” łączy nazwę stanu z czasownikiem. „miesiąc „na serio”” w SM-1/SM-4 jest małą literą, w SM-2 „Miesiąc „na serio”” wielką. W UJ-2 „klika eksport” odnosi się do akcji, a §4.5 i NFR-6 znają ekran „Eksport”. Ekrany „Użytkownicy”, „Ustawienia konta” i „Nowy wpis” są nazwane w NFR-6, ale nie w §3. To wystarcza, choć „Użytkownicy” obok roli „User” to mieszanka polsko-angielska, warta jednego zdania w §3.
+- **Kolejność numerów:** FR-16 stoi w §4.3 między FR-8 a FR-9, a FR-14 i FR-15 na końcu (§4.9). To zgodne z regułą stałych numerów z §0, nie błąd.
+- **Odsyłacze nierozwiązywalne dla czytelnika:** §8 „Decyzje z 31.10.2026 (K1–K17)” i addendum „(K8)” odsyłają do identyfikatorów, które istnieją tylko w `.memlog.md`. Nie ma ich ani w forge, ani w PRD. *Fix:* usunąć identyfikatory K albo zastąpić je odsyłaczem do forge.
+- **SM-3 nie da się czytać osobno:** „Zestawienie za *ten* Miesiąc” odnosi się do SM-2. *Fix:* „za Miesiąc z SM-2”.
+- **Indeks założeń:** w tekście nie ma tagów `[ASSUMPTION]`, a §8 opisuje je jako potwierdzone i wpisane. Lista zgadza się z memlogiem. `.memlog.md` zawiera jednak niezamknięte założenie: „Prawdziwe dane wrześniowe nie trafiają na Droplet … Autor nie potwierdził wprost”, które w SM-1 jest już stanowczym warunkiem. Warto sprawdzić, czy Autor to potwierdził. Jeśli tak, wystarczy notatka w memlogu.
+- **Wymagane sekcje:** komplet dla tej skali.

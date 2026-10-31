@@ -6,11 +6,37 @@ Szczegóły dla architektury, które nie należą do PRD.
 
 Obowiązują decyzje z kręgosłupa architektury [`architecture-rejestr-czasu.md`](../architecture-rejestr-czasu/architecture-rejestr-czasu.md) (AD-1–AD-14, 30.10.2026). Zastąpiły pierwotne założenia briefu (Node.js, SQLite w jednym pliku, `npm start`).
 
+Do aktualizacji w architekturze (forge 31.10.2026 je zastępuje): AD-2 (uruchomienie wyłącznie lokalne; zostaje tylko Postgres na `127.0.0.1`, teraz na Droplecie, na potrzeby tunelu SSH), AD-3 (Kopia bazy przy starcie).
+
 - .NET 10, Blazor Web App (Interactive Server), Fluent UI Blazor 5, FluentValidation 12, EF Core 10 z Npgsql.
-- PostgreSQL 18 w kontenerze Docker (`docker compose`), port tylko na `127.0.0.1`, dane w wolumenie Dockera.
-- Uruchomienie: `docker compose up -d`, potem `dotnet run`.
-- Kopia bazy przy starcie przez `pg_dump` (plik `.sql`), przed migracjami; rotacja do 10 plików. Aplikacja działa 1–2 h co kilka dni, więc kopie cykliczne nie są potrzebne.
-- `.gitignore` wyklucza `docs/*.xlsx`, `docs/projekt-testowy-material.md` i katalog `backups/`; `appsettings.Local.json` (prefiks nazwy Zestawienia, katalog kopii, hasło) i `.env` też muszą być wykluczone.
+- PostgreSQL 18 w kontenerze Docker (`docker compose`), dane w wolumenie Dockera, bez publicznego portu.
+- Lokalnie (praca nad kodem, Test wrześniowy): `docker compose up -d`, potem `dotnet run`.
+- `.gitignore` wyklucza `docs/*.xlsx`, `docs/projekt-testowy-material.md`, `appsettings.Local.json` i `.env`.
+
+## Wdrożenie i infrastruktura (forge 31.10.2026)
+
+Źródło: [`forge-chmura-konta-wdrozenie.md`](../forge-chmura-konta-wdrozenie/forge-chmura-konta-wdrozenie.md).
+
+- Serwer: Droplet DigitalOcean z `docker compose`; subdomena kupionej domeny; Caddy jako reverse proxy z Let's Encrypt.
+- Cloud Firewall: tylko 80, 443, 22; SSH tylko kluczem. PostgreSQL bez publicznego portu; dostęp Administratora tunelem SSH (Postgres na `127.0.0.1` Dropletu) albo `docker exec psql`; na co dzień rola tylko do odczytu.
+- Sekrety: `.env` (`chmod 600`) na Droplecie, GitHub Secrets dla workflow. Pierwszy Administrator z sekretu w konfiguracji.
+- Kopie (Kopia serwera): włączone kopie Dropletu w DigitalOcean (tygodniowe albo dzienne za dopłatą). Brak kodu kopii w aplikacji.
+- Konta: ASP.NET Core Identity; `UserId` w Project, WorkType, TimeEntry; globalny filtr EF Core bez wyjątków; unikalność `(user_id, lower(...))`. Liczba Wpisów na ekranie Użytkownicy to jedyne nazwane zapytanie omijające filtr, z testem. Usunięcie Konta: kaskada po `UserId` w jednej transakcji.
+- CI/CD (GitHub Actions): PR → `dotnet build` + `dotnet test` (Testcontainers na `ubuntu-latest`), ochrona `main`. Merge do `main` → obraz do GHCR z tagiem skrótu commita → SSH `docker compose pull && up -d` → `/health`; błąd kończy workflow. Rollback: `workflow_dispatch` z tagiem poprzedniego obrazu.
+- Migracje przy starcie (jedna instancja); od pierwszego wdrożenia tylko migracje dodające (NFR-9).
+- **Przepisanie schematu (decyzja Autora, 31.10.2026):** historia 1.1 zbudowała migrację `Initial` bez `UserId`. `Initial` zostaje przepisana tak, by od początku miała `UserId` w Project, WorkType i TimeEntry, przed pierwszym wdrożeniem na serwer (na serwerze nie ma jeszcze danych). Od pierwszego wdrożenia obowiązują tylko migracje dodające. Architektura ustala, jak to zrobić.
+- Pomoc: strony `/pomoc/...`; `/pomoc/administracja` tylko dla roli Administrator. Definition of Done: każda historia zmieniająca ekran aktualizuje jego stronę pomocy.
+- `docs/admin/`: Droplet, domena, Caddy, firewall, sekrety, tunel SSH, rola tylko do odczytu, wdrożenie, rollback, odtwarzanie z kopii Dropletu.
+- Kolejność z forge: CI → Identity z `UserId` (przed Słownikami) → wdrożenie na Droplet → epiki 1–3 z danymi per User → Użytkownicy, Ustawienia konta, pomoc, `docs/admin/`.
+
+### Odrzucone (z forge)
+
+- App Platform + Managed DB — Droplet tańszy i bliższy obecnemu układowi.
+- Potwierdzanie e-maila — niepotrzebne przy 2 osobach, wymaga usługi wysyłki.
+- Wgląd Administratora w treść danych w aplikacji — wymagałby wyjątków w filtrze.
+- Staging — podwaja koszt; środowiskiem testowym jest lokalny `docker compose`.
+- Historia 1.2 „Kopia bazy przy starcie” (`docker exec pg_dump`) — nie działa w tym układzie.
+- Układy Zestawienia per Odbiorca — poza zakresem.
 
 ## Źródło układu Zestawienia
 
