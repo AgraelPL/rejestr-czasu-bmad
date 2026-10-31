@@ -1,0 +1,84 @@
+@page "/konto/logowanie"
+@layout AccountLayout
+@attribute [AllowAnonymous]
+@attribute [ExcludeFromInteractiveRouting]
+@attribute [EnableRateLimiting(AccountRateLimit.PolicyName)]
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.RateLimiting
+@inject AccountSignIn AccountSignIn
+@inject NavigationManager Navigation
+
+<PageTitle>Logowanie — Rejestr czasu pracy</PageTitle>
+<AccountHelp Topic="logowanie" />
+
+<h1>Logowanie</h1>
+
+<AccountMessages Messages="@_messages" Intent="@_intent" />
+
+<EditForm Model="Input" FormName="logowanie" OnValidSubmit="LoginAsync" method="post" class="account-form">
+    <DataAnnotationsValidator />
+    <div class="account-field">
+        <label for="login-user-name">Login</label>
+        <InputText id="login-user-name" @bind-Value="Input.UserName" autocomplete="username" maxlength="@IdentitySetup.MaxUserNameLength" autofocus />
+        <ValidationMessage For="() => Input.UserName" />
+    </div>
+    <div class="account-field">
+        <label for="login-password">Hasło</label>
+        <InputText id="login-password" type="password" @bind-Value="Input.Password" autocomplete="current-password" />
+        <ValidationMessage For="() => Input.Password" />
+    </div>
+    <button type="submit" class="account-submit">Zaloguj</button>
+</EditForm>
+
+<p>Nie masz Konta? <a href="/konto/rejestracja">Zarejestruj się</a></p>
+
+@code {
+    public const string InvalidCredentialsMessage = "Nieprawidłowy login lub hasło.";
+    public const string LockedOutMessage =
+        "Zbyt wiele nieudanych prób logowania. Logowanie na to Konto jest wstrzymane na 15 minut.";
+    public const string PendingMessage = "Konto oczekuje na zatwierdzenie przez Administratora.";
+    public const string BlockedMessage = "Konto jest zablokowane. Skontaktuj się z Administratorem.";
+
+    private IReadOnlyList<string> _messages = [];
+    private MessageBarIntent _intent = MessageBarIntent.Error;
+
+    [SupplyParameterFromForm]
+    private LoginInput Input { get; set; } = default!;
+
+    protected override void OnInitialized() => Input ??= new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private async Task LoginAsync()
+    {
+        var outcome = await AccountSignIn.LoginAsync(Input.UserName, Input.Password);
+        if (outcome == LoginOutcome.Success)
+        {
+            Navigation.NavigateTo(LocalUrl.OrHome(ReturnUrl));
+            return;
+        }
+
+        _intent = outcome is LoginOutcome.Pending or LoginOutcome.Blocked ? MessageBarIntent.Warning : MessageBarIntent.Error;
+        _messages =
+        [
+            outcome switch
+            {
+                LoginOutcome.LockedOut => LockedOutMessage,
+                LoginOutcome.Pending => PendingMessage,
+                LoginOutcome.Blocked => BlockedMessage,
+                _ => InvalidCredentialsMessage,
+            },
+        ];
+    }
+
+    private sealed class LoginInput
+    {
+        [Required(ErrorMessage = "Podaj login.")]
+        [StringLength(IdentitySetup.MaxUserNameLength, ErrorMessage = IdentitySetup.UserNameTooLongMessage)]
+        public string UserName { get; set; } = "";
+
+        [Required(ErrorMessage = "Podaj hasło.")]
+        public string Password { get; set; } = "";
+    }
+}

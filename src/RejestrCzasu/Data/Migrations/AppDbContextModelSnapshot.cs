@@ -77,6 +77,22 @@ namespace RejestrCzasu.Data.Migrations
                         .HasDatabaseName("ix_roles_normalized_name");
 
                     b.ToTable("roles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            ConcurrencyStamp = "5b0f2d0e-1f6a-4c3e-9a51-2c7d8f3e6a01",
+                            Name = "Administrator",
+                            NormalizedName = "ADMINISTRATOR"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            ConcurrencyStamp = "9c4e7a12-6b3d-4f80-8e25-7d1a0b5c3f02",
+                            Name = "User",
+                            NormalizedName = "USER"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>

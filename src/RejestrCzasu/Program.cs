@@ -1,8 +1,10 @@
 using System.Globalization;
 using Microsoft.FluentUI.AspNetCore.Components;
 using RejestrCzasu;
+using RejestrCzasu.Accounts;
 using RejestrCzasu.Components;
 using RejestrCzasu.Data;
+using RejestrCzasu.Localization;
 using RejestrCzasu.Options;
 using RejestrCzasu.Startup;
 
@@ -23,6 +25,9 @@ builder.Services.AddOptions<DatabaseOptions>().Bind(builder.Configuration.GetSec
 // System mode (Startup, Identity, Data Protection) and User mode (UserDbContextFactory), without pooling (AD-16).
 builder.Services.AddAppDatabase();
 
+// Identity, login cookie, authorization, CurrentUser and the login/registration rate limit (AD-15, AD-16).
+builder.Services.AddAccounts();
+
 builder.Services.AddSingleton(TimeProvider.System);
 
 // Startup sequence (AD-21), run below before app.RunAsync().
@@ -32,7 +37,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Fluent UI 5: components and services (incl. IDialogService); providers rendered by <FluentProviders /> in MainLayout.
-builder.Services.AddFluentUIComponents();
+// Polish texts of the Fluent UI components (AD-6).
+builder.Services.AddFluentUIComponents(options => options.Localizer = new FluentLocalizer());
 
 var app = builder.Build();
 
@@ -53,12 +59,19 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseRequestLocalization(polish.Name);
+// Story 4.5 puts UseForwardedHeaders before this point, so the rate limiter sees the client address (AD-15, AD-19).
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+// After UseRouting: the limiter reads [EnableRateLimiting] of the selected endpoint.
+app.UseRateLimiter();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     // frame-ancestors is already part of our CSP header; avoid a second CSP header from Blazor.
     .AddInteractiveServerRenderMode(options => options.ContentSecurityFrameAncestorsPolicy = null);
+app.MapAccountEndpoints();
 
 // Startup sequence (AD-21) before the server starts: connection check, migrations.
 try

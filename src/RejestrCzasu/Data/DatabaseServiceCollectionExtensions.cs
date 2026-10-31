@@ -9,7 +9,10 @@ public static class DatabaseServiceCollectionExtensions
 {
     /// <summary>
     /// Registers <see cref="IDbContextFactory{TContext}"/> of <see cref="AppDbContext"/> (system mode: Startup,
-    /// Identity, Data Protection) and <see cref="UserDbContextFactory"/> (the only source of User mode).
+    /// Identity, Data Protection) and <see cref="UserDbContextFactory"/> (the only source of User mode, scoped: it
+    /// takes the User from the scoped <c>Accounts/CurrentUser</c>). <c>AddDbContextFactory</c> also registers a scoped
+    /// <see cref="AppDbContext"/> created by the factory: system mode, used by the Identity stores
+    /// (<c>AddEntityFrameworkStores</c>) and <c>Accounts/</c>.
     /// </summary>
     /// <remarks>
     /// Never use <c>AddPooledDbContextFactory</c> or <c>AddDbContextPool</c> here: a pooled context keeps

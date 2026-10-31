@@ -1,0 +1,16 @@
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Sections
+@* Layout of the static /konto pages (AD-11): no menu, a Pomoc link to the page's topic. *@
+<div class="account-layout">
+    <header class="account-header">
+        <span class="account-app-name">Rejestr czasu pracy</span>
+        <SectionOutlet SectionName="@HelpSection" />
+    </header>
+    <main class="account-content">
+        @Body
+    </main>
+</div>
+
+@code {
+    public const string HelpSection = "account-help";
+}

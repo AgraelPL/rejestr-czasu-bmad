@@ -67,6 +67,18 @@ docker exec rejestr-czasu-db psql -U rejestr -d rejestr -c "\dt"
 
 Zamień `rejestr` na wartości `POSTGRES_USER` i `POSTGRES_DB` z `.env`, jeśli je zmieniono.
 
+## Konto lokalnie
+
+Cała aplikacja wymaga logowania. Konto zakłada się na `/konto/rejestracja`; nowe Konto czeka na zatwierdzenie
+(stan Oczekuje). Dopóki nie ma ekranu Użytkownicy, Konto zatwierdza się w bazie:
+
+```powershell
+docker exec rejestr-czasu-db psql -U rejestr -d rejestr -c "UPDATE users SET status = 'active' WHERE user_name = '<login>';"
+```
+
+Potem logowanie na `/konto/logowanie`. Rejestracja i logowanie przyjmują najwyżej 10 prób (POST) na minutę z jednego
+adresu IP; po 5 złych hasłach z rzędu logowanie na Konto jest wstrzymane na 15 minut.
+
 ## Testy
 
 ```powershell
@@ -88,7 +100,9 @@ dotnet ef migrations add <Nazwa> --project src/RejestrCzasu --output-dir Data/Mi
 ```
 
 Migracja `Initial` została wygenerowana od nowa (schemat z kontami Userów, tabele Identity, `user_id`).
-Lokalna baza utworzona starą migracją `Initial` nie przejdzie startu — wolumen trzeba założyć od nowa
+Ostatnio (historia 4.3) doszły do niej role `Administrator` i `User`: są danymi schematu (`HasData` w `AppDbContext`
+ze stałymi `Id`), więc `Initial` znów ma nowy znacznik czasu. Lokalna baza utworzona wcześniejszą wersją `Initial`
+nie przejdzie startu — wolumen trzeba założyć od nowa, także jeśli robiłeś to już po poprzedniej zmianie
 (usuwa wszystkie dane lokalnej bazy):
 
 ```powershell

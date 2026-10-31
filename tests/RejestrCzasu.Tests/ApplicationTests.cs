@@ -15,14 +15,26 @@ public sealed class ApplicationTests(PostgresFixture postgres)
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task HomePage_Returns200_WithContentSecurityPolicy()
+    public async Task HomePage_WithoutLogin_RedirectsToLogin_WithContentSecurityPolicy()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-            builder.ConfigureAppConfiguration((_, configuration) =>
-                configuration.AddInMemoryCollection(postgres.ConfigurationOverrides)));
-        using var client = factory.CreateClient();
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
         using var response = await client.GetAsync("/", Ct);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/konto/logowanie", response.Headers.Location?.AbsolutePath);
+        Assert.True(response.Headers.TryGetValues("Content-Security-Policy", out var values));
+        Assert.Equal(SecurityHeaders.ContentSecurityPolicy, Assert.Single(values));
+    }
+
+    [Fact]
+    public async Task LoginPage_Returns200_WithContentSecurityPolicy()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/konto/logowanie", Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.True(response.Headers.TryGetValues("Content-Security-Policy", out var values));
@@ -78,6 +90,11 @@ public sealed class ApplicationTests(PostgresFixture postgres)
         Assert.Contains("uruchom Docker Desktop i `docker compose up -d`", await stderr);
         Assert.DoesNotContain("Now listening", await stdout);
     }
+
+    private WebApplicationFactory<Program> CreateFactory() =>
+        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, configuration) =>
+                configuration.AddInMemoryCollection(postgres.ConfigurationOverrides)));
 
     private static string FindApplicationDll()
     {
