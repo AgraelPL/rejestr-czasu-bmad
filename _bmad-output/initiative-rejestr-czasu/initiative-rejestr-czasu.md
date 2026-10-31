@@ -10,18 +10,18 @@ companions:
   - _bmad-output/initiative-rejestr-czasu/glossary.md
   - _bmad-output/initiative-rejestr-czasu/export-layout.md
   - _bmad-output/initiative-rejestr-czasu/architecture-rejestr-czasu/architecture-rejestr-czasu.md
-risk: medium
+risk: high
 ---
 
 # Rejestr czasu pracy
 
 ## Description
 
-Lokalna aplikacja webowa, do której Autor co kilka dni przenosi czas pracy z notatek w Sesji wpisywania, a na koniec Miesiąca jednym kliknięciem dostaje Zestawienie xlsx w układzie Odbiorcy, bez przepisywania do Excela i bez ręcznie liczonych sum. Przedsięwzięcie ma dwa równorzędne cele: narzędzie do prawdziwych rozliczeń od stycznia 2027 (najpóźniej lutego) i naukę metody BMad na pełnym cyklu. Szczegóły i uzasadnienia: PRD i brief.
+Aplikacja webowa na serwerze w chmurze, pod subdomeną Autora z HTTPS, dla kilku Userów (Autor i znajomy), z których każdy widzi wyłącznie własne dane. User co kilka dni przenosi czas pracy z notatek w Sesji wpisywania, a na koniec Miesiąca jednym kliknięciem dostaje Zestawienie xlsx w układzie Odbiorcy, bez przepisywania do Excela i bez ręcznie liczonych sum. Przedsięwzięcie ma dwa równorzędne cele: narzędzie do prawdziwych rozliczeń od stycznia 2027 (najpóźniej lutego) i naukę metody BMad na pełnym cyklu, razem z CI/CD i wdrażaniem. Szczegóły i uzasadnienia: PRD (wersja 31.10.2026) i brief.
 
 ## Outcome
 
-Autor oddaje Odbiorcy miesięczne Zestawienie prosto z eksportu, przyjęte bez poprawek; sygnałem są Test wrześniowy i pierwszy Miesiąc „na serio” (prd SM-1, SM-2, SM-3).
+Autor wysyła Odbiorcy miesięczne Zestawienie prosto z eksportu na serwerze, przyjęte bez poprawek, a dane Userów są od siebie oddzielone; sygnałem są Test wrześniowy, pierwszy Miesiąc „na serio” i próba oddzielenia danych (prd SM-1, SM-2, SM-3, SM-5), a wdrożenia idą wyłącznie przez potok (prd SM-4).
 
 ## Requirements
 
@@ -75,23 +75,26 @@ Autor oddaje Odbiorcy miesięczne Zestawienie prosto z eksportu, przyjęte bez p
 
 ## Done when
 
-- Test wrześniowy przechodzi lokalnie do 28.12.2026: Sumy dnia, Sumy tygodnia 30 / 16 / 18 / 25 / 14 h i RAZEM 103 h zgodne z oryginałem (prd SM-1).
-- Aplikacja działa na komputerze Autora (`docker compose up -d`, `dotnet run`) i w pierwszym Miesiącu „na serio” (styczeń 2027, najpóźniej luty) wszystkie Wpisy trafiają do niej przed końcem Miesiąca (prd SM-2).
-- Zestawienie za ten Miesiąc trafia do Odbiorcy prosto z eksportu, bez poprawek w Excelu, i zostaje przyjęte (prd SM-3).
-- Cały kod napisali agenci BMad, a po pierwszym Miesiącu „na serio” powstała notatka o tym, co w metodzie działało (prd SM-4).
+- Test wrześniowy przechodzi lokalnie do 28.12.2026: Sumy dnia, Sumy tygodnia 30 / 16 / 18 / 25 / 14 h i RAZEM 103 h zgodne z oryginałem, bez prawdziwych danych wrześniowych w repozytorium i na serwerze (prd SM-1).
+- Przed Miesiącem „na serio” na serwerze Konta Autora i znajomego nie widzą swoich Słowników, Wpisów ani Zestawień, a testy oddzielenia danych przechodzą w potoku przy każdej zmianie (prd SM-5).
+- W pierwszym Miesiącu „na serio” (styczeń 2027, najpóźniej luty) wszystkie Wpisy Autora trafiają do aplikacji na serwerze przed końcem Miesiąca, a Zestawienie za ten Miesiąc Autor wysyła Odbiorcy prosto z eksportu, bez poprawek w Excelu, i zostaje przyjęte (prd SM-2, SM-3).
+- Cały kod napisali agenci BMad; wdrożenia na serwer szły wyłącznie przez merge do gałęzi głównej, rollback i odtworzenie z Kopii serwera na tymczasowym serwerze są przećwiczone, a po pierwszym Miesiącu „na serio” powstała notatka o tym, co w metodzie działało (prd SM-4).
 
 ## Boundaries
 
-- Nie jest to narzędzie zespołowe ani usługa sieciowa: brak kont, logowania, dostępu z telefonu i innych urządzeń.
+- Nie jest to narzędzie zespołowe: brak zespołów, współdzielenia danych między Userami i wglądu Administratora w treść danych w aplikacji.
+- Brak e-maila w aplikacji (potwierdzania adresu, samodzielnego resetu hasła), układu pod telefon, układów Zestawienia per Odbiorca, środowiska przedprodukcyjnego i kodu kopii w aplikacji.
 - Brak wykresów, raportów według Projektu, stawek i kwot, timera, importu (w tym z notatek), eksportu CSV, zamykania Miesiąca i przypomnień.
-- Brak autostartu, synchronizacji i kopii poza dyskiem lokalnym.
 - Aplikacja nie zastępuje notatek i nie rozwiązuje „szacowania po fakcie”.
-- Touch point: Docker Desktop i obraz `postgres:18` — instaluje i uruchamia Autor; compose, wolumen i `docker exec pg_dump`; owner: epic-szkielet-i-slowniki
-- Touch point: katalog Kopii bazy na dysku lokalnym — wskazuje Autor w konfiguracji; owner: epic-szkielet-i-slowniki
-- Touch point: Odbiorca — konsumuje Zestawienie w układzie z `export-layout.md`; owner: epic-miesiac-i-zestawienie
+- Touch point: Droplet DigitalOcean z Cloud Firewall i włączonymi kopiami Dropletu (Kopia serwera) — zakłada i utrzymuje Autor; owner: epic-konta-i-wdrozenie
+- Touch point: kupiona domena i DNS subdomeny; Caddy z Let's Encrypt — owner: epic-konta-i-wdrozenie
+- Touch point: GitHub Actions, GHCR, GitHub Secrets i ochrona gałęzi `main` — owner: epic-konta-i-wdrozenie
+- Touch point: Docker Desktop i obraz `postgres:18` lokalnie, środowisko testowe i Test wrześniowy — instaluje i uruchamia Autor; owner: epic-szkielet-i-slowniki (historia 1.1, zrobiona)
+- Touch point: znajomy — drugie Konto do próby oddzielenia danych; owner: epic-administracja-kont-i-pomoc
+- Touch point: Odbiorca — konsumuje Zestawienie w układzie z `export-layout.md`, wysyłane e-mailem przez Usera; owner: epic-miesiac-i-zestawienie
 - Touch point: źródłowy xlsx wrześniowy — tylko lokalnie, poza gitem, do Testu wrześniowego; owner: epic-miesiac-i-zestawienie
 - Touch point: notatki Autora — źródło ręczne, bez importu
-- Ścieżka przez epiki: Szkielet (start, Kopia bazy, układ) → Słowniki → Wpis w Sesji wpisywania → Widok miesiąca z sumami → Zestawienie xlsx sprawdzone Testem wrześniowym.
+- Ścieżka przez epiki: Konta i wdrożenie (CI, Initial z UserId, logowanie, serwer) → Szkielet i Słowniki → Wpis w Sesji wpisywania → Widok miesiąca i Zestawienie sprawdzone Testem wrześniowym; Administracja Kont i pomoc równolegle po epiku Konta i wdrożenie, przed Miesiącem „na serio”.
 
 ## References
 
@@ -105,6 +108,14 @@ Autor oddaje Odbiorcy miesięczne Zestawienie prosto z eksportu, przyjęte bez p
 ## Notes
 
 - Decision (30.10.2026): konflikt PRD (Node.js, SQLite, `npm start`, `.sqlite`) z architekturą AD-1–AD-3 rozwiązany aktualizacją PRD; PRD ma też FR-16 (filtry w siatce) i NFR-6 (układ i komunikaty).
-- Decision (30.10.2026): podział na 3 epiki według zasady „jedna zdolność dostarczana w całości, szkielet otwiera”: szkielet i Słowniki → Wpisy i Lista wpisów → Widok miesiąca i Zestawienie.
+- Decision (30.10.2026): podział na 3 epiki według zasady „jedna zdolność dostarczana w całości, szkielet otwiera”: szkielet i Słowniki → Wpisy i Lista wpisów → Widok miesiąca i Zestawienie. Zastąpiony 31.10.2026 podziałem na 5 epików.
 - Decision (30.10.2026): `ReportGrid` w pełnym zakresie AD-9 i typy domeny powstają w epiku 1 („najpierw mechanizm, później zastosowanie”).
 - Decision (30.10.2026): SM-2 i SM-4 zostają kryteriami inicjatywy; epik 3 kończy się Testem wrześniowym.
+- Decision (31.10.2026): zmiana z forge chmura-konta-wdrożenie (PRD 31.10.2026): konta, oddzielenie danych, wdrożenie na serwer, CI/CD i pomoc; zmienia się i to, co wymagane (R18–R31, R14 wycofane), i sposób dostarczenia (serwer zamiast `127.0.0.1`); zbudowana historia 1.1 zostaje bez zmian, poprawki kodu robią nowe historie.
+- Decision (31.10.2026): podział na 5 epików według reguły „jedna zdolność dostarczana w całości, platforma (CI, wdrożenie) otwiera”, kolejność z forge: Konta i wdrożenie → Szkielet i Słowniki → Wpisy i Lista wpisów → Widok miesiąca i Zestawienie; Administracja Kont i pomoc po epiku Konta i wdrożenie, równolegle z pozostałymi, przed Miesiącem „na serio”.
+- Decision (31.10.2026): epik Konta i wdrożenie nie ma `after` na epik Szkielet i Słowniki, bo ten na niego czeka; jego historie zależą od zrobionej historii 1.1.
+- Decision (31.10.2026): mechanizm pomocy (`/pomoc`, ikona `?`) powstaje w historii 1.3, żeby reguła „historia zmieniająca ekran aktualizuje jego stronę pomocy” działała od pierwszego ekranu; strony ekranów bez logowania pisze epik Administracja Kont i pomoc.
+- Decision (31.10.2026): zmiana własnego hasła w Ustawieniach konta należy do epiku Widok miesiąca i Zestawienie (właściciel ekranu), żeby epik Administracja Kont i pomoc zależał tylko od epiku Konta i wdrożenie.
+- Decision (31.10.2026): instrukcja administratora powstaje razem z infrastrukturą w epiku Konta i wdrożenie; strona o odtwarzaniu z Kopii serwera i ćwiczenie odtworzenia należą do epiku Administracja Kont i pomoc.
+- Decision (31.10.2026): odrzucona sugestia dodania forge chmura-konta-wdrożenie do `sources:` — PRD go destyluje.
+- Architecture invalidated (31.10.2026): AD-2 i AD-3 nieaktualne; brak decyzji o Identity, globalnym filtrze po `UserId`, sprawdzaniu stanu Konta w obwodzie, CI/CD, wdrożeniu i konwencji stron pomocy. Historie epiku Konta i wdrożenie planowane po aktualizacji przez `bmad-architecture`.
