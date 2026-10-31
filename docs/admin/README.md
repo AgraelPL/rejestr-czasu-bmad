@@ -12,6 +12,17 @@ Workflow `.github/workflows/pr.yml` uruchamia się na każdy pull request do `ma
 `build-and-test`: build, wszystkie testy (w tym kontrola migracji dodających), `dotnet ef migrations
 has-pending-model-changes`. Reguła ochrony sprawia, że do `main` trafia tylko PR, w którym ten job jest zielony.
 
+> **Stan obecny: reguła jest ustawiona, ale nieegzekwowana.** Repozytorium jest prywatne na darmowym koncie
+> GitHub, a tam ochrona gałęzi (klasyczna i Rulesets) działa tylko w repozytoriach publicznych albo z GitHub Pro.
+> W ustawieniach reguła ma status **Not enforced**. Dopóki tak jest, obowiązuje zasada ręczna:
+>
+> - zmiany trafiają do `main` wyłącznie przez PR, nigdy przez bezpośredni `git push`;
+> - scalasz PR tylko wtedy, gdy `build-and-test` jest zielony, a gałąź jest aktualna względem `main`
+>   (gdy GitHub pokazuje **Update branch**, najpierw go kliknij i poczekaj na nowy wynik joba);
+> - nie używasz force push na `main`.
+>
+> Po upublicznieniu repozytorium albo wykupieniu GitHub Pro reguła zacznie działać sama, bez zmian w ustawieniach.
+
 Regułę ustawia się raz, po pierwszym uruchomieniu workflow (GitHub podpowiada na liście tylko joby, które już
 raz się wykonały — najpierw otwórz PR z gałęzi zawierającej `pr.yml` i poczekaj na wynik joba).
 
@@ -28,10 +39,13 @@ raz się wykonały — najpierw otwórz PR z gałęzi zawierającej `pr.yml` i p
 7. Upewnij się, że **Allow force pushes** i **Allow deletions** są odznaczone.
 8. Kliknij **Create** na dole strony.
 
-Od tej chwili bezpośredni `git push` do `main` jest odrzucany, a przycisk scalenia PR jest zablokowany,
-dopóki job `build-and-test` nie jest zielony i gałąź nie jest aktualna względem `main`.
+Gdy reguła jest egzekwowana, bezpośredni `git push` do `main` jest odrzucany, a przycisk scalenia PR jest
+zablokowany, dopóki job `build-and-test` nie jest zielony i gałąź nie jest aktualna względem `main`.
 
 ### Sprawdzenie
+
+Status reguły: **Settings** → **Branches**, przy `main`. **Not enforced** oznacza, że obowiązuje zasada ręczna
+z ramki powyżej i poniższe sprawdzenia jeszcze nie zadziałają.
 
 - Na liście PR otwórz dowolny PR do `main`: w sekcji sprawdzeń widać `build-and-test` oznaczony jako **Required**.
 - PR z czerwonym testem: przycisk **Merge pull request** jest nieaktywny, z komunikatem o wymaganym sprawdzeniu.
