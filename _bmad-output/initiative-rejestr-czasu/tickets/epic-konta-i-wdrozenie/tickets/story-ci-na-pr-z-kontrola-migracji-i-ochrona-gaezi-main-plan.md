@@ -3,14 +3,14 @@ title: 'CI na PR z kontrolą migracji i ochroną gałęzi main'
 type: 'chore'
 ticket: '1'
 created: '2026-10-31'
-status: 'ready-for-dev'
-baseline_revision: ''
+status: 'built'
+baseline_revision: '6c510584869a68e5a051806d5be9728d0c19bfca'
 route: 'full'
 route_source: 'auto'
 risk: 'low'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/_bmad-output/initiative-rejestr-czasu/architecture-rejestr-czasu/architecture-rejestr-czasu.md'
@@ -68,10 +68,10 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `global.json` -- `version` 10.0.403 -- AD-1.
-- [ ] `.github/workflows/pr.yml` -- workflow z Boundaries -- R28, AD-20.
-- [ ] `tests/RejestrCzasu.Tests/MigrationRulesTests.cs` -- kontrola migracji dodających na prawdziwych migracjach i testy z I/O Matrix (wiersze 2 i 3) na migracjach testowych zdefiniowanych w samym teście, poza assembly aplikacji -- AD-21.
-- [ ] `docs/admin/README.md` -- spis i instrukcja ochrony `main` -- R27, AD-20.
+- [x] `global.json` -- `version` 10.0.403 -- AD-1.
+- [x] `.github/workflows/pr.yml` -- workflow z Boundaries -- R28, AD-20.
+- [x] `tests/RejestrCzasu.Tests/MigrationRulesTests.cs` -- kontrola migracji dodających na prawdziwych migracjach i testy z I/O Matrix (wiersze 2 i 3) na migracjach testowych zdefiniowanych w samym teście, poza assembly aplikacji -- AD-21.
+- [x] `docs/admin/README.md` -- spis i instrukcja ochrony `main` -- R27, AD-20.
 
 **Acceptance Criteria:**
 - Given lokalne drzewo, when `dotnet build` i `dotnet test`, then 0 ostrzeżeń i wszystkie testy zielone, w tym kontrola migracji.
@@ -89,3 +89,11 @@ context:
 - Na GitHubie: job `build-and-test` zielony na PR tej gałęzi. Po ustawieniu ochrony `main` przycisk scalenia zablokowany dla PR z czerwonym testem.
 
 ## Review Triage Log
+
+| # | Lens | Lokalizacja | Znalezisko | Werdykt | Uzasadnienie | Trasa |
+|---|------|-------------|------------|---------|--------------|-------|
+| 1 | quick | `MigrationRulesTests.cs` `FindViolations` | `AddUniqueConstraintOperation` i `AddPrimaryKeyOperation` przechodzą kontrolę | medium | AD-21 zakazuje nowego indeksu unikalnego; w PostgreSQL ograniczenie unikalne i klucz główny tworzą indeks unikalny, a AD-7 opiera się na kluczach alternatywnych, więc EF wygeneruje `AddUniqueConstraint` przy dodaniu klucza do istniejącej tabeli. Switch ma tylko `CreateIndexOperation { IsUnique: true }`. | patch |
+| 2 | quick | `MigrationRulesTests.cs` `FindViolations` | kolumna `NOT NULL` bez wartości domyślnej przechodzi | medium | AD-21 dopuszcza tylko kolumny `NULL` lub z wartością domyślną; `AddColumnOperation` nie ma ramienia w switchu, więc poprzedni obraz po rollbacku nie wstawi wiersza. | patch |
+| 3 | quick | `MigrationRulesTests.cs` `FindViolations` | `DeleteData`/`UpdateData`/`AddCheckConstraint`/`AddForeignKey` przechodzą | low | W `src/` brak `HasData` i `HasCheckConstraint`, więc te operacje nie powstają w codziennej pracy; poprawka to przebudowa na allowlistę. Odrzucone (low, poprawka więcej niż bezpośrednia korekta). | reject |
+| 4 | quick | `docs/admin/README.md` krok 4 | „zostaw odznaczoną” przy **Require approvals**, a GitHub zaznacza je domyślnie razem z **Require a pull request** | low | Z krokiem 6 (bez obejścia) samodzielny Autor nie scali żadnego PR. Bezpośrednia korekta słowa. | patch |
+| 5 | quick | `MigrationRulesTests.cs` `AppMigrations_AfterInitial_AreAdditiveOnly` | każda klasa `Initial` jest pomijana, `Assert.Contains` nie wymusza jednej | low | Druga klasa `Initial` w innej przestrzeni nazw byłaby pominięta po cichu; korekta to `Assert.Single`. | patch |
