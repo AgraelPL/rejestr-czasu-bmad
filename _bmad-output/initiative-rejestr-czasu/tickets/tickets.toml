@@ -27,12 +27,12 @@ after = [{ epic = 1, needs = "Domain/Czas, PolishCalendar, YearMonth, Dictionary
 id = 3
 slug = "epic-miesiac-i-zestawienie"
 title = "Widok miesiąca i Zestawienie"
-description = "Na serwerze User sprawdza Miesiąc w siatce grupowanej Tydzień → Dzień i pobiera Zestawienie xlsx we wspólnym układzie (endpoint /zestawienie, ekran Eksport) z prefiksem nazwy z Ustawień konta; Test wrześniowy przechodzi lokalnie. Epik posiada MonthEntriesQuery i MonthReport.Build, jedyne źródło sum (AD-5), oraz ekran Ustawienia konta z prefiksem i linkiem do zmiany hasła (R25 tu: prefiks i link; strona zmiany hasła z epiku 4). R17 tu: filtr kolumn i licznik w Widoku miesiąca; filtr nie zmienia sum z MonthReport. R26 tu: strony pomocy ekranów Widok miesiąca, Eksport i Ustawienia konta."
+description = "Na serwerze User sprawdza Miesiąc w siatce grupowanej Tydzień → Dzień i pobiera Zestawienie xlsx we wspólnym układzie (endpoint /zestawienie, ekran Eksport) z prefiksem nazwy z Ustawień konta; Test wrześniowy przechodzi lokalnie. Epik posiada MonthEntriesQuery i MonthReport.Build, jedyne źródło sum (AD-5), oraz ekran Ustawienia konta z prefiksem i linkiem do zmiany hasła (R25 tu: prefiks i link; strona zmiany hasła z epiku 4); wiersz account_settings powstaje leniwie przy pierwszym zapisie prefiksu, brak wiersza = pusty prefiks (AD-7). R17 tu: filtr kolumn i licznik w Widoku miesiąca; filtr nie zmienia sum z MonthReport. R26 tu: strony pomocy ekranów Widok miesiąca, Eksport i Ustawienia konta."
 covers = ["R9", "R10", "R11", "R12", "R13", "R17", "R25", "R26"]
 after = [
   { epic = 1, needs = "ReportGrid ze stałym grupowaniem, Domain/Czas, PolishCalendar, YearMonth, mechanizm pomocy, link Ustawienia konta w belce, Notify i Confirm" },
   { epic = 2, needs = "EntryForm w oknie dialogowym i DeleteEntry dla ikon w wierszach" },
-  { epic = 4, needs = "strona /konto/zmiana-hasla i wiersz account_settings tworzony z Kontem" },
+  { epic = 4, needs = "strona /konto/zmiana-hasla" },
 ]
 
 [[epic]]

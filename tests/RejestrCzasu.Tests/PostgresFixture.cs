@@ -31,16 +31,11 @@ public sealed class PostgresFixture : IAsyncLifetime
         Name = DatabaseName,
         User = UserName,
         Password = Password,
-        ContainerName = _container.Name.TrimStart('/'),
     };
 
-    /// <summary>Per-run temporary backup directory, so the Author's local settings are never used by tests.</summary>
-    public string BackupDirectory { get; } =
-        Path.Combine(Path.GetTempPath(), "rejestr-czasu-tests", Guid.NewGuid().ToString("N"));
-
     /// <summary>
-    /// Configuration overrides pointing the application at the container (<c>Database:*</c>) and at test-only
-    /// <c>Backup</c>/<c>Export</c> values, so the Author's appsettings.Local.json does not leak into tests.
+    /// Configuration overrides pointing the application at the container (<c>Database:*</c>),
+    /// so the Author's appsettings.Local.json does not leak into tests.
     /// </summary>
     public IReadOnlyDictionary<string, string?> ConfigurationOverrides
     {
@@ -54,50 +49,79 @@ public sealed class PostgresFixture : IAsyncLifetime
                 ["Database:Name"] = options.Name,
                 ["Database:User"] = options.User,
                 ["Database:Password"] = options.Password,
-                ["Database:ContainerName"] = options.ContainerName,
-                ["Backup:Directory"] = BackupDirectory,
-                ["Export:Prefix"] = "Test_Testowy",
             };
         }
     }
 
     public async ValueTask InitializeAsync()
     {
-        Directory.CreateDirectory(BackupDirectory);
         await _container.StartAsync();
         await using var db = CreateContext();
         await db.Database.MigrateAsync();
     }
 
-    public AppDbContext CreateContext()
+    /// <summary>A system-mode context (no User): <see cref="IUserOwned"/> data is invisible and read-only.</summary>
+    public AppDbContext CreateContext() => ContextFactory.CreateDbContext();
+
+    /// <summary>The application's <see cref="IDbContextFactory{TContext}"/> shape, on the container database.</summary>
+    public IDbContextFactory<AppDbContext> ContextFactory => new TestContextFactory(DatabaseOptions.BuildConnectionString());
+
+    /// <summary>A User-mode context, created the only allowed way: through <see cref="UserDbContextFactory"/>.</summary>
+    public Task<AppDbContext> CreateUserContextAsync(int userId) =>
+        new UserDbContextFactory(ContextFactory).CreateDbContextAsync(userId);
+
+    /// <summary>Creates an active Account with a fictional login and returns its id.</summary>
+    public async Task<int> CreateUserAsync(string userName)
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(DatabaseOptions.BuildConnectionString())
-            .UseSnakeCaseNamingConvention()
-            .Options;
-        return new AppDbContext(options);
+        await using var db = CreateContext();
+        var user = new AppUser
+        {
+            UserName = userName,
+            NormalizedUserName = userName.ToUpperInvariant(),
+            SecurityStamp = Guid.NewGuid().ToString("N"),
+            Status = AccountStatus.Active,
+            RegisteredAt = DateTime.UtcNow,
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        return user.Id;
     }
 
-    /// <summary>Removes all data and restarts identity sequences.</summary>
+    /// <summary>Removes all data (every table except the migration history) and restarts identity sequences.</summary>
     public async Task ResetAsync()
     {
         await using var connection = new NpgsqlConnection(DatabaseOptions.BuildConnectionString());
         await connection.OpenAsync();
-        await using var command = new NpgsqlCommand(
-            "TRUNCATE time_entry, project, work_type RESTART IDENTITY CASCADE;", connection);
-        await command.ExecuteNonQueryAsync();
+        var tables = new List<string>();
+        await using (var list = new NpgsqlCommand(
+            "SELECT quote_ident(table_name) FROM information_schema.tables " +
+            "WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name <> '__EFMigrationsHistory';",
+            connection))
+        await using (var reader = await list.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                tables.Add(reader.GetString(0));
+            }
+        }
+        await using var truncate = new NpgsqlCommand(
+            $"TRUNCATE {string.Join(", ", tables)} RESTART IDENTITY;", connection);
+        await truncate.ExecuteNonQueryAsync();
     }
 
-    public async ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync() => await _container.DisposeAsync();
+
+    private sealed class TestContextFactory(string connectionString) : IDbContextFactory<AppDbContext>
     {
-        await _container.DisposeAsync();
-        try
-        {
-            Directory.Delete(BackupDirectory, recursive: true);
-        }
-        catch (IOException)
-        {
-            // Best effort cleanup of the temporary directory.
-        }
+        public AppDbContext CreateDbContext() =>
+            new(AppDbContextOptions(connectionString));
+    }
+
+    /// <summary>The application's database options (<see cref="DatabaseServiceCollectionExtensions.UseAppDatabase"/>).</summary>
+    private static DbContextOptions<AppDbContext> AppDbContextOptions(string connectionString)
+    {
+        var builder = new DbContextOptionsBuilder<AppDbContext>();
+        builder.UseAppDatabase(connectionString);
+        return builder.Options;
     }
 }

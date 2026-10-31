@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 using RejestrCzasu.Data;
@@ -8,9 +8,20 @@ using RejestrCzasu.Startup;
 
 namespace RejestrCzasu.Tests;
 
-public sealed class DatabaseStartupTests(PostgresFixture postgres)
+public sealed class DatabaseStartupTests(PostgresFixture postgres) : IAsyncDisposable
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    /// <summary>Service providers built by <see cref="CreateStartup"/>, disposed when the test ends.</summary>
+    private readonly List<ServiceProvider> _providers = [];
+
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var provider in _providers)
+        {
+            await provider.DisposeAsync();
+        }
+    }
 
     [Fact]
     public async Task WrongPassword_ReportsSettingsProblem_NotDockerProblem()
@@ -54,15 +65,17 @@ public sealed class DatabaseStartupTests(PostgresFixture postgres)
         Assert.StartsWith("Migracja bazy nie powiodła się", ex.Message);
     }
 
-    private static DatabaseStartup CreateStartup(DatabaseOptions options)
+    private DatabaseStartup CreateStartup(DatabaseOptions options)
     {
-        var contextOptions = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(options.BuildConnectionString())
-            .UseSnakeCaseNamingConvention()
-            .Options;
+        // The application's registration (AddAppDatabase), so the test uses the same, unpooled factory.
+        var services = new ServiceCollection();
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(options));
+        services.AddAppDatabase();
+        var provider = services.BuildServiceProvider();
+        _providers.Add(provider);
         return new DatabaseStartup(
             Microsoft.Extensions.Options.Options.Create(options),
-            new PooledDbContextFactory<AppDbContext>(contextOptions),
+            provider.GetRequiredService<IDbContextFactory<AppDbContext>>(),
             NullLogger<DatabaseStartup>.Instance);
     }
 }

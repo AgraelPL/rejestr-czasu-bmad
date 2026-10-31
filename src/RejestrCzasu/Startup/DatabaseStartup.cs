@@ -7,8 +7,9 @@ using RejestrCzasu.Options;
 namespace RejestrCzasu.Startup;
 
 /// <summary>
-/// Startup sequence from AD-3, run by <c>Program</c> after the app is built and before the server starts:
-/// (1) database connection check, (2) database backup, (3) migrations. Then (4) the server starts.
+/// Startup sequence from AD-21, run by <c>Program</c> after the app is built and before the server starts:
+/// (1) database connection check, (2) migrations. The first Administrator step (3) is added by a later story;
+/// then (4) the server starts.
 /// A failure of any step throws <see cref="DatabaseStartupException"/>; <c>Program</c> prints its
 /// message and exits with code 1 without starting the server.
 /// </summary>
@@ -31,9 +32,7 @@ public sealed class DatabaseStartup(
         // Step 1: connection check with a short timeout.
         await CheckConnectionAsync(cancellationToken);
 
-        // Step 2: database backup (docker exec pg_dump) — inserted here by story 2 "Kopia bazy".
-
-        // Step 3: migrations.
+        // Step 2: migrations.
         await MigrateAsync(cancellationToken);
     }
 

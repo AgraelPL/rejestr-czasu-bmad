@@ -1,6 +1,4 @@
 using System.Globalization;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.FluentUI.AspNetCore.Components;
 using RejestrCzasu;
 using RejestrCzasu.Components;
@@ -14,24 +12,20 @@ CultureInfo.DefaultThreadCurrentUICulture = polish;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Local, git-ignored configuration (AD-13): password, backup directory, export prefix.
+// Local, git-ignored configuration (AD-13): database password and port.
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false);
 // Environment variables and command line keep precedence over the local file.
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 
 builder.Services.AddOptions<DatabaseOptions>().Bind(builder.Configuration.GetSection(DatabaseOptions.SectionName));
-builder.Services.AddOptions<BackupOptions>().Bind(builder.Configuration.GetSection(BackupOptions.SectionName));
-builder.Services.AddOptions<ExportOptions>().Bind(builder.Configuration.GetSection(ExportOptions.SectionName));
 
-builder.Services.AddDbContextFactory<AppDbContext>((services, options) =>
-    options
-        .UseNpgsql(services.GetRequiredService<IOptions<DatabaseOptions>>().Value.BuildConnectionString())
-        .UseSnakeCaseNamingConvention());
+// System mode (Startup, Identity, Data Protection) and User mode (UserDbContextFactory), without pooling (AD-16).
+builder.Services.AddAppDatabase();
 
 builder.Services.AddSingleton(TimeProvider.System);
 
-// Startup sequence (AD-3), run below before app.RunAsync().
+// Startup sequence (AD-21), run below before app.RunAsync().
 builder.Services.AddTransient<DatabaseStartup>();
 
 builder.Services.AddRazorComponents()
@@ -66,7 +60,7 @@ app.MapRazorComponents<App>()
     // frame-ancestors is already part of our CSP header; avoid a second CSP header from Blazor.
     .AddInteractiveServerRenderMode(options => options.ContentSecurityFrameAncestorsPolicy = null);
 
-// Startup sequence (AD-3) before the server starts: connection check, [backup], migrations.
+// Startup sequence (AD-21) before the server starts: connection check, migrations.
 try
 {
     await app.Services.GetRequiredService<DatabaseStartup>().RunAsync();
