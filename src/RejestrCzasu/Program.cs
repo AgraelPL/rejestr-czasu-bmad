@@ -22,9 +22,28 @@ builder.Configuration.AddCommandLine(args);
 
 builder.Services.AddOptions<DatabaseOptions>().Bind(builder.Configuration.GetSection(DatabaseOptions.SectionName));
 builder.Services.AddOptions<FirstAdminOptions>().Bind(builder.Configuration.GetSection(FirstAdminOptions.SectionName));
+builder.Services.AddOptions<ProxyOptions>().Bind(builder.Configuration.GetSection(ProxyOptions.SectionName));
+// A top-level key (APP_IMAGE_TAG, set by the Dockerfile and the server's .env), not a section (AD-13, AD-20).
+builder.Services.AddOptions<AppImageOptions>().Configure<IConfiguration>((options, configuration) =>
+{
+    var tag = configuration[AppImageOptions.TagKey];
+    if (!string.IsNullOrWhiteSpace(tag))
+    {
+        options.Tag = tag.Trim();
+    }
+});
 
 // System mode (Startup, Identity, Data Protection) and User mode (UserDbContextFactory), without pooling (AD-16).
 builder.Services.AddAppDatabase();
+
+// Data Protection keys in the database with a fixed application name: a restart does not log anybody out (AD-19).
+builder.Services.AddAppDataProtection();
+
+// Client address and scheme from Caddy, trusted only from ForwardedHeaders:KnownNetwork and loopback (AD-19).
+builder.Services.AddAppForwardedHeaders();
+
+// GET /health: database state and image tag (AD-20).
+builder.Services.AddAppHealthChecks();
 
 // Identity, login cookie, authorization, CurrentUser and the login/registration rate limit (AD-15, AD-16).
 builder.Services.AddAccounts();
@@ -43,6 +62,21 @@ builder.Services.AddFluentUIComponents(options => options.Localizer = new Fluent
 
 var app = builder.Build();
 
+// A wrong ForwardedHeaders:KnownNetwork ends the start with a Polish message, before the database and the server.
+try
+{
+    app.Services.EnsureForwardedHeadersConfiguration();
+}
+catch (ProxyConfigurationException ex)
+{
+    Console.Error.WriteLine(ex.Message);
+    return 1;
+}
+
+// First in the pipeline: everything after it (CSP, authentication, the rate limiter) sees the client address and
+// scheme sent by Caddy, never headers from outside the trusted networks (AD-15, AD-19).
+app.UseForwardedHeaders();
+
 app.Use(async (context, next) =>
 {
     // OnStarting: the exception handler clears headers before re-executing /Error.
@@ -60,7 +94,6 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseRequestLocalization(polish.Name);
-// Story 4.5 puts UseForwardedHeaders before this point, so the rate limiter sees the client address (AD-15, AD-19).
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -75,6 +108,7 @@ app.MapRazorComponents<App>()
     // frame-ancestors is already part of our CSP header; avoid a second CSP header from Blazor.
     .AddInteractiveServerRenderMode(options => options.ContentSecurityFrameAncestorsPolicy = null);
 app.MapAccountEndpoints();
+app.MapAppHealth();
 
 // Startup sequence (AD-21) before the server starts: connection check, migrations, first Administrator.
 try

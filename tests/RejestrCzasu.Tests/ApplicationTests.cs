@@ -96,6 +96,27 @@ public sealed class ApplicationTests(PostgresFixture postgres)
         Assert.Equal(0, await db.Users.CountAsync(Ct));
     }
 
+    /// <summary>
+    /// The real application process with a wrong proxy network (AD-19): exit code 1 and a message naming the setting,
+    /// before the database startup sequence and the server.
+    /// </summary>
+    [Fact]
+    public async Task Startup_InvalidKnownNetwork_ExitsWithMessage_BeforeServerStarts()
+    {
+        var environment = postgres.ConfigurationOverrides
+            .ToDictionary(o => o.Key.Replace(":", "__", StringComparison.Ordinal), o => o.Value ?? "");
+        environment["ForwardedHeaders__KnownNetwork"] = "nie-cidr";
+
+        var (exitCode, stdout, stderr) = await RunApplicationAsync(environment, []);
+
+        Assert.Equal(1, exitCode);
+        // ASCII parts only: the console code page of the child process is not necessarily UTF-8.
+        Assert.Contains("`ForwardedHeaders:KnownNetwork`", stderr);
+        Assert.Contains("nie-cidr", stderr);
+        Assert.Contains("CIDR", stderr);
+        Assert.DoesNotContain("Now listening", stdout);
+    }
+
     private static async Task<(int ExitCode, string Stdout, string Stderr)> RunApplicationAsync(
         IReadOnlyDictionary<string, string> environment, IReadOnlyList<string> arguments)
     {

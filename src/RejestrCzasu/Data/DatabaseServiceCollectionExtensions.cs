@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using RejestrCzasu.Options;
@@ -24,6 +25,22 @@ public static class DatabaseServiceCollectionExtensions
         services.AddDbContextFactory<AppDbContext>((provider, options) =>
             options.UseAppDatabase(provider.GetRequiredService<IOptions<DatabaseOptions>>().Value.BuildConnectionString()));
         services.AddScoped<UserDbContextFactory>();
+        return services;
+    }
+
+    /// <summary>Name shared by every instance and image version, so they read each other's protected data (AD-19).</summary>
+    public const string DataProtectionApplicationName = "RejestrCzasu";
+
+    /// <summary>
+    /// Data Protection keys in the <c>data_protection_keys</c> table (AD-19), written through the scoped system-mode
+    /// <see cref="AppDbContext"/> (AD-16), with a fixed application name: a new container or image version keeps the
+    /// key ring, so a deployment or restart does not log anybody out.
+    /// </summary>
+    public static IServiceCollection AddAppDataProtection(this IServiceCollection services)
+    {
+        services.AddDataProtection()
+            .PersistKeysToDbContext<AppDbContext>()
+            .SetApplicationName(DataProtectionApplicationName);
         return services;
     }
 

@@ -90,6 +90,38 @@ docker exec rejestr-czasu-db psql -U rejestr -d rejestr -c "UPDATE users SET sta
 Potem logowanie na `/konto/logowanie`. Rejestracja i logowanie przyjmują najwyżej 10 prób (POST) na minutę z jednego
 adresu IP; po 5 złych hasłach z rzędu logowanie na Konto jest wstrzymane na 15 minut.
 
+## Obraz aplikacji (Docker)
+
+Na serwerze aplikacja działa jako obraz kontenera za Caddy (wdrożenie: historia 4.8). `Dockerfile` w katalogu głównym
+buduje ją w SDK 10.0.403 i uruchamia na `mcr.microsoft.com/dotnet/aspnet:10.0` (z ICU i tzdata). Obraz nie zawiera
+`appsettings.Local.json`, `.env` ani testów (`.dockerignore`), więc całą konfigurację dostaje ze zmiennych środowiskowych.
+
+Lokalny próbny przebieg na bazie z `docker compose` (PowerShell, z katalogu głównego; hasło i nazwy z własnego `.env`):
+
+```powershell
+docker compose up -d
+docker build --build-arg APP_IMAGE_TAG=test-lokalny -t rejestr-czasu:test .
+docker run -d --name rejestr-app-test --network rejestr-czasu-bmad_default -p 127.0.0.1:8080:8080 `
+  -e Database__Host=db -e Database__User=rejestr -e Database__Name=rejestr -e Database__Password=<POSTGRES_PASSWORD z .env> `
+  -e FirstAdmin__UserName=<login> -e FirstAdmin__Password=<hasło> rejestr-czasu:test
+curl http://127.0.0.1:8080/health
+docker rm -f rejestr-app-test
+```
+
+- Sieć `rejestr-czasu-bmad_default` tworzy `docker compose` (nazwa katalogu repozytorium + `_default`); w niej baza
+  ma nazwę `db`. Port aplikacji w kontenerze to zawsze `8080` (`ASPNETCORE_HTTP_PORTS`).
+- `FirstAdmin__*` są potrzebne tylko, gdy w bazie nie ma jeszcze Administratora (jak przy `dotnet run`).
+- Aplikacja otwiera się na `http://127.0.0.1:8080`. `GET /health` nie wymaga logowania i zwraca
+  `{"status":"Healthy","tag":"test-lokalny"}` (200), a gdy baza nie odpowiada — 503 z tym samym kształtem.
+  Bez `--build-arg APP_IMAGE_TAG` tag to `local`; tak samo przy `dotnet run`.
+- Klucze Data Protection (ciasteczka logowania i formularzy) leżą w tabeli `data_protection_keys`, więc
+  `docker restart rejestr-app-test` i nowy obraz na tej samej bazie nie wylogowują.
+- Komunikat `Cannot load library libgssapi_krb5.so.2` w logu kontenera przy starcie jest nieszkodliwy: sterownik
+  bazy sprawdza obsługę Kerberos, której aplikacja nie używa.
+
+Umowa zmiennych dla serwera (`APP_IMAGE_TAG`, `ForwardedHeaders__KnownNetwork`) jest w
+[`docs/admin/`](docs/admin/README.md#obraz-aplikacji-i-zmienne-serwera).
+
 ## Testy
 
 ```powershell

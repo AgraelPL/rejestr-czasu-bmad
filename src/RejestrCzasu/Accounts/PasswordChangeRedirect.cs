@@ -4,7 +4,7 @@ namespace RejestrCzasu.Accounts;
 
 /// <summary>
 /// Marks an endpoint that a logged-in User with <c>must_change_password</c> may still reach (AD-15): the password
-/// change page, logout, and later <c>/health</c> and the anonymous help topics. On a component as an attribute, on a
+/// change page, logout, <c>/health</c> and later the anonymous help topics. On a component as an attribute, on a
 /// Minimal API endpoint through <see cref="PasswordChangeRedirect.AllowDuringPasswordChange{TBuilder}"/>.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]

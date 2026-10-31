@@ -1,0 +1,19 @@
+# Build context of the Dockerfile: no secrets, data or build output in the image (AD-13).
+**/bin
+**/obj
+**/appsettings.Local.json
+**/appsettings.Local.example.json
+**/.env
+_bmad*
+.git
+tests
+
+# Not needed to build the application.
+.agents
+.claude
+.github
+.vs
+docs
+TestResults
+**/*.user
+**/*Zestawienie*.xlsx
