@@ -29,3 +29,11 @@ Session: unavailable · Timestamp: 2026-10-31T19:20:00+01:00
 - Action: świeży agent szukał obejść zwykłym kodem EF Core
 - Result: SaveChanges, Include, Find, Attach, grafy, stub po Id — trzyma. Furtki (open → fix w 4.2): (1) ExecuteUpdate SetProperty(UserId) omija SaveChanges — trigger blokujący zmianę user_id w Initial; (2) IgnoreQueryFilters i (3) SqlQuery/ExecuteSql bez filtra — BannedApiAnalyzers z dozwolonymi miejscami AD-16; (4) Identity i (5) DataProtectionKeys dostępne w trybie Usera — odrzucać zapis nie-IUserOwned w trybie Usera, filtry na Identity i kluczach; (6) pula kontekstów — reguła bez puli; (7) encja bez UserId — ostrzejszy test
 - Decision: Autor wybrał naprawę na gałęzi 4.2 przed scaleniem PR (bmad-build, plan uzupełniający)
+
+## 5 — blok 4 — poprawki furtek 1–7
+
+Session: unavailable · Timestamp: 2026-10-31T19:55:00+01:00
+
+- Action: bmad-build z planem ../plan-4-2-uszczelnienie-oddzielenia-danych.md; recenzja quick (3 patch, 1 false, 2 reject)
+- Result: furtki 1–7 fixed w commicie f54e60f; build 0 ostrzeżeń, testy 42/42, has-pending-model-changes bez zmian; RS0030 działa też w .razor (sprawdzone plikiem próbnym)
+- Open: lokalna baza Autora wymaga docker compose down -v (Initial zmieniony: triggery)

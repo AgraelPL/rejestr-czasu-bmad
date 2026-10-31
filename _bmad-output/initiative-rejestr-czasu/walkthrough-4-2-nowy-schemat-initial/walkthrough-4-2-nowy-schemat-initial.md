@@ -30,7 +30,7 @@ Jedna nowa migracja zawiera cały schemat. Identity ma klucze `int` i jawne nazw
 - [AppDbContext.cs:138](../../../src/RejestrCzasu/Data/AppDbContext.cs#L138) — `RESTRICT` wszędzie
 - [20261031164517_Initial.cs:339](../../../src/RejestrCzasu/Data/Migrations/20261031164517_Initial.cs#L339) — indeks `(user_id, lower(name))` SQL-em
 
-## [ ] 4. Oddzielenie danych (w toku)
+## [ ] 4. Oddzielenie danych (w toku; zmieniony w przeglądzie: uszczelnienie, commit f54e60f)
 
 Każda encja z `user_id` implementuje `IUserOwned`; filtr, klucz obcy do `users` i token współbieżności nakłada pętla po interfejsie. Tryb Usera ustawia tylko fabryka (`BindUser` raz), a tryb systemowy nie widzi i nie zapisuje danych Userów. Token współbieżności dokłada `user_id` do UPDATE i DELETE, żeby zapis po samym `Id` nie trafił w cudzy wiersz (poprawka z recenzji).
 
@@ -39,7 +39,10 @@ Każda encja z `user_id` implementuje `IUserOwned`; filtr, klucz obcy do `users`
 - [AppDbContext.cs:148](../../../src/RejestrCzasu/Data/AppDbContext.cs#L148) i [AppDbContext.cs:150](../../../src/RejestrCzasu/Data/AppDbContext.cs#L150) — token współbieżności i filtr
 - [AppDbContext.cs:172](../../../src/RejestrCzasu/Data/AppDbContext.cs#L172) — `ApplyUserOwnership`
 - [UserDbContextFactory.cs:9](../../../src/RejestrCzasu/Data/UserDbContextFactory.cs#L9)
-- [Program.cs:30](../../../src/RejestrCzasu/Program.cs#L30) — rejestracja fabryki
+- [DatabaseServiceCollectionExtensions.cs](../../../src/RejestrCzasu/Data/DatabaseServiceCollectionExtensions.cs) — jedyna rejestracja bazy, bez puli kontekstów
+- [BannedSymbols.txt](../../../src/RejestrCzasu/BannedSymbols.txt) — zakazane API omijające filtr (błąd kompilacji)
+- [20261031164517_Initial.cs](../../../src/RejestrCzasu/Data/Migrations/20261031164517_Initial.cs) — trigger blokujący zmianę `user_id`
+- [DataIsolationGuardTests.cs](../../../tests/RejestrCzasu.Tests/DataIsolationGuardTests.cs) — testy strażników
 
 ## [ ] 5. Testy (nieodwiedzony)
 
