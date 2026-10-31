@@ -1,8 +1,9 @@
 # Rejestr czasu pracy
 
-Lokalna aplikacja (Blazor Server, .NET 10) do rejestrowania czasu pracy. Działa tylko na komputerze Autora:
-serwer nasłuchuje na `http://127.0.0.1:5080`, baza PostgreSQL 18 działa w kontenerze Dockera
-z portem wystawionym tylko na `127.0.0.1`.
+Aplikacja webowa (Blazor Server, .NET 10) do rejestrowania czasu pracy, z kontami Userów i rolą Administratora.
+Docelowo działa pod `czas-pracy.kandula-consulting.pl` (wdrożenie: historia 4.8, instrukcje w [`docs/admin/`](docs/admin/README.md)).
+Do pracy nad nią uruchamia się ją lokalnie: serwer nasłuchuje na `http://127.0.0.1:5080`, a baza PostgreSQL 18
+działa w kontenerze Dockera z portem wystawionym tylko na `127.0.0.1`.
 
 ## Wymagania
 
@@ -74,6 +75,8 @@ dotnet test
 
 Testy zapisu do bazy i test aplikacji uruchamiają własny, tymczasowy kontener `postgres:18` (Testcontainers),
 więc Docker Desktop musi działać; baza Autora nie jest używana.
+
+Te same testy uruchamia job `build-and-test` (`.github/workflows/pr.yml`) na każdym pull requeście do `main`.
 
 ## Migracje
 
