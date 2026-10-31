@@ -32,6 +32,10 @@ z portem wystawionym tylko na `127.0.0.1`.
    Hasło z `.env` jest używane tylko przy pierwszym utworzeniu wolumenu bazy; późniejsza zmiana w `.env` nie zmienia hasła
    istniejącej bazy.
 
+   Jeśli port 5432 jest zajęty (np. przez PostgreSQL zainstalowany w Windows jako usługa — kontener zostaje wtedy
+   w stanie `Created`, a aplikacja zgłasza błąd hasła 28P01 z cudzego serwera), ustaw inny port, np. `5433`,
+   w `POSTGRES_PORT` w `.env` i ten sam w `Database:Port` w `appsettings.Local.json`.
+
 3. Uruchom bazę i aplikację:
 
    ```powershell
