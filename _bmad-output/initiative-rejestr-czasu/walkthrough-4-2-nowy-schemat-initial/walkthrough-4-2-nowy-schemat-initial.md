@@ -1,6 +1,6 @@
 # Przegląd: historia 4.2 — Nowy schemat Initial z Identity i UserId
 
-Cel: commit 8e504f2 na gałęzi `4-2-nowy-schemat-initial`. Bieżący blok: **4**.
+Cel: commit 8e504f2 na gałęzi `4-2-nowy-schemat-initial`. Wszystkie bloki przejrzane..
 
 ## [x] 1. Cel (zaakceptowany; test lokalny wykonany)
 
@@ -30,7 +30,7 @@ Jedna nowa migracja zawiera cały schemat. Identity ma klucze `int` i jawne nazw
 - [AppDbContext.cs:138](../../../src/RejestrCzasu/Data/AppDbContext.cs#L138) — `RESTRICT` wszędzie
 - [20261031164517_Initial.cs:339](../../../src/RejestrCzasu/Data/Migrations/20261031164517_Initial.cs#L339) — indeks `(user_id, lower(name))` SQL-em
 
-## [ ] 4. Oddzielenie danych (w toku; zmieniony w przeglądzie: uszczelnienie, commit f54e60f)
+## [x] 4. Oddzielenie danych (zaakceptowany; zmieniony w przeglądzie: uszczelnienie, commit f54e60f)
 
 Każda encja z `user_id` implementuje `IUserOwned`; filtr, klucz obcy do `users` i token współbieżności nakłada pętla po interfejsie. Tryb Usera ustawia tylko fabryka (`BindUser` raz), a tryb systemowy nie widzi i nie zapisuje danych Userów. Token współbieżności dokłada `user_id` do UPDATE i DELETE, żeby zapis po samym `Id` nie trafił w cudzy wiersz (poprawka z recenzji).
 
@@ -44,7 +44,7 @@ Każda encja z `user_id` implementuje `IUserOwned`; filtr, klucz obcy do `users`
 - [20261031164517_Initial.cs](../../../src/RejestrCzasu/Data/Migrations/20261031164517_Initial.cs) — trigger blokujący zmianę `user_id`
 - [DataIsolationGuardTests.cs](../../../tests/RejestrCzasu.Tests/DataIsolationGuardTests.cs) — testy strażników
 
-## [ ] 5. Testy (nieodwiedzony)
+## [x] 5. Testy (zaakceptowany)
 
 Fixture tworzy fikcyjnych Userów i kontekst Usera przez prawdziwą fabrykę oraz czyści wszystkie tabele. Testy pokrywają każdy wiersz tabeli przypadków z planu oraz zapis stubem z cudzym `Id`.
 
@@ -52,7 +52,7 @@ Fixture tworzy fikcyjnych Userów i kontekst Usera przez prawdziwą fabrykę ora
 - [DataIsolationTests.cs](../../../tests/RejestrCzasu.Tests/DataIsolationTests.cs)
 - [SchemaTests.cs](../../../tests/RejestrCzasu.Tests/SchemaTests.cs)
 
-## [ ] 6. Peryferia (nieodwiedzony)
+## [x] 6. Peryferia (zaakceptowany)
 
 - [README.md:92](../../../README.md#L92) — wolumen od nowa i odświeżenie `appsettings.Local.json`
 - [RejestrCzasu.csproj](../../../src/RejestrCzasu/RejestrCzasu.csproj) — pakiety Identity i DataProtection, `InternalsVisibleTo`
