@@ -3,7 +3,7 @@ title: 'CI na PR z kontrolą migracji i ochroną gałęzi main'
 type: 'chore'
 ticket: '1'
 created: '2026-10-31'
-status: 'built'
+status: done
 baseline_revision: '6c510584869a68e5a051806d5be9728d0c19bfca'
 route: 'full'
 route_source: 'auto'
