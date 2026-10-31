@@ -4,9 +4,7 @@ Szczegóły dla architektury, które nie należą do PRD.
 
 ## Decyzje techniczne
 
-Obowiązują decyzje z kręgosłupa architektury [`architecture-rejestr-czasu.md`](../architecture-rejestr-czasu/architecture-rejestr-czasu.md) (AD-1–AD-14, 30.10.2026). Zastąpiły pierwotne założenia briefu (Node.js, SQLite w jednym pliku, `npm start`).
-
-Do aktualizacji w architekturze (forge 31.10.2026 je zastępuje): AD-2 (uruchomienie wyłącznie lokalne; zostaje tylko Postgres na `127.0.0.1`, teraz na Droplecie, na potrzeby tunelu SSH), AD-3 (Kopia bazy przy starcie).
+Obowiązują decyzje z kręgosłupa architektury [`architecture-rejestr-czasu.md`](../architecture-rejestr-czasu/architecture-rejestr-czasu.md) (AD-1–AD-22, 31.10.2026; AD-3 wycofane). Zastąpiły pierwotne założenia briefu (Node.js, SQLite w jednym pliku, `npm start`). Przy rozbieżności z tym addendum wiąże architektura.
 
 - .NET 10, Blazor Web App (Interactive Server), Fluent UI Blazor 5, FluentValidation 12, EF Core 10 z Npgsql.
 - PostgreSQL 18 w kontenerze Docker (`docker compose`), dane w wolumenie Dockera, bez publicznego portu.
@@ -21,7 +19,7 @@ Do aktualizacji w architekturze (forge 31.10.2026 je zastępuje): AD-2 (uruchomi
 - Cloud Firewall: tylko 80, 443, 22; SSH tylko kluczem. PostgreSQL bez publicznego portu; dostęp Administratora tunelem SSH (Postgres na `127.0.0.1` Dropletu) albo `docker exec psql`; na co dzień rola tylko do odczytu.
 - Sekrety: `.env` (`chmod 600`) na Droplecie, GitHub Secrets dla workflow. Pierwszy Administrator z sekretu w konfiguracji.
 - Kopie (Kopia serwera): włączone kopie Dropletu w DigitalOcean (tygodniowe albo dzienne za dopłatą). Brak kodu kopii w aplikacji.
-- Konta: ASP.NET Core Identity; `UserId` w Project, WorkType, TimeEntry; globalny filtr EF Core bez wyjątków; unikalność `(user_id, lower(...))`. Liczba Wpisów na ekranie Użytkownicy to jedyne nazwane zapytanie omijające filtr, z testem. Usunięcie Konta: kaskada po `UserId` w jednej transakcji.
+- Konta: ASP.NET Core Identity; `UserId` w Project, WorkType, TimeEntry; globalny filtr EF Core omijany tylko w dwóch nazwanych miejscach z testem (liczba Wpisów na ekranie Użytkownicy, usuwanie Konta); usunięcie Konta jawne, w jednej transakcji, bez kaskady w bazie. Szczegóły: AD-15–AD-18.
 - CI/CD (GitHub Actions): PR → `dotnet build` + `dotnet test` (Testcontainers na `ubuntu-latest`), ochrona `main`. Merge do `main` → obraz do GHCR z tagiem skrótu commita → SSH `docker compose pull && up -d` → `/health`; błąd kończy workflow. Rollback: `workflow_dispatch` z tagiem poprzedniego obrazu.
 - Migracje przy starcie (jedna instancja); od pierwszego wdrożenia tylko migracje dodające (NFR-9).
 - **Przepisanie schematu (decyzja Autora, 31.10.2026):** historia 1.1 zbudowała migrację `Initial` bez `UserId`. `Initial` zostaje przepisana tak, by od początku miała `UserId` w Project, WorkType i TimeEntry, przed pierwszym wdrożeniem na serwer (na serwerze nie ma jeszcze danych). Od pierwszego wdrożenia obowiązują tylko migracje dodające. Architektura ustala, jak to zrobić.
