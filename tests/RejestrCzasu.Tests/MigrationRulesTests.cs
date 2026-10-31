@@ -45,6 +45,10 @@ public sealed class MigrationRulesTests
     [InlineData(typeof(UniqueConstraintTestMigration), nameof(AddUniqueConstraintOperation))]
     [InlineData(typeof(PrimaryKeyTestMigration), nameof(AddPrimaryKeyOperation))]
     [InlineData(typeof(RequiredColumnWithoutDefaultTestMigration), nameof(AddColumnOperation))]
+    [InlineData(typeof(DropIndexTestMigration), nameof(DropIndexOperation))]
+    [InlineData(typeof(DropUniqueConstraintTestMigration), nameof(DropUniqueConstraintOperation))]
+    [InlineData(typeof(DropForeignKeyTestMigration), nameof(DropForeignKeyOperation))]
+    [InlineData(typeof(ForeignKeyOnExistingTableTestMigration), nameof(AddForeignKeyOperation))]
     public void DestructiveMigration_IsRejected_WithMigrationAndOperationName(Type migrationType, string operationName)
     {
         var violation = Assert.Single(FindViolations((Migration)Activator.CreateInstance(migrationType)!));
@@ -53,30 +57,37 @@ public sealed class MigrationRulesTests
         Assert.Contains(operationName, violation);
     }
 
+    /// <summary>
+    /// Lista dozwolonych operacji: wszystko, czego tu nie ma (usuwanie, zmiana nazwy, zmiana kolumny, <c>Sql</c>,
+    /// nowe operacje EF), jest naruszeniem. Unikalność i klucze wolno dodać tylko do tabeli z tej samej migracji,
+    /// bo poprzedni obraz jej nie zna.
+    /// </summary>
     private static IEnumerable<string> FindViolations(Migration migration)
     {
         var migrationName = migration.GetType().Name;
+        var newTables = migration.UpOperations.OfType<CreateTableOperation>()
+            .Select(op => (op.Schema, op.Name))
+            .ToHashSet();
+        bool IsNew(string? schema, string table) => newTables.Contains((schema, table));
+
         foreach (var operation in migration.UpOperations)
         {
-            var reason = operation switch
+            var isAdditive = operation switch
             {
-                DropTableOperation op => $"usuwa tabelę {op.Name}",
-                DropColumnOperation op => $"usuwa kolumnę {op.Table}.{op.Name}",
-                RenameTableOperation op => $"zmienia nazwę tabeli {op.Name} na {op.NewName}",
-                RenameColumnOperation op => $"zmienia nazwę kolumny {op.Table}.{op.Name} na {op.NewName}",
-                AlterColumnOperation op => $"zmienia kolumnę {op.Table}.{op.Name}",
-                CreateIndexOperation { IsUnique: true } op => $"tworzy unikalny indeks {op.Name} na {op.Table}",
-                AddUniqueConstraintOperation op => $"dodaje ograniczenie unikalne {op.Name} na {op.Table}",
-                AddPrimaryKeyOperation op => $"dodaje klucz główny {op.Name} na {op.Table}",
-                AddColumnOperation { IsNullable: false, DefaultValue: null, DefaultValueSql: null, ComputedColumnSql: null } op =>
-                    $"dodaje kolumnę {op.Table}.{op.Name} NOT NULL bez wartości domyślnej",
-                SqlOperation => "wykonuje migrationBuilder.Sql(...)",
-                _ => null,
+                CreateTableOperation or EnsureSchemaOperation or CreateSequenceOperation => true,
+                AddColumnOperation op => op.IsNullable || op.DefaultValue is not null || op.DefaultValueSql is not null
+                    || op.ComputedColumnSql is not null,
+                CreateIndexOperation op => !op.IsUnique || IsNew(op.Schema, op.Table),
+                AddUniqueConstraintOperation op => IsNew(op.Schema, op.Table),
+                AddPrimaryKeyOperation op => IsNew(op.Schema, op.Table),
+                AddForeignKeyOperation op => IsNew(op.Schema, op.Table),
+                _ => false,
             };
 
-            if (reason is not null)
+            if (!isAdditive)
             {
-                yield return $"Migracja {migrationName}: {operation.GetType().Name} {reason} — po Initial dozwolone są tylko migracje dodające (AD-21).";
+                var table = operation is ITableMigrationOperation t ? $" na tabeli {t.Table}" : "";
+                yield return $"Migracja {migrationName}: {operation.GetType().Name}{table} nie jest operacją dodającą — po Initial dozwolone są tylko migracje dodające (AD-21).";
             }
         }
     }
@@ -90,7 +101,46 @@ public sealed class MigrationRulesTests
             migrationBuilder.AddColumn<string>(name: "note", table: "project", nullable: true);
             migrationBuilder.AddColumn<int>(name: "priority", table: "project", nullable: false, defaultValue: 0);
             migrationBuilder.CreateIndex(name: "ix_project_note", table: "project", column: "note");
+
+            migrationBuilder.CreateTable(
+                name: "tag",
+                columns: table => new
+                {
+                    id = table.Column<int>(nullable: false),
+                    user_id = table.Column<int>(nullable: false),
+                    name = table.Column<string>(nullable: false),
+                },
+                constraints: table => table.PrimaryKey("pk_tag", x => x.id));
+            migrationBuilder.AddUniqueConstraint(name: "ak_tag_user_id_id", table: "tag", columns: ["user_id", "id"]);
+            migrationBuilder.CreateIndex(name: "ix_tag_user_id_name", table: "tag", columns: ["user_id", "name"], unique: true);
+            migrationBuilder.AddForeignKey(
+                name: "fk_tag_project_user_id", table: "tag", column: "user_id", principalTable: "project", principalColumn: "id");
         }
+    }
+
+    private sealed class DropIndexTestMigration : Migration
+    {
+        protected override void Up(MigrationBuilder migrationBuilder) =>
+            migrationBuilder.DropIndex(name: "ix_project_code", table: "project");
+    }
+
+    private sealed class DropUniqueConstraintTestMigration : Migration
+    {
+        protected override void Up(MigrationBuilder migrationBuilder) =>
+            migrationBuilder.DropUniqueConstraint(name: "ak_project_note", table: "project");
+    }
+
+    private sealed class DropForeignKeyTestMigration : Migration
+    {
+        protected override void Up(MigrationBuilder migrationBuilder) =>
+            migrationBuilder.DropForeignKey(name: "fk_time_entry_project", table: "time_entry");
+    }
+
+    private sealed class ForeignKeyOnExistingTableTestMigration : Migration
+    {
+        protected override void Up(MigrationBuilder migrationBuilder) =>
+            migrationBuilder.AddForeignKey(
+                name: "fk_project_tag", table: "project", column: "note", principalTable: "tag", principalColumn: "name");
     }
 
     private sealed class DropColumnTestMigration : Migration
