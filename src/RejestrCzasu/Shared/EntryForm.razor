@@ -1,0 +1,123 @@
+@using Blazilla
+@using RejestrCzasu.Data
+@using RejestrCzasu.Domain
+@* The one Entry form (AD-10): presentation only. It gets the model, the options of DictionaryOptions and the save
+   call from its host (the /wpisy/nowy page; the dialog of story 2.3); it never creates a database context.
+   Focus order follows the markup: Data → Projekt → Typ pracy → Opis → Czas (no tabindex > 0).
+   Enter: in Data, Opis and Czas it saves the form without a confirmation; in a combobox it only picks the option.
+   Opis and Czas send their current text with the Enter key (ChangeAfterKeyPress), so the save never sees a value the
+   browser has not reported yet; the native date input reports every complete date as it is typed. Data saves on the
+   key-up of an Enter whose key-down also happened in Data, so the Enter that opened the screen (menu button, then
+   Data autofocused) never submits an empty form. The save button is
+   not a submit button: otherwise Enter in any Fluent text field would submit the form (implicit submission) before
+   its text reaches the server. *@
+
+<EditForm EditContext="_editContext" OnSubmit="SubmitAsync" class="entry-form" novalidate>
+    <FluentValidator Validator="_validator" />
+    <div class="entry-form-date" @onkeydown="OnDateKeyDown" @onkeyup="OnDateKeyUpAsync">
+        <FluentDatePicker TValue="DateOnly?" Value="Model.Date" ValueChanged="OnDateValueChangedAsync" ValueExpression="() => Model.Date"
+                          RenderStyle="DatePickerRenderStyle.Native" Label="Data" Autofocus="true" class="entry-date" />
+        <span class="entry-day-name">@DayName</span>
+    </div>
+    <FluentCombobox @ref="_project" Items="Projects" @bind-Value="Model.Project" OptionText="ProjectText"
+                    Label="Projekt" Placeholder="Wpisz początek kodu" class="entry-project" />
+    <FluentCombobox Items="WorkTypes" @bind-Value="Model.WorkType" OptionText="WorkTypeText"
+                    Label="Typ pracy" Placeholder="Wpisz początek nazwy" class="entry-work-type" />
+    <FluentTextInput @bind-Value="Model.Description" Label="Opis" ChangeAfterKeyPress="EnterKey"
+                     OnChangeAfterKeyPress="OnEnterAsync" class="entry-description" />
+    <FluentTextInput @bind-Value="Model.Czas" Label="Czas" Placeholder="np. 1h 30m" ChangeAfterKeyPress="EnterKey"
+                     OnChangeAfterKeyPress="OnEnterAsync" class="entry-czas" />
+    <div class="entry-form-buttons">
+        <FluentButton Appearance="ButtonAppearance.Primary" OnClick="SubmitAsync" class="entry-save">Zapisz</FluentButton>
+    </div>
+</EditForm>
+
+@code {
+    private static readonly KeyPress[] EnterKey = [KeyPress.For(KeyCode.Enter)];
+
+    private readonly EntryFormValidator _validator = new();
+    private EditContext _editContext = default!;
+    private FluentCombobox<ProjectOption, ProjectOption?>? _project;
+    private bool _saving;
+    private bool _enterDownInDate;
+
+    /// <summary>The edited Entry; the host keeps the instance (e.g. clears it after a save, R5).</summary>
+    [Parameter, EditorRequired] public EntryInput Model { get; set; } = default!;
+
+    /// <summary>Project options, only from <c>DictionaryOptions.ProjectsAsync</c> (AD-10).</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<ProjectOption> Projects { get; set; } = [];
+
+    /// <summary>Work type options, only from <c>DictionaryOptions.WorkTypesAsync</c> (AD-10).</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<WorkTypeOption> WorkTypes { get; set; } = [];
+
+    /// <summary>Called with the model once it has passed <see cref="EntryFormValidator"/>; a save in progress ignores further saves.</summary>
+    [Parameter, EditorRequired] public EventCallback<EntryInput> OnSave { get; set; }
+
+    /// <summary>Called after every change of the date field (also to <c>null</c> when it is cleared).</summary>
+    [Parameter] public EventCallback<DateOnly?> OnDateChanged { get; set; }
+
+    /// <summary>Text of a Project option: "KOD — nazwa".</summary>
+    internal static string ProjectText(ProjectOption? project) => project is null ? "" : $"{project.Code} — {project.Name}";
+
+    private static string WorkTypeText(WorkTypeOption? workType) => workType?.Name ?? "";
+
+    private string DayName => Model.Date is { } date ? PolishCalendar.DayName(date) : "";
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_editContext?.Model, Model))
+        {
+            _editContext = new EditContext(Model);
+        }
+    }
+
+    /// <summary>Moves the focus to the Projekt field (after a save in the Sesja wpisywania, R5).</summary>
+    public async Task FocusProjectAsync()
+    {
+        if (_project is not null)
+        {
+            await _project.Element.FocusAsync();
+        }
+    }
+
+    private async Task OnDateValueChangedAsync(DateOnly? date)
+    {
+        Model.Date = date;
+        await OnDateChanged.InvokeAsync(date);
+    }
+
+    private static bool IsPlainEnter(KeyboardEventArgs e) => e.Key == "Enter" && !e.AltKey && !e.CtrlKey && !e.ShiftKey && !e.MetaKey;
+
+    private void OnDateKeyDown(KeyboardEventArgs e) => _enterDownInDate = IsPlainEnter(e);
+
+    private Task OnDateKeyUpAsync(KeyboardEventArgs e)
+    {
+        if (e.Key != "Enter")
+        {
+            return Task.CompletedTask;
+        }
+        // Only the key-up of an Enter pressed in Data: a key-up whose key-down happened elsewhere does nothing.
+        var pressedHere = _enterDownInDate && IsPlainEnter(e);
+        _enterDownInDate = false;
+        return pressedHere ? SubmitAsync() : Task.CompletedTask;
+    }
+
+    private Task OnEnterAsync(FluentKeyPressEventArgs e) => SubmitAsync();
+
+    private async Task SubmitAsync()
+    {
+        if (_saving || !_editContext.Validate())
+        {
+            return;
+        }
+        _saving = true;
+        try
+        {
+            await OnSave.InvokeAsync(Model);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

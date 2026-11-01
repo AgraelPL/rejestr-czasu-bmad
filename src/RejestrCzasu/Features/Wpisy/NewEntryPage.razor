@@ -1,0 +1,82 @@
+@page "/wpisy/nowy"
+@using System.Globalization
+@using RejestrCzasu.Data
+@using RejestrCzasu.Domain
+@using RejestrCzasu.Features.Pomoc
+@inject EntryStore Store
+@inject DictionaryOptions Options
+@inject EntryDateMemory DateMemory
+@inject CurrentUser CurrentUser
+@inject TimeProvider TimeProvider
+@inject Notify Notify
+@* Nowy wpis (R4, R5, R16): the Sesja wpisywania. Every opening starts with today's date in Poland; after a save the
+   form stays with the same date and the focus goes to Projekt. The date set here is remembered for the copy of an
+   Entry (EntryDateMemory, R7). Data only through EntryStore and DictionaryOptions (AD-4, AD-16). *@
+
+<PageHeader Title="Nowy wpis" Subtitle="Kolejne Wpisy samą klawiaturą: data, Projekt, Typ pracy, opis, Czas i Enter."
+            Topic="@HelpTopics.WpisyNowy" />
+
+@if (_projects is not null && _workTypes is not null)
+{
+    <EntryForm @ref="_form" Model="_input" Projects="_projects" WorkTypes="_workTypes" OnSave="SaveAsync"
+               OnDateChanged="RememberDate" />
+}
+
+@code {
+    internal const string MissingDictionaryItemMessage = "Wybrany Projekt lub Typ pracy już nie istnieje.";
+
+    private EntryForm? _form;
+    private EntryInput _input = new();
+    private IReadOnlyList<ProjectOption>? _projects;
+    private IReadOnlyList<WorkTypeOption>? _workTypes;
+    private int _userId;
+
+    /// <summary>The short description of a saved Entry: date, Project code and Czas.</summary>
+    internal static string SavedMessage(DateOnly date, string projectCode, int minutes) =>
+        $"Zapisano Wpis: {date.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)}, {projectCode}, {Czas.Format(minutes)}.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var today = PolishCalendar.Today(TimeProvider);
+        _input = new EntryInput { Date = today };
+        _userId = await CurrentUser.GetUserIdAsync();
+        DateMemory.Remember(_userId, today);
+        await LoadOptionsAsync();
+    }
+
+    private async Task LoadOptionsAsync()
+    {
+        _projects = await Options.ProjectsAsync(null, CancellationToken.None);
+        _workTypes = await Options.WorkTypesAsync(null, CancellationToken.None);
+    }
+
+    private void RememberDate(DateOnly? date)
+    {
+        if (date is { } value)
+        {
+            DateMemory.Remember(_userId, value);
+        }
+    }
+
+    private async Task SaveAsync(EntryInput input)
+    {
+        var change = await Store.AddAsync(input.Date!.Value, input.Project!.Id, input.WorkType!.Id, input.Description, input.Czas);
+        switch (change)
+        {
+            case EntryChange.Done done:
+                var message = SavedMessage(input.Date.Value, input.Project.Code, done.Minutes);
+                input.ClearAfterSave();
+                if (_form is not null)
+                {
+                    await _form.FocusProjectAsync();
+                }
+                await Notify.Success(message);
+                break;
+            case EntryChange.MissingDictionaryItem:
+                // The form keeps the typed values; the lists no longer offer the missing item.
+                await Notify.Error(MissingDictionaryItemMessage);
+                await LoadOptionsAsync();
+                break;
+        }
+    }
+}

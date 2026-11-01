@@ -12,7 +12,7 @@
 - **Słownik** — lista Projektów albo lista Typów pracy prowadzona przez Usera; każdy User ma własne Słowniki.
 - **Sesja wpisywania** — jedno posiedzenie (zwykle 1–2 h co kilka dni), w którym User przenosi notatki z kilku dni do Wpisów.
 - **Wpis** — jeden zarejestrowany odcinek pracy: data, dokładnie jeden Projekt, dokładnie jeden Typ pracy, opis, Czas.
-- **Czas** — długość Wpisu w formacie `h:mm`, wielokrotność 15 minut, od `0:15` do `24:00`. W Zestawieniu jako godziny dziesiętne (`1:30` → 1,5).
+- **Czas** — długość Wpisu zapisywana i pokazywana jak w Jirze (`1h 30m`, `2h`, `45m`; przy wpisywaniu także `90m`, `1,5h`, `1.5h` i `1:30`), wielokrotność 15 minut, od `15m` do `24h`. Sumy także ponad 24 h (`30h 30m`). W Zestawieniu jako godziny dziesiętne (`1h 30m` → 1,5).
 - **Miesiąc** — miesiąc kalendarzowy; jednostka Widoku miesiąca i Zestawienia.
 - **Suma dnia** — suma Czasu Wpisów z jednego dnia.
 - **Suma tygodnia** — suma Czasu Wpisów z dni jednego tygodnia (pn–nd) należących do danego Miesiąca; tydzień na przełomie miesięcy liczy się w każdym Miesiącu osobno.
