@@ -33,6 +33,7 @@
     [Parameter] public int? GroupSumColumn { get; set; }
 
     // Unchecked values per column index; kept across new Items, so a value unchecked once stays hidden.
+    private bool _running;
     private readonly Dictionary<int, HashSet<string>> _excluded = [];
     private List<string>[] _values = [];
     private bool[] _shown = [];
@@ -101,13 +102,40 @@
                             {
                                 <FluentButton IconStart="@action.Icon" IconOnly="true" Appearance="ButtonAppearance.Subtle"
                                               Title="@action.Label" aria-label="@action.Label"
-                                              OnClick="@(() => action.Invoke(data))" />
+                                              OnClick="@(() => RunAsync(action, data))" />
                             }
                         }
                     }
                 </TemplateColumn>
             }
         </FluentDataGrid>;
+
+    /// <summary>
+    /// Runs a row action and then renders the screen that owns it: the click handler belongs to the grid, so Blazor
+    /// would otherwise render only the grid, not the screen whose state the action changed. A click while an action is
+    /// still running is ignored (no second write, no second Confirm window).
+    /// </summary>
+    private async Task RunAsync(ReportAction<T> action, T row)
+    {
+        if (_running)
+        {
+            return;
+        }
+        _running = true;
+        try
+        {
+            await action.Invoke(row);
+        }
+        finally
+        {
+            _running = false;
+        }
+        if (action.Invoke.Target is IHandleEvent owner && !ReferenceEquals(owner, this))
+        {
+            // The same render an EventCallback with the screen as receiver would trigger.
+            await owner.HandleEventAsync(EventCallbackWorkItem.Empty, null);
+        }
+    }
 
     private RenderFragment PlainCell(T row, int index) => builder => builder.AddContent(0, Columns[index].Text(row));
 

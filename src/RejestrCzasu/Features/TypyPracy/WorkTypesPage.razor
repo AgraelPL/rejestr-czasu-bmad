@@ -1,0 +1,159 @@
+@page "/typy-pracy"
+@using Blazilla
+@using RejestrCzasu.Features.Pomoc
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@inject WorkTypeStore Store
+@inject Notify Notify
+@inject Confirm Confirm
+@* Typy pracy (R1–R3, R17): the User's Work type Dictionary, the same pattern as Projekty. Data only through
+   WorkTypeStore (AD-4, AD-16); after every change the list is read again from the database. *@
+
+<PageHeader Title="Typy pracy" Subtitle="Nazwy Typów pracy, które wybierasz we Wpisach." Topic="@HelpTopics.TypyPracy" />
+
+@if (_form is null)
+{
+    <FluentButton Appearance="ButtonAppearance.Primary" IconStart="@(new Icons.Regular.Size20.Add())" OnClick="OpenAdd"
+                  class="work-types-add">Dodaj Typ pracy</FluentButton>
+}
+else
+{
+    @* novalidate: the browser's own check of Required would block submit before WorkTypeFormValidator shows its messages. *@
+    <EditForm @key="_form" Model="_form" OnValidSubmit="SaveAsync" class="work-type-form" novalidate>
+        <FluentValidator Validator="_validator" />
+        <h2 class="work-type-form-title">@(_form.Id is null ? "Nowy Typ pracy" : $"Edycja Typu pracy {_editedName}")</h2>
+        <FluentTextInput @bind-Value="_form.Name" Label="Nazwa" Required="true" AutoFocus="true" class="work-type-name" />
+        <div class="work-type-form-buttons">
+            <FluentButton Type="ButtonType.Submit" Appearance="ButtonAppearance.Primary" class="work-type-save">Zapisz</FluentButton>
+            <FluentButton OnClick="CloseForm" class="work-type-cancel">Anuluj</FluentButton>
+        </div>
+    </EditForm>
+}
+
+@if (_rows is not null)
+{
+    <ReportGrid T="WorkTypeRow" Items="_rows" Columns="Columns" Actions="_actions" />
+}
+
+@code {
+    private static readonly IReadOnlyList<ReportColumn<WorkTypeRow>> Columns =
+    [
+        new("Nazwa", w => w.Name),
+        new("Stan", w => w.State),
+    ];
+
+    private readonly WorkTypeFormValidator _validator = new();
+    private IReadOnlyList<ReportAction<WorkTypeRow>> _actions = [];
+    private IReadOnlyList<WorkTypeRow>? _rows;
+    private WorkTypeForm? _form;
+    private string _editedName = "";
+    private bool _busy;
+
+    /// <summary>Warning shown when a Work type used by Entries is to be deleted (R3).</summary>
+    internal static string InUseMessage(string name, int entryCount) =>
+        $"Typ pracy {name} występuje w {EntryCount.InEntries(entryCount)}. Zamiast go usuwać, dezaktywuj go.";
+
+    internal static string DuplicateMessage(string name) => $"Typ pracy o nazwie {name} już istnieje.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _actions =
+        [
+            new(new Icons.Regular.Size20.Edit(), "Edytuj", OpenEdit),
+            new(new Icons.Regular.Size20.Archive(), "Dezaktywuj", w => SetActiveAsync(w, false)) { Visible = w => w.IsActive },
+            new(new Icons.Regular.Size20.ArrowUndo(), "Przywróć", w => SetActiveAsync(w, true)) { Visible = w => !w.IsActive },
+            new(new Icons.Regular.Size20.Delete(), "Usuń", DeleteAsync),
+        ];
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync() => _rows = await Store.ListAsync();
+
+    private void OpenAdd() => _form = new WorkTypeForm();
+
+    private Task OpenEdit(WorkTypeRow row)
+    {
+        _form = new WorkTypeForm { Id = row.Id, Name = row.Name };
+        _editedName = row.Name;
+        return Task.CompletedTask;
+    }
+
+    private void CloseForm() => _form = null;
+
+    private async Task SaveAsync()
+    {
+        if (_form is not { } form || _busy)
+        {
+            return;
+        }
+        _busy = true;
+        try
+        {
+            var change = form.Id is { } id
+                ? await Store.UpdateAsync(id, form.Name)
+                : await Store.AddAsync(form.Name);
+            switch (change)
+            {
+                case WorkTypeChange.Done done:
+                    _form = null;
+                    await ReloadAsync();
+                    await Notify.Success(form.Id is null ? $"Dodano Typ pracy {done.Name}." : $"Zapisano Typ pracy {done.Name}.");
+                    break;
+                case WorkTypeChange.DuplicateName duplicate:
+                    // The form stays open with the value the User typed.
+                    await Notify.Error(DuplicateMessage(duplicate.Name));
+                    break;
+                case WorkTypeChange.NotFound:
+                    _form = null;
+                    await ReloadAsync();
+                    await Notify.Warning(NotFoundMessage);
+                    break;
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SetActiveAsync(WorkTypeRow row, bool isActive)
+    {
+        var change = await Store.SetActiveAsync(row.Id, isActive);
+        await ReloadAsync();
+        if (change is WorkTypeChange.Done done)
+        {
+            await Notify.Success(isActive ? $"Przywrócono Typ pracy {done.Name}." : $"Dezaktywowano Typ pracy {done.Name}.");
+        }
+        else
+        {
+            await Notify.Warning(NotFoundMessage);
+        }
+    }
+
+    private async Task DeleteAsync(WorkTypeRow row)
+    {
+        if (!await Confirm.AskAsync("Usuń Typ pracy", $"Usunąć Typ pracy {row.Name}?", "Usuń"))
+        {
+            return;
+        }
+        var change = await Store.DeleteAsync(row.Id);
+        if (change is WorkTypeChange.Done or WorkTypeChange.NotFound && _form?.Id == row.Id)
+        {
+            _form = null;
+        }
+        await ReloadAsync();
+        switch (change)
+        {
+            case WorkTypeChange.Done done:
+                await Notify.Success($"Usunięto Typ pracy {done.Name}.");
+                break;
+            case WorkTypeChange.InUse inUse:
+                await Notify.Warning(InUseMessage(inUse.Name, inUse.EntryCount));
+                break;
+            default:
+                await Notify.Warning(NotFoundMessage);
+                break;
+        }
+    }
+
+    private const string NotFoundMessage = "Ten Typ pracy już nie istnieje. Lista została wczytana ponownie.";
+}

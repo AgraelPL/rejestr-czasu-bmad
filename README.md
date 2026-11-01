@@ -90,10 +90,10 @@ docker exec rejestr-czasu-db psql -U rejestr -d rejestr -c "UPDATE users SET sta
 Potem logowanie na `/konto/logowanie`. Rejestracja i logowanie przyjmują najwyżej 10 prób (POST) na minutę z jednego
 adresu IP; po 5 złych hasłach z rzędu logowanie na Konto jest wstrzymane na 15 minut.
 
-### Wpis testowy (blokada usunięcia Projektu)
+### Wpis testowy (blokada usunięcia Projektu i Typu pracy)
 
-Dopóki nie ma formularza Wpisu, Wpis do ręcznego sprawdzenia blokady usunięcia Projektu (Słowniki → Projekty)
-dodaje się w bazie. Najpierw `id` Konta:
+Dopóki nie ma formularza Wpisu, Wpis do ręcznego sprawdzenia blokady usunięcia Projektu lub Typu pracy
+(Słowniki → Projekty, Słowniki → Typy pracy) dodaje się w bazie. Najpierw `id` Konta:
 
 ```powershell
 docker exec rejestr-czasu-db psql -U rejestr -d rejestr -c "SELECT id, user_name FROM users;"
@@ -108,6 +108,18 @@ docker exec rejestr-czasu-db psql -U rejestr -d rejestr -c "WITH p AS (SELECT id
 
 `INSERT 0 1` oznacza dodany Wpis (`INSERT 0 0` — nie ma takiego Projektu tego Konta; wtedy nie powstaje też Typ pracy). Usunięcie tego Projektu
 na ekranie Projekty pokaże wtedy liczbę Wpisów i propozycję dezaktywacji, a Projekt zostanie na liście.
+
+Blokadę usunięcia Typu pracy (Słowniki → Typy pracy) sprawdza drugie polecenie: dodaje jeden Wpis z istniejącym Typem
+pracy o podanej nazwie (bez względu na wielkość liter) i pierwszym aktywnym Projektem tego Konta. Najpierw trzeba dodać
+na ekranach Typ pracy i co najmniej jeden aktywny Projekt; zamień `<user_id>` i `<NAZWA>` (nazwa Typu pracy):
+
+```powershell
+docker exec rejestr-czasu-db psql -U rejestr -d rejestr -c "WITH w AS (SELECT id, user_id FROM work_type WHERE user_id = <user_id> AND lower(name) = lower('<NAZWA>')), p AS (SELECT id FROM project WHERE user_id = <user_id> AND is_active ORDER BY id LIMIT 1) INSERT INTO time_entry (user_id, date, project_id, work_type_id, description, minutes) SELECT w.user_id, DATE '2026-09-01', p.id, w.id, 'Wpis testowy', 60 FROM w, p;"
+```
+
+`INSERT 0 1` oznacza dodany Wpis (`INSERT 0 0` — to Konto nie ma Typu pracy o tej nazwie albo nie ma aktywnego
+Projektu). Usunięcie tego Typu pracy na ekranie Typy pracy pokaże wtedy liczbę Wpisów i propozycję dezaktywacji, a Typ
+pracy zostanie na liście.
 
 ## Obraz aplikacji (Docker)
 

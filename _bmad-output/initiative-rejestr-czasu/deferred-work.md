@@ -31,3 +31,8 @@
 - source_plan: `_bmad-output/initiative-rejestr-czasu/tickets/epic-szkielet-i-slowniki/tickets/story-projekty-lista-dodawanie-edycja-dezaktywacja-i-usuwanie-plan.md`
   summary: Kliknięcie ikony akcji w `ReportGrid` odświeża tylko siatkę, nie ekran; Projekty obchodzą to opakowaniem `ThenRender`, które musi powtórzyć każdy kolejny ekran (low).
   evidence: Akcja wiersza to `Func<T, Task>` wywoływany z handlera komponentu `ReportGrid`; poprawka w siatce (np. `EventCallback` lub odświeżenie rodzica) usunie obejście z ekranów — kandydat do Refactor sweep 1.10.
+
+- Rozstrzygnięte 01.11.2026 (Autor, przed historią 1.10):
+  - `ReportGrid` sam renderuje ekran, do którego należy akcja wiersza, i ignoruje kliknięcie w trakcie trwającej akcji; obejście `ThenRender` usunięte z Projektów i Typów pracy.
+  - AD-11 zaktualizowane: `Confirm` na `ShowDialogAsync` z `ConfirmDialog`; komunikaty `Notify` znikają po 5 s, w pływającym panelu w prawym górnym rogu.
+  - Pakiet ikon: `Microsoft.FluentUI.AspNetCore.Components.Icons` ma własną numerację i deklaruje zależność minimalną od rdzenia 4.14.x (także najnowsza 5.0.1), więc z Components 5.0.1 jest zgodny; podniesiony do 5.0.1, ikony renderują się w testach i w przeglądarce.

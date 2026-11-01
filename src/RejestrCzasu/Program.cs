@@ -4,7 +4,7 @@ using RejestrCzasu;
 using RejestrCzasu.Accounts;
 using RejestrCzasu.Components;
 using RejestrCzasu.Data;
-using RejestrCzasu.Features.Projekty;
+using RejestrCzasu.Features;
 using RejestrCzasu.Localization;
 using RejestrCzasu.Options;
 using RejestrCzasu.Shared;
@@ -61,11 +61,8 @@ builder.Services.AddRazorComponents()
 // Fluent UI 5: components and services (incl. IDialogService); providers rendered by <FluentProviders /> in MainLayout.
 // Polish texts of the Fluent UI components (AD-6).
 builder.Services.AddFluentUIComponents(options => options.Localizer = new FluentLocalizer());
-// Screen messages and confirmations of every screen (AD-11), one instance per circuit.
-builder.Services.AddScoped<Notify>();
-builder.Services.AddScoped<Confirm>();
-// Data of the Projekty screen, on top of the scoped UserDbContextFactory (AD-4, AD-16).
-builder.Services.AddScoped<ProjectStore>();
+// Screen messages, confirmations and the data of the Dictionary screens (AD-4, AD-11), one instance per circuit.
+builder.Services.AddAppScreens();
 
 var app = builder.Build();
 

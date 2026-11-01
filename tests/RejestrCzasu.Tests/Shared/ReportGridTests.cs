@@ -1,4 +1,6 @@
 using Bunit;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.FluentUI.AspNetCore.Components;
 using RejestrCzasu.Localization;
 using RejestrCzasu.Shared;
@@ -172,6 +174,64 @@ public sealed class ReportGridTests : BunitContext
 
         await ShowOptionsAsync(cut, 1);
         Assert.Equal(["Zaznacz wszystkie", "(puste)"], cut.FindComponents<FluentCheckbox>().Select(c => c.Instance.Label));
+    }
+
+    [Fact]
+    public async Task Action_RendersTheScreenThatOwnsIt()
+    {
+        var cut = Render<ActionHost>();
+
+        await cut.InvokeAsync(() => cut.Find("tbody tr fluent-button[aria-label='Edytuj']").Click());
+
+        cut.WaitForAssertion(() => Assert.Equal("1", cut.Find(".host-count").TextContent));
+    }
+
+    [Fact]
+    public async Task Action_SecondClickWhileRunning_IsIgnored()
+    {
+        var cut = Render<ActionHost>(p => p.Add(h => h.Gate, new TaskCompletionSource()));
+        var button = cut.Find("tbody tr fluent-button[aria-label='Edytuj']");
+
+        await cut.InvokeAsync(() => button.Click());
+        await cut.InvokeAsync(() => cut.Find("tbody tr fluent-button[aria-label='Edytuj']").Click());
+        await cut.InvokeAsync(() => cut.Instance.Gate!.SetResult());
+
+        cut.WaitForAssertion(() => Assert.Equal("1", cut.Find(".host-count").TextContent));
+        Assert.Equal(1, cut.Instance.Started);
+    }
+
+    /// <summary>A screen whose row action changes its own state, like Projekty: the grid must render it afterwards.</summary>
+    private sealed class ActionHost : ComponentBase
+    {
+        [Parameter] public TaskCompletionSource? Gate { get; set; }
+
+        public int Started { get; private set; }
+
+        private int _count;
+
+        private async Task MarkAsync(Row row)
+        {
+            Started++;
+            if (Gate is not null)
+            {
+                await Gate.Task;
+            }
+            _count++;
+        }
+
+        protected override void BuildRenderTree(RenderTreeBuilder builder)
+        {
+            builder.OpenElement(0, "span");
+            builder.AddAttribute(1, "class", "host-count");
+            builder.AddContent(2, _count);
+            builder.CloseElement();
+            builder.OpenComponent<ReportGrid<Row>>(3);
+            builder.AddComponentParameter(4, nameof(ReportGrid<Row>.Items), new[] { A });
+            builder.AddComponentParameter(5, nameof(ReportGrid<Row>.Columns), Columns);
+            builder.AddComponentParameter(6, nameof(ReportGrid<Row>.Actions),
+                new ReportAction<Row>[] { new(new Icons.Regular.Size20.Edit(), "Edytuj", MarkAsync) });
+            builder.CloseComponent();
+        }
     }
 
     private IRenderedComponent<ReportGrid<Row>> RenderGrid(Row[] items) =>
