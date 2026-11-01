@@ -58,34 +58,13 @@ else
     {
         _actions =
         [
-            new(new Icons.Regular.Size20.Edit(), "Edytuj", ThenRender(OpenEdit)),
-            new(new Icons.Regular.Size20.Archive(), "Dezaktywuj", ThenRender(w => SetActiveAsync(w, false))) { Visible = w => w.IsActive },
-            new(new Icons.Regular.Size20.ArrowUndo(), "Przywróć", ThenRender(w => SetActiveAsync(w, true))) { Visible = w => !w.IsActive },
-            new(new Icons.Regular.Size20.Delete(), "Usuń", ThenRender(DeleteAsync)),
+            new(new Icons.Regular.Size20.Edit(), "Edytuj", OpenEdit),
+            new(new Icons.Regular.Size20.Archive(), "Dezaktywuj", w => SetActiveAsync(w, false)) { Visible = w => w.IsActive },
+            new(new Icons.Regular.Size20.ArrowUndo(), "Przywróć", w => SetActiveAsync(w, true)) { Visible = w => !w.IsActive },
+            new(new Icons.Regular.Size20.Delete(), "Usuń", DeleteAsync),
         ];
         await ReloadAsync();
     }
-
-    // The icon's click handler belongs to ReportGrid, so Blazor re-renders only the grid after it; the screen's own
-    // state (form, list) changed too, so the screen renders itself.
-    // While a change is running, another click is ignored (no second write, no second Confirm window).
-    private Func<WorkTypeRow, Task> ThenRender(Func<WorkTypeRow, Task> action) => async row =>
-    {
-        if (_busy)
-        {
-            return;
-        }
-        _busy = true;
-        try
-        {
-            await action(row);
-        }
-        finally
-        {
-            _busy = false;
-        }
-        StateHasChanged();
-    };
 
     private async Task ReloadAsync() => _rows = await Store.ListAsync();
 
