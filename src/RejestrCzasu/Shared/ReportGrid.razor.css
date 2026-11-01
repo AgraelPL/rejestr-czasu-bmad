@@ -1,0 +1,12 @@
+/* Value filter of a column (AD-9): a vertical list with a height limit. */
+.report-grid-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.report-grid-counter {
+    margin-top: 8px;
+}

@@ -16,3 +16,13 @@ M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRaw
 M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlInterpolated(Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade,System.FormattableString);Surowy SQL omija filtr Usera (AD-16)
 M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlInterpolatedAsync(Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade,System.FormattableString,System.Threading.CancellationToken);Surowy SQL omija filtr Usera (AD-16)
 M:Microsoft.EntityFrameworkCore.RelationalQueryableExtensions.FromSqlRaw``1(Microsoft.EntityFrameworkCore.DbSet{``0},System.String,System.Object[]);Surowy SQL bez parametrow (AD-16)
+// AD-6: the server clock and zone are never used; take time from TimeProvider and dates from PolishCalendar.
+P:System.DateTime.Now;Zegar i strefa serwera, uzyj TimeProvider i PolishCalendar (AD-6)
+P:System.DateTime.Today;Data w strefie serwera, uzyj PolishCalendar.Today(TimeProvider) (AD-6)
+P:System.DateTimeOffset.Now;Zegar i strefa serwera, uzyj TimeProvider (AD-6)
+P:System.DateTime.UtcNow;Zegar serwera, uzyj TimeProvider.GetUtcNow() (AD-6)
+P:System.DateTimeOffset.UtcNow;Zegar serwera, uzyj TimeProvider.GetUtcNow() (AD-6)
+P:System.TimeZoneInfo.Local;Strefa serwera, uzyj PolishCalendar.TimeZone (AD-6)
+M:System.DateTime.ToLocalTime;Strefa serwera, uzyj PolishCalendar.ToPolishTime (AD-6)
+M:System.DateTimeOffset.ToLocalTime;Strefa serwera, uzyj PolishCalendar.ToPolishTime (AD-6)
+M:System.TimeProvider.GetLocalNow;Strefa serwera, uzyj PolishCalendar.Today albo ToPolishTime (AD-6)
