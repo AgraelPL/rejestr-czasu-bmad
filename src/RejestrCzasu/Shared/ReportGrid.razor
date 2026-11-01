@@ -1,68 +1,52 @@
 @* One report grid for every list (AD-9, R17): rows in input order, value filter in each column, item counter,
-   row action icons. The grid only hides rows; it never sorts, sums or reads data itself. *@
+   row action icons, optional fixed grouping set by the screen with sums given by the screen.
+   The grid only hides rows; it never sorts, sums or reads data itself. *@
 @typeparam T
 @using System.Globalization
 
-<FluentDataGrid TGridItem="T" Items="@_visibleQuery" ItemKey="@RowKey">
-    @for (var i = 0; i < Columns.Count; i++)
+<div class="report-grid">
+    @if (Groups.Count == 0)
     {
-        var index = i;
-        var column = Columns[index];
-        <TemplateColumn TGridItem="T" Title="@column.Title" Sortable="false" Filtered="@IsFiltered(index)" Context="row">
-            <ChildContent>@column.Text(row)</ChildContent>
-            <ColumnOptions>
-                <div class="report-grid-filter">
-                    <FluentCheckbox Label="Zaznacz wszystkie"
-                                    Value="@(!IsFiltered(index))"
-                                    ValueChanged="@((bool value) => SetAll(index, value))" />
-                    @foreach (var value in Values(index))
-                    {
-                        <FluentCheckbox Label="@ValueLabel(value)"
-                                        Value="@(!Excluded(index).Contains(value))"
-                                        ValueChanged="@((bool shown) => SetValue(index, value, shown))" />
-                    }
-                </div>
-            </ColumnOptions>
-        </TemplateColumn>
+        @Grid(_visibleQuery, RowKey, null, PlainCell, _ => true, row => row)
     }
-    @if (Actions.Count > 0)
+    else
     {
-        <TemplateColumn TGridItem="T" Title="Akcje" Sortable="false" Context="row">
-            @foreach (var action in Actions)
-            {
-                if (action.Visible is null || action.Visible(row))
-                {
-                    <FluentButton IconStart="@action.Icon" IconOnly="true" Appearance="ButtonAppearance.Subtle"
-                                  Title="@action.Label" aria-label="@action.Label"
-                                  OnClick="@(() => action.Invoke(row))" />
-                }
-            }
-        </TemplateColumn>
+        @Grid(_groupedQuery, row => row.Key, GroupedRowClass, GroupedCell, row => !row.IsHeader, row => row.Item)
     }
-</FluentDataGrid>
-<p class="report-grid-counter">@Counter</p>
+    <p class="report-grid-counter">@Counter</p>
+</div>
 
 @code {
     private static readonly StringComparer PolishOrder = StringComparer.Create(CultureInfo.GetCultureInfo("pl-PL"), ignoreCase: false);
 
-    /// <summary>Rows in display order; the grid keeps this order.</summary>
+    /// <summary>Rows in display order; the grid keeps this order (within a group when grouped).</summary>
     [Parameter, EditorRequired] public IReadOnlyList<T> Items { get; set; } = [];
 
     [Parameter, EditorRequired] public IReadOnlyList<ReportColumn<T>> Columns { get; set; } = [];
 
     [Parameter] public IReadOnlyList<ReportAction<T>> Actions { get; set; } = [];
 
+    /// <summary>Fixed grouping levels, outer level first; empty means no grouping.</summary>
+    [Parameter] public IReadOnlyList<ReportGroup<T>> Groups { get; set; } = [];
+
+    /// <summary>Index in <see cref="Columns"/> where group headers show their sum; defaults to the last data column.</summary>
+    [Parameter] public int? GroupSumColumn { get; set; }
+
     // Unchecked values per column index; kept across new Items, so a value unchecked once stays hidden.
     private readonly Dictionary<int, HashSet<string>> _excluded = [];
     private List<string>[] _values = [];
-    private List<T> _visible = [];
+    private bool[] _shown = [];
+    private int _shownCount;
     private IQueryable<T> _visibleQuery = Enumerable.Empty<T>().AsQueryable();
+    private IQueryable<GridRow> _groupedQuery = Enumerable.Empty<GridRow>().AsQueryable();
     // Row key = input position; equal records (Equals) are still distinct rows, so the grid's @key never collides.
     private Dictionary<object, int> _positions = new(ReferenceEqualityComparer.Instance);
 
-    internal string Counter => IsAnyFiltered ? $"Pozycje: {_visible.Count} z {Items.Count}" : $"Pozycje: {_visible.Count}";
+    internal string Counter => IsAnyFiltered ? $"Pozycje: {_shownCount} z {Items.Count}" : $"Pozycje: {_shownCount}";
 
     private bool IsAnyFiltered => Enumerable.Range(0, Columns.Count).Any(IsFiltered);
+
+    private int SumColumn => GroupSumColumn ?? Columns.Count - 1;
 
     protected override void OnParametersSet()
     {
@@ -80,6 +64,82 @@
             .ToArray();
         ApplyFilter();
     }
+
+    private RenderFragment Grid<TRow>(IQueryable<TRow> items, Func<TRow, object> key, Func<TRow, string?>? rowClass,
+        Func<TRow, int, RenderFragment> cell, Func<TRow, bool> isData, Func<TRow, T> item) =>
+        @<FluentDataGrid TGridItem="TRow" Items="@items" ItemKey="@key" RowClass="@rowClass">
+            @for (var i = 0; i < Columns.Count; i++)
+            {
+                var index = i;
+                var column = Columns[index];
+                <TemplateColumn TGridItem="TRow" Title="@column.Title" Sortable="false" Filtered="@IsFiltered(index)" Context="row">
+                    <ChildContent>@cell(row, index)</ChildContent>
+                    <ColumnOptions>
+                        <div class="report-grid-filter">
+                            <FluentCheckbox Label="Zaznacz wszystkie"
+                                            Value="@(!IsFiltered(index))"
+                                            ValueChanged="@((bool value) => SetAll(index, value))" />
+                            @foreach (var value in Values(index))
+                            {
+                                <FluentCheckbox Label="@ValueLabel(value)"
+                                                Value="@(!Excluded(index).Contains(value))"
+                                                ValueChanged="@((bool shown) => SetValue(index, value, shown))" />
+                            }
+                        </div>
+                    </ColumnOptions>
+                </TemplateColumn>
+            }
+            @if (Actions.Count > 0)
+            {
+                <TemplateColumn TGridItem="TRow" Title="Akcje" Sortable="false" Context="row">
+                    @if (isData(row))
+                    {
+                        var data = item(row);
+                        foreach (var action in Actions)
+                        {
+                            if (action.Visible is null || action.Visible(data))
+                            {
+                                <FluentButton IconStart="@action.Icon" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                              Title="@action.Label" aria-label="@action.Label"
+                                              OnClick="@(() => action.Invoke(data))" />
+                            }
+                        }
+                    }
+                </TemplateColumn>
+            }
+        </FluentDataGrid>;
+
+    private RenderFragment PlainCell(T row, int index) => builder => builder.AddContent(0, Columns[index].Text(row));
+
+    // Header: title in the first column, the screen's sum in the sum column, nothing elsewhere.
+    private RenderFragment GroupedCell(GridRow row, int index) => builder =>
+    {
+        if (!row.IsHeader)
+        {
+            builder.AddContent(0, Columns[index].Text(row.Item));
+            return;
+        }
+
+        var group = Groups[row.Level];
+        if (index == 0)
+        {
+            builder.OpenElement(1, "span");
+            builder.AddAttribute(2, "class", "report-grid-group-title");
+            builder.AddContent(3, group.Title(row.GroupKey));
+            builder.CloseElement();
+        }
+
+        if (index == SumColumn && group.Sum is not null)
+        {
+            builder.OpenElement(4, "span");
+            builder.AddAttribute(5, "class", "report-grid-group-sum");
+            builder.AddContent(6, group.Sum(row.GroupKey));
+            builder.CloseElement();
+        }
+    };
+
+    private static string? GroupedRowClass(GridRow row) =>
+        row.IsHeader ? $"report-grid-group report-grid-group-{row.Level}" : null;
 
     private object RowKey(T item) => item is not null && _positions.TryGetValue(item, out var position) ? position : -1;
 
@@ -122,10 +182,60 @@
 
     private void ApplyFilter()
     {
-        _visible = Items
-            .Where(item => Columns.Select((column, index) => (column, index))
+        _shown = Items
+            .Select(item => Columns.Select((column, index) => (column, index))
                 .All(c => !_excluded.TryGetValue(c.index, out var set) || !set.Contains(c.column.Text(item))))
-            .ToList();
-        _visibleQuery = _visible.AsQueryable();
+            .ToArray();
+        _shownCount = _shown.Count(shown => shown);
+
+        if (Groups.Count == 0)
+        {
+            _visibleQuery = Items.Where((_, position) => _shown[position]).ToList().AsQueryable();
+            _groupedQuery = Enumerable.Empty<GridRow>().AsQueryable();
+            return;
+        }
+
+        var rows = new List<GridRow>();
+        AddGroupRows(rows, 0, Enumerable.Range(0, Items.Count).ToList(), "");
+        _groupedQuery = rows.AsQueryable();
+        _visibleQuery = Enumerable.Empty<T>().AsQueryable();
     }
+
+    // Groups in order of first appearance of their key; a group without a shown data row has no header.
+    private void AddGroupRows(List<GridRow> rows, int level, List<int> positions, string path)
+    {
+        if (level == Groups.Count)
+        {
+            rows.AddRange(positions.Where(position => _shown[position])
+                .Select(position => new GridRow(false, level, "", Items[position], position)));
+            return;
+        }
+
+        var groups = new List<(string Key, List<int> Positions)>();
+        var byKey = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+        foreach (var position in positions)
+        {
+            var key = Groups[level].Key(Items[position]) ?? "";
+            if (!byKey.TryGetValue(key, out var members))
+            {
+                byKey[key] = members = [];
+                groups.Add((key, members));
+            }
+
+            members.Add(position);
+        }
+
+        foreach (var (key, members) in groups.Where(g => g.Positions.Any(position => _shown[position])))
+        {
+            var groupPath = level == 0 ? key : path + '\u001f' + key;
+            rows.Add(new GridRow(true, level, key, default!, new HeaderKey(level, groupPath)));
+            AddGroupRows(rows, level + 1, members, groupPath);
+        }
+    }
+
+    /// <summary>Grid row when grouped: a group header (level, key) or a data row with its input item.</summary>
+    internal sealed record GridRow(bool IsHeader, int Level, string GroupKey, T Item, object Key);
+
+    // Header key = level and path of group keys; data rows are keyed by input position (int), so keys never collide.
+    private sealed record HeaderKey(int Level, string Path);
 }
