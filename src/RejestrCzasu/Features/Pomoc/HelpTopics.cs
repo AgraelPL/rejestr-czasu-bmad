@@ -39,10 +39,12 @@ public sealed record HelpTopic(string Key, string Title, Type Content, HelpAcces
 public static class HelpTopics
 {
     public const string Start = "start";
+    public const string Projekty = "projekty";
 
     public static IReadOnlyList<HelpTopic> All { get; } =
     [
         new(Start, "Strona startowa i menu", typeof(StartHelp), HelpAccess.LoggedIn),
+        new(Projekty, "Projekty", typeof(ProjektyHelp), HelpAccess.LoggedIn),
     ];
 
     /// <summary>The topic with the key (case-insensitive), or <c>null</c>.</summary>

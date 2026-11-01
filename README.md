@@ -90,6 +90,25 @@ docker exec rejestr-czasu-db psql -U rejestr -d rejestr -c "UPDATE users SET sta
 Potem logowanie na `/konto/logowanie`. Rejestracja i logowanie przyjmują najwyżej 10 prób (POST) na minutę z jednego
 adresu IP; po 5 złych hasłach z rzędu logowanie na Konto jest wstrzymane na 15 minut.
 
+### Wpis testowy (blokada usunięcia Projektu)
+
+Dopóki nie ma formularza Wpisu, Wpis do ręcznego sprawdzenia blokady usunięcia Projektu (Słowniki → Projekty)
+dodaje się w bazie. Najpierw `id` Konta:
+
+```powershell
+docker exec rejestr-czasu-db psql -U rejestr -d rejestr -c "SELECT id, user_name FROM users;"
+```
+
+Potem, po dodaniu Projektu na ekranie Projekty, polecenie dodaje testowy Typ pracy (z bieżącym czasem w nazwie, więc
+można je powtarzać) i jeden Wpis z tym Projektem; zamień `<user_id>` i `<KOD>` (kod Projektu wielkimi literami):
+
+```powershell
+docker exec rejestr-czasu-db psql -U rejestr -d rejestr -c "WITH p AS (SELECT id, user_id FROM project WHERE user_id = <user_id> AND code = '<KOD>'), w AS (INSERT INTO work_type (user_id, name, is_active) SELECT user_id, 'Typ testowy ' || clock_timestamp(), true FROM p RETURNING id) INSERT INTO time_entry (user_id, date, project_id, work_type_id, description, minutes) SELECT p.user_id, DATE '2026-09-01', p.id, w.id, 'Wpis testowy', 60 FROM p, w;"
+```
+
+`INSERT 0 1` oznacza dodany Wpis (`INSERT 0 0` — nie ma takiego Projektu tego Konta; wtedy nie powstaje też Typ pracy). Usunięcie tego Projektu
+na ekranie Projekty pokaże wtedy liczbę Wpisów i propozycję dezaktywacji, a Projekt zostanie na liście.
+
 ## Obraz aplikacji (Docker)
 
 Na serwerze aplikacja działa jako obraz kontenera za Caddy (wdrożenie: historia 4.8). `Dockerfile` w katalogu głównym

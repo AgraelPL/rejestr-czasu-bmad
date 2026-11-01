@@ -1,0 +1,38 @@
+@* Help topic "projekty" (AD-22, R26): the Projekty screen (Słowniki → Projekty). *@
+<p>
+    Projekty to Twój Słownik Projektów. Każdy Wpis wskazuje dokładnie jeden Projekt. Projekty widzisz tylko Ty —
+    każdy User ma własny Słownik.
+</p>
+
+<h2>Lista</h2>
+<p>
+    Lista pokazuje wszystkie Twoje Projekty, aktywne i nieaktywne, uporządkowane według kodu. Kolumny: <strong>Kod</strong>,
+    <strong>Nazwa</strong> i <strong>Stan</strong> (Aktywny albo Nieaktywny). W nagłówku każdej kolumny możesz odznaczyć
+    wartości, których nie chcesz widzieć; pod listą jest licznik pozycji.
+</p>
+
+<h2>Dodawanie i edycja</h2>
+<ul>
+    <li><strong>Dodaj Projekt</strong> otwiera nad listą formularz z polami <strong>Kod</strong> i <strong>Nazwa</strong>.
+        <strong>Zapisz</strong> dodaje Projekt jako aktywny, <strong>Anuluj</strong> zamyka formularz bez zapisu.</li>
+    <li>Ikona <strong>Edytuj</strong> w wierszu otwiera ten sam formularz z wartościami Projektu. Zmiana kodu lub nazwy
+        nie zmienia Wpisów: nadal wskazują ten sam Projekt, już z nowym kodem i nazwą.</li>
+    <li>Kod i Nazwa są wymagane. Kod może mieć najwyżej 20 znaków, nazwa najwyżej 200. Spacje na początku i końcu
+        są pomijane.</li>
+    <li>Kod zapisuje się wielkimi literami (np. „rdz” jako <strong>RDZ</strong>) i musi być unikalny bez względu na
+        wielkość liter. Gdy masz już Projekt o takim kodzie, zobaczysz komunikat „Projekt o kodzie … już istnieje.”,
+        a formularz zostanie otwarty z wpisanymi wartościami.</li>
+</ul>
+
+<h2>Dezaktywacja i przywrócenie</h2>
+<p>
+    Ikona <strong>Dezaktywuj</strong> (tylko przy aktywnym Projekcie) zmienia Stan na Nieaktywny: Projekt nie pojawia się
+    na liście wyboru w nowych Wpisach, ale Wpisy, które już go mają, zostają bez zmian. Ikona <strong>Przywróć</strong>
+    (tylko przy nieaktywnym Projekcie) przywraca Stan Aktywny.
+</p>
+
+<h2>Usuwanie</h2>
+<p>
+    Ikona <strong>Usuń</strong> pyta o potwierdzenie. Usunąć można tylko Projekt, który nie występuje w żadnym Wpisie.
+    Jeśli występuje, nic nie jest usuwane, a komunikat podaje liczbę Wpisów z tym Projektem — taki Projekt dezaktywuj.
+</p>

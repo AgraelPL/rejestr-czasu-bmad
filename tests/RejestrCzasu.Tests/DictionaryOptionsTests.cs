@@ -1,8 +1,3 @@
-using System.Globalization;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Components.Server;
-using Microsoft.AspNetCore.Http;
 using RejestrCzasu.Accounts;
 using RejestrCzasu.Data;
 
@@ -226,21 +221,8 @@ public sealed class DictionaryOptionsTests(PostgresFixture postgres) : IAsyncLif
         await Assert.ThrowsAsync<NoCurrentUserException>(() => options.WorkTypesAsync(null, Ct));
     }
 
-    /// <summary>
-    /// <see cref="DictionaryOptions"/> for a logged-in User, through the public <see cref="UserDbContextFactory"/> path.
-    /// <see cref="CurrentUser"/> runs in circuit mode, so the User is per instance (<c>HttpContextAccessor</c> is a
-    /// static AsyncLocal shared by all instances). The only place that builds <see cref="CurrentUser"/>.
-    /// </summary>
-    private DictionaryOptions OptionsFor(int userId)
-    {
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(
-            [new Claim(ClaimTypes.NameIdentifier, userId.ToString(CultureInfo.InvariantCulture))], "test"));
-        var provider = new ServerAuthenticationStateProvider();
-        provider.SetAuthenticationState(Task.FromResult(new AuthenticationState(principal)));
-        var currentUser = new CurrentUser(new HttpContextAccessor(), provider, postgres.ContextFactory);
-        _ = new CurrentUserCircuitHandler(currentUser);
-        return new DictionaryOptions(new UserDbContextFactory(postgres.ContextFactory, currentUser));
-    }
+    /// <summary><see cref="DictionaryOptions"/> for a logged-in User, through the public <see cref="UserDbContextFactory"/> path.</summary>
+    private DictionaryOptions OptionsFor(int userId) => new(postgres.CreateLoggedInUserDbContextFactory(userId));
 
     /// <summary>An active Project <c>AKT</c> and an inactive Project <c>NIE</c> of the User.</summary>
     private async Task<(int Active, int Inactive)> SeedProjectsAsync(int userId)

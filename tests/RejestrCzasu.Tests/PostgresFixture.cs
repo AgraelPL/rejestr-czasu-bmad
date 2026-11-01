@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -85,6 +87,22 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// </summary>
     public UserDbContextFactory CreateUserDbContextFactory() =>
         new(ContextFactory, new CurrentUser(new HttpContextAccessor(), new ServerAuthenticationStateProvider(), ContextFactory));
+
+    /// <summary>
+    /// <see cref="UserDbContextFactory"/> for a logged-in User, through the public path the application uses.
+    /// <see cref="CurrentUser"/> runs in circuit mode, so the User is per instance (<c>HttpContextAccessor</c> is a
+    /// static AsyncLocal shared by all instances).
+    /// </summary>
+    public UserDbContextFactory CreateLoggedInUserDbContextFactory(int userId)
+    {
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.NameIdentifier, userId.ToString(CultureInfo.InvariantCulture))], "test"));
+        var provider = new ServerAuthenticationStateProvider();
+        provider.SetAuthenticationState(Task.FromResult(new AuthenticationState(principal)));
+        var currentUser = new CurrentUser(new HttpContextAccessor(), provider, ContextFactory);
+        _ = new CurrentUserCircuitHandler(currentUser);
+        return new UserDbContextFactory(ContextFactory, currentUser);
+    }
 
     /// <summary>Creates an active Account with a fictional login and returns its id.</summary>
     public async Task<int> CreateUserAsync(string userName)
