@@ -3,7 +3,7 @@ title: 'Układ aplikacji z menu, Notify i Confirm'
 type: 'feature'
 ticket: '3'
 created: '2026-11-01'
-status: 'built'
+status: done
 baseline_revision: '8e6a000490ada9760cf4298b601942b6ff2787fc'
 route: 'full'
 route_source: 'auto'
