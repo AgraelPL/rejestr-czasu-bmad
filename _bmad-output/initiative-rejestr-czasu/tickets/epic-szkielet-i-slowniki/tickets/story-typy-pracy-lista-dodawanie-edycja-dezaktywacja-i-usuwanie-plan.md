@@ -3,7 +3,7 @@ title: 'Typy pracy: lista, dodawanie, edycja, dezaktywacja i usuwanie'
 type: 'feature'
 ticket: '8'
 created: '2026-11-01'
-status: 'built'
+status: done
 baseline_revision: 'ff61904ecdc7c513be8273db66a79feada265739'
 route: 'full'
 route_source: 'auto'
