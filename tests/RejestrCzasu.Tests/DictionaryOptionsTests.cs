@@ -237,7 +237,7 @@ public sealed class DictionaryOptionsTests(PostgresFixture postgres) : IAsyncLif
             [new Claim(ClaimTypes.NameIdentifier, userId.ToString(CultureInfo.InvariantCulture))], "test"));
         var provider = new ServerAuthenticationStateProvider();
         provider.SetAuthenticationState(Task.FromResult(new AuthenticationState(principal)));
-        var currentUser = new CurrentUser(new HttpContextAccessor(), provider);
+        var currentUser = new CurrentUser(new HttpContextAccessor(), provider, postgres.ContextFactory);
         _ = new CurrentUserCircuitHandler(currentUser);
         return new DictionaryOptions(new UserDbContextFactory(postgres.ContextFactory, currentUser));
     }
