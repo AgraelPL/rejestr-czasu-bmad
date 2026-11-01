@@ -8,6 +8,7 @@ companions: []
 after: []
 refined: true
 risk: high
+status: done
 ---
 
 # Szkielet aplikacji i Słowniki
@@ -79,3 +80,4 @@ Autor po zalogowaniu w aplikacji uruchomionej lokalnie wpisuje swoje 7 Projektó
 - Dropped: historia 2 „Kopia bazy przy starcie i odtwarzanie z README” (31.10.2026) — prd FR-14 usunięty, R14 wycofane; kopie zapewnia Kopia serwera dostawcy, a `docker exec pg_dump` nie działa w układzie z serwerem.
 - Waits on epic-konta-i-wdrozenie because: schemat `Initial` z `UserId` i globalnym filtrem, logowanie i wylogowanie, role, autoryzacja tras, układ dla niezalogowanych.
 - Decision (01.11.2026): Autor odkłada wdrożenie na Droplet na koniec, po dostarczeniu funkcji z epików 1–3 i 5: migracja `Initial` zostaje otwarta do pierwszego wdrożenia (NFR-9), bez kosztów i obsługi serwera, zanim aplikacja jest użyteczna. Wdrożenie, rollback i sprawdzenia na serwerze przeszły do nowego epic-wdrozenie-na-serwer (epik 6), przed Miesiącem „na serio”. Historie 3 i 7 nie czekają już na wdrożenie (3 czeka na 4.4), a sprawdzenia „na serwerze” historii 3, 7 i 8 są lokalne; na serwerze powtarza je historia 6.3.
+- Decision (01.11.2026): epik zamknięty po scaleniu PR #15 (historie 1.1, 1.3–1.10 zrobione, 1.2 wycofana); Done when sprawdzony lokalnie przez Autora (Projekty, Typy pracy, belka i menu) i testami (368 zielonych); sprawdzenia na serwerze w historii 6.3.

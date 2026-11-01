@@ -3,7 +3,7 @@ title: 'Refactor sweep epiku Szkielet i Słowniki'
 type: 'refactor'
 ticket: '10'
 created: '2026-11-01'
-status: 'built'
+status: done
 baseline_revision: 'ebc1d442e8ca984db62ce628d366953c01d679d4'
 route: 'oneshot'
 route_source: 'auto'
