@@ -1,0 +1,131 @@
+@* One report grid for every list (AD-9, R17): rows in input order, value filter in each column, item counter,
+   row action icons. The grid only hides rows; it never sorts, sums or reads data itself. *@
+@typeparam T
+@using System.Globalization
+
+<FluentDataGrid TGridItem="T" Items="@_visibleQuery" ItemKey="@RowKey">
+    @for (var i = 0; i < Columns.Count; i++)
+    {
+        var index = i;
+        var column = Columns[index];
+        <TemplateColumn TGridItem="T" Title="@column.Title" Sortable="false" Filtered="@IsFiltered(index)" Context="row">
+            <ChildContent>@column.Text(row)</ChildContent>
+            <ColumnOptions>
+                <div class="report-grid-filter">
+                    <FluentCheckbox Label="Zaznacz wszystkie"
+                                    Value="@(!IsFiltered(index))"
+                                    ValueChanged="@((bool value) => SetAll(index, value))" />
+                    @foreach (var value in Values(index))
+                    {
+                        <FluentCheckbox Label="@ValueLabel(value)"
+                                        Value="@(!Excluded(index).Contains(value))"
+                                        ValueChanged="@((bool shown) => SetValue(index, value, shown))" />
+                    }
+                </div>
+            </ColumnOptions>
+        </TemplateColumn>
+    }
+    @if (Actions.Count > 0)
+    {
+        <TemplateColumn TGridItem="T" Title="Akcje" Sortable="false" Context="row">
+            @foreach (var action in Actions)
+            {
+                if (action.Visible is null || action.Visible(row))
+                {
+                    <FluentButton IconStart="@action.Icon" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                  Title="@action.Label" aria-label="@action.Label"
+                                  OnClick="@(() => action.Invoke(row))" />
+                }
+            }
+        </TemplateColumn>
+    }
+</FluentDataGrid>
+<p class="report-grid-counter">@Counter</p>
+
+@code {
+    private static readonly StringComparer PolishOrder = StringComparer.Create(CultureInfo.GetCultureInfo("pl-PL"), ignoreCase: false);
+
+    /// <summary>Rows in display order; the grid keeps this order.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<T> Items { get; set; } = [];
+
+    [Parameter, EditorRequired] public IReadOnlyList<ReportColumn<T>> Columns { get; set; } = [];
+
+    [Parameter] public IReadOnlyList<ReportAction<T>> Actions { get; set; } = [];
+
+    // Unchecked values per column index; kept across new Items, so a value unchecked once stays hidden.
+    private readonly Dictionary<int, HashSet<string>> _excluded = [];
+    private List<string>[] _values = [];
+    private List<T> _visible = [];
+    private IQueryable<T> _visibleQuery = Enumerable.Empty<T>().AsQueryable();
+    // Row key = input position; equal records (Equals) are still distinct rows, so the grid's @key never collides.
+    private Dictionary<object, int> _positions = new(ReferenceEqualityComparer.Instance);
+
+    internal string Counter => IsAnyFiltered ? $"Pozycje: {_visible.Count} z {Items.Count}" : $"Pozycje: {_visible.Count}";
+
+    private bool IsAnyFiltered => Enumerable.Range(0, Columns.Count).Any(IsFiltered);
+
+    protected override void OnParametersSet()
+    {
+        _positions = new Dictionary<object, int>(ReferenceEqualityComparer.Instance);
+        for (var i = 0; i < Items.Count; i++)
+        {
+            if (Items[i] is { } item)
+            {
+                _positions.TryAdd(item, i);
+            }
+        }
+
+        _values = Columns
+            .Select(column => Items.Select(column.Text).Distinct(StringComparer.Ordinal).Order(PolishOrder).ToList())
+            .ToArray();
+        ApplyFilter();
+    }
+
+    private object RowKey(T item) => item is not null && _positions.TryGetValue(item, out var position) ? position : -1;
+
+    private IReadOnlyList<string> Values(int index) => index < _values.Length ? _values[index] : [];
+
+    private HashSet<string> Excluded(int index) =>
+        _excluded.TryGetValue(index, out var set) ? set : _excluded[index] = new HashSet<string>(StringComparer.Ordinal);
+
+    // A column is filtered when one of its present values is unchecked.
+    private bool IsFiltered(int index) =>
+        _excluded.TryGetValue(index, out var set) && set.Count > 0 && Values(index).Any(set.Contains);
+
+    private static string ValueLabel(string? value) => string.IsNullOrEmpty(value) ? "(puste)" : value;
+
+    private void SetValue(int index, string value, bool shown)
+    {
+        if (shown)
+        {
+            Excluded(index).Remove(value);
+        }
+        else
+        {
+            Excluded(index).Add(value);
+        }
+
+        ApplyFilter();
+    }
+
+    private void SetAll(int index, bool shown)
+    {
+        var set = Excluded(index);
+        set.Clear();
+        if (!shown)
+        {
+            set.UnionWith(Values(index));
+        }
+
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        _visible = Items
+            .Where(item => Columns.Select((column, index) => (column, index))
+                .All(c => !_excluded.TryGetValue(c.index, out var set) || !set.Contains(c.column.Text(item))))
+            .ToList();
+        _visibleQuery = _visible.AsQueryable();
+    }
+}
