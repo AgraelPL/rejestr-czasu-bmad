@@ -12,7 +12,8 @@ public static class DatabaseServiceCollectionExtensions
     /// Identity, Data Protection) and <see cref="UserDbContextFactory"/> (the only source of User mode, scoped: it
     /// takes the User from the scoped <c>Accounts/CurrentUser</c>). <c>AddDbContextFactory</c> also registers a scoped
     /// <see cref="AppDbContext"/> created by the factory: system mode, used by the Identity stores
-    /// (<c>AddEntityFrameworkStores</c>) and <c>Accounts/</c>.
+    /// (<c>AddEntityFrameworkStores</c>) and <c>Accounts/</c>. <see cref="DictionaryOptions"/> is scoped, on top of
+    /// <see cref="UserDbContextFactory"/>.
     /// </summary>
     /// <remarks>
     /// Never use <c>AddPooledDbContextFactory</c> or <c>AddDbContextPool</c> here: a pooled context keeps
@@ -24,6 +25,7 @@ public static class DatabaseServiceCollectionExtensions
         services.AddDbContextFactory<AppDbContext>((provider, options) =>
             options.UseAppDatabase(provider.GetRequiredService<IOptions<DatabaseOptions>>().Value.BuildConnectionString()));
         services.AddScoped<UserDbContextFactory>();
+        services.AddScoped<DictionaryOptions>();
         return services;
     }
 
