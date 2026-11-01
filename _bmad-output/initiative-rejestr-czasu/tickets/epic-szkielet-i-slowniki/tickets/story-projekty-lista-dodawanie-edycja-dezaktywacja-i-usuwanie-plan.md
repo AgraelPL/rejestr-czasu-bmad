@@ -3,7 +3,7 @@ title: 'Projekty: lista, dodawanie, edycja, dezaktywacja i usuwanie'
 type: 'feature'
 ticket: '7'
 created: '2026-11-01'
-status: 'built'
+status: done
 baseline_revision: '71ece42bb07eb4786c2b95e76e44ee04ac4af75b'
 route: 'full'
 route_source: 'auto'
