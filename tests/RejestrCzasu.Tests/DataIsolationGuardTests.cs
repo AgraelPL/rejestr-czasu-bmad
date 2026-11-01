@@ -52,6 +52,23 @@ public sealed partial class DataIsolationGuardTests
         Assert.Null(next.CurrentUserId);
     }
 
+    /// <summary><see cref="DictionaryOptions"/> is scoped: a singleton would capture the scoped <see cref="CurrentUser"/>.</summary>
+    [Fact]
+    public async Task AddAppDatabase_RegistersDictionaryOptionsAsScoped()
+    {
+        var services = new ServiceCollection();
+        services.AddOptions<DatabaseOptions>();
+        services.AddAppDatabase();
+        services.AddHttpContextAccessor();
+        services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
+        services.AddScoped<CurrentUser>();
+        await using var provider = services.BuildServiceProvider(validateScopes: true);
+
+        Assert.Equal(ServiceLifetime.Scoped, Assert.Single(services, s => s.ServiceType == typeof(DictionaryOptions)).Lifetime);
+        await using var scope = provider.CreateAsyncScope();
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<DictionaryOptions>());
+    }
+
     [Fact]
     public void DatabaseRegistration_IsOnlyInAddAppDatabase()
     {
