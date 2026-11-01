@@ -10,3 +10,29 @@
 .report-grid-counter {
     margin-top: 8px;
 }
+
+/* Group headers (AD-9): rows are rendered by FluentDataGrid, so the rules reach them through ::deep. */
+.report-grid ::deep tr.report-grid-group td {
+    font-weight: 600;
+}
+
+.report-grid ::deep tr.report-grid-group-0 td {
+    background-color: var(--colorNeutralBackground3);
+}
+
+.report-grid ::deep tr.report-grid-group-1 td {
+    background-color: var(--colorNeutralBackground2);
+}
+
+.report-grid ::deep tr.report-grid-group-1 .report-grid-group-title {
+    padding-inline-start: 16px;
+}
+
+.report-grid ::deep tr.report-grid-group-2 .report-grid-group-title {
+    padding-inline-start: 32px;
+}
+
+/* Sum in the title's cell (GroupSumColumn = 0): keep a gap after the title. */
+.report-grid ::deep .report-grid-group-title + .report-grid-group-sum {
+    margin-inline-start: 12px;
+}
