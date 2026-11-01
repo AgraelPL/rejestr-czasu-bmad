@@ -52,7 +52,7 @@ else
 
     /// <summary>Warning shown when a Project used by Entries is to be deleted (R3).</summary>
     internal static string InUseMessage(string code, int entryCount) =>
-        $"Projekt {code} występuje w {entryCount} {(entryCount == 1 ? "Wpisie" : "Wpisach")}. Zamiast go usuwać, dezaktywuj go.";
+        $"Projekt {code} występuje w {EntryCount.InEntries(entryCount)}. Zamiast go usuwać, dezaktywuj go.";
 
     internal static string DuplicateMessage(string code) => $"Projekt o kodzie {code} już istnieje.";
 

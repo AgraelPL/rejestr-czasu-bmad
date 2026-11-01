@@ -50,7 +50,7 @@ else
 
     /// <summary>Warning shown when a Work type used by Entries is to be deleted (R3).</summary>
     internal static string InUseMessage(string name, int entryCount) =>
-        $"Typ pracy {name} występuje w {entryCount} {(entryCount == 1 ? "Wpisie" : "Wpisach")}. Zamiast go usuwać, dezaktywuj go.";
+        $"Typ pracy {name} występuje w {EntryCount.InEntries(entryCount)}. Zamiast go usuwać, dezaktywuj go.";
 
     internal static string DuplicateMessage(string name) => $"Typ pracy o nazwie {name} już istnieje.";
 
