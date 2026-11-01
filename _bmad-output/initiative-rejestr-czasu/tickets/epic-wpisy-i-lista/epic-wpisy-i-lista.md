@@ -14,15 +14,15 @@ risk: medium
 
 ## Description
 
-Główna część pracy Usera, na serwerze: w Sesji wpisywania przenosi notatki z kilku dni do własnych Wpisów samą klawiaturą, a na Liście wpisów wyszukuje, edytuje, kopiuje i usuwa swoje Wpisy z sumą Czasu. Data domyślna to dzisiejsza (Europe/Warsaw) przy każdym otwarciu ekranu Nowy wpis. Każdy ekran tego epiku dopisuje swoją stronę pomocy przez mechanizm z epic-szkielet-i-slowniki (R26). Epik przekazuje epic-miesiac-i-zestawienie `EntryForm` (strona `/wpisy/nowy` i okno dialogowe) oraz `DeleteEntry` z potwierdzeniem.
+Główna część pracy Usera, sprawdzana lokalnie: w Sesji wpisywania przenosi notatki z kilku dni do własnych Wpisów samą klawiaturą, a na Liście wpisów wyszukuje, edytuje, kopiuje i usuwa swoje Wpisy z sumą Czasu. Data domyślna to dzisiejsza (Europe/Warsaw) przy każdym otwarciu ekranu Nowy wpis. Każdy ekran tego epiku dopisuje swoją stronę pomocy przez mechanizm z epic-szkielet-i-slowniki (R26). Epik przekazuje epic-miesiac-i-zestawienie `EntryForm` (strona `/wpisy/nowy` i okno dialogowe) oraz `DeleteEntry` z potwierdzeniem.
 
 ## Outcome
 
-User przenosi na serwerze notatki z 3–4 dni w jednej Sesji wpisywania, każdy kolejny Wpis w nie więcej niż 10 s samą klawiaturą, i odnajduje je na Liście wpisów (R4–R8, R16).
+User przenosi w aplikacji uruchomionej lokalnie notatki z 3–4 dni w jednej Sesji wpisywania, każdy kolejny Wpis w nie więcej niż 10 s samą klawiaturą, i odnajduje je na Liście wpisów (R4–R8, R16).
 
 ## Done when
 
-- Sesja wpisywania na serwerze po wdrożeniu z gałęzi głównej: kilkanaście Wpisów z różnych dni, data domyślna dzisiejsza według Europe/Warsaw, formularz zostaje z tą samą datą po zapisie, każdy Wpis samą klawiaturą w nie więcej niż 10 s (R4, R5, R16).
+- Sesja wpisywania lokalnie: kilkanaście Wpisów z różnych dni, data domyślna dzisiejsza według Europe/Warsaw, formularz zostaje z tą samą datą po zapisie, każdy Wpis samą klawiaturą w nie więcej niż 10 s (R4, R5, R16).
 - Edycja i kopia z ikon w wierszu Listy wpisów otwierają okno dialogowe; usunięcie wymaga potwierdzenia; lista pokazuje dane z bazy po zmianie (R6, R7, R8).
 - Nieaktywne Projekty i Typy pracy nie pojawiają się w listach wyboru, a zostają przy edycji istniejącego Wpisu (R2).
 - Filtr wartości i licznik na Liście wpisów; suma Czasu pod listą zgodna z widocznymi filtrami zakresu, Projektu i Typu pracy (R8, R17).
@@ -44,3 +44,4 @@ User przenosi na serwerze notatki z 3–4 dni w jednej Sesji wpisywania, każdy 
 
 - Waits on epic-szkielet-i-slowniki because: `Domain/Czas`, `PolishCalendar`, `YearMonth`, `DictionaryOptions`, `ReportGrid`, `MainLayout`, mechanizm pomocy, `Notify` i `Confirm`.
 - Decision (31.10.2026): re-slice po forge chmura-konta-wdrożenie: User zamiast Autora, praca na serwerze, R5 z datą przy każdym otwarciu ekranu Nowy wpis, R16 przez internet, R26 strony pomocy ekranów tego epiku.
+- Decision (01.11.2026): Autor odkłada wdrożenie na Droplet na koniec, po dostarczeniu funkcji z epików 1–3 i 5: migracja `Initial` zostaje otwarta do pierwszego wdrożenia (NFR-9), bez kosztów i obsługi serwera, zanim aplikacja jest użyteczna. Wdrożenie, rollback i sprawdzenia na serwerze przeszły do nowego epic-wdrozenie-na-serwer (epik 6), przed Miesiącem „na serio”. Done when sprawdzany lokalnie; na serwerze powtarza go historia 6.3.

@@ -3,7 +3,7 @@ title: 'DictionaryOptions dla formularza Wpisu'
 type: 'feature'
 ticket: '9'
 created: '2026-11-01'
-status: 'built'
+status: done
 baseline_revision: '872b6ae2c4c8bb9ced1ae689bc415bce454c5c9d'
 route: 'full'
 route_source: 'auto'

@@ -324,6 +324,39 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Home_ForLoggedInUser_HasLogoutFormWithToken_AndReconnectMarker()
+    {
+        await using var app = await LoggedInAsync();
+
+        var (html, fields) = await app.GetPageAsync("/");
+
+        Assert.Contains($"<form method=\"post\" action=\"{AccountEndpoints.LogoutPath}\"", html);
+        Assert.True(fields.ContainsKey("__RequestVerificationToken"));
+        Assert.Contains("id=\"components-reconnect-modal\"", html);
+        Assert.Contains("Odśwież stronę", html);
+
+        // The token of the top bar form logs out (AD-15).
+        using var logout = await app.Http.PostAsync(AccountEndpoints.LogoutPath, new FormUrlEncodedContent(fields), Ct);
+        Assert.Equal(HttpStatusCode.Redirect, logout.StatusCode);
+        Assert.Equal(AccountEndpoints.LoginPath, logout.Headers.Location?.OriginalString);
+    }
+
+    [Fact]
+    public async Task Help_UnknownTopic_IsPolishNotFound_StartTopicIsAvailable()
+    {
+        await using var app = await LoggedInAsync();
+
+        using var unknown = await app.Http.GetAsync("/pomoc/xyz", Ct);
+        Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+        Assert.Contains("Nie znaleziono", await TextAsync(unknown));
+
+        var (html, _) = await app.GetPageAsync("/pomoc/start");
+        Assert.Contains("Strona startowa i menu", html);
+        var (index, _) = await app.GetPageAsync("/pomoc");
+        Assert.Contains("href=\"/pomoc/start\"", index);
+    }
+
+    [Fact]
     public async Task RateLimit_EleventhPostInAMinute_Returns429_InPolish_WithCsp()
     {
         await using var app = new AppClient(postgres);

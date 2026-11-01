@@ -1,5 +1,7 @@
 # Historie epiku Konta i wdrożenie, w kolejności budowy.
 
+next_id = 9
+
 [[entry]]
 id = 2
 type = "story"
@@ -64,37 +66,12 @@ references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-19", 
 notes = ["Obraz budujący (jeśli wieloetapowy) używa mcr.microsoft.com/dotnet/sdk w wersji z global.json (10.0.403), tej samej co CI z historii 1 (przegląd historii 1, 31.10.2026)."]
 
 [[entry]]
-id = 8
-type = "story"
-title = "Wdrożenie na Droplet pod czas-pracy.kandula-consulting.pl"
-description = "Używa obrazu z historii 5, workflow z historii 1 i pierwszego Administratora z historii 4. deploy/compose.yml (sieć compose 172.30.0.0/24, caddy:2.11, app z GHCR po APP_IMAGE_TAG z przekazanymi APP_IMAGE_TAG i ForwardedHeaders__KnownNetwork=172.30.0.0/24, postgres:18 na dysku Dropletu z portem tylko na 127.0.0.1, rotacja logów), deploy/Caddyfile z SITE_DOMAIN. Workflow .github/workflows/deploy.yml po merge do main: obraz do GHCR z tagiem pełnego skrótu commita, kopiowanie deploy/ na Droplet, ustawienie APP_IMAGE_TAG, docker compose pull && up -d, czekanie do 60 s na /health. Instrukcja docs/admin/: założenie Dropletu (FRA1) z kopiami, Cloud Firewall 80/443/22, SSH kluczem, DNS subdomeny, .env z kontraktem nazw z AD-13 (chmod 600), GitHub Secrets, rola rejestr_ro i dostęp do bazy tunelem SSH, przebieg wdrożenia w kolejności: pierwszy workflow, przełączenie pakietu GHCR na publiczny, ponowne uruchomienie workflow. To pierwsze wdrożenie: zamraża Initial z historii 2. Daje historii 6 krok wdrożenia z deploy.yml do uruchomienia ręcznego z tagiem, a historiom 1.3 i 1.7 aplikację na serwerze do ich sprawdzeń."
-verify = "Merge do main kończy workflow na zielono, https://czas-pracy.kandula-consulting.pl pokazuje stronę logowania z ważnym certyfikatem, a /health odpowiada 200 z pełnym skrótem tego commita; na serwerze Autor loguje się kontem pierwszego Administratora, a zapytanie rolą rejestr_ro według docs/admin/ pokazuje u niego role Administrator i User; nowa rejestracja daje Konto Oczekuje, 5 złych haseł blokuje logowanie, dobrowolna zmiana hasła nie wylogowuje; port 5432 nie odpowiada z internetu; ćwiczenie z docs/admin/ (docker compose stop db przez SSH, ponowne uruchomienie workflow) kończy workflow na czerwono, a na serwerze zostaje nowy tag bez automatycznego powrotu; po docker compose start db /health znowu odpowiada 200; log workflow nie zawiera sekretów; docs/admin/ pozwala przejść przygotowanie serwera od zera."
-covers = ["R15", "R27", "R29"]
-after = [1, 5]
-hitl = true # Autor zakłada Droplet z kopiami, Cloud Firewall, klucz SSH, rekord DNS, .env na serwerze, GitHub Secrets i przełącza pakiet GHCR na publiczny według docs/admin/
-risk = "high" # pierwszy kontakt z serwerem, DNS, certyfikatem i SSH z potoku; kroki człowieka w ustalonej kolejności
-references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-19", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-20", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-13", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-2", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-21"]
-notes = ["Subdomena: czas-pracy.kandula-consulting.pl (domena kandula-consulting.pl kupiona przez Autora).", "Dodatkowe sprawdzenie: nmap lub test portów z zewnątrz pokazuje tylko 22, 80 i 443.", "Po zamrożeniu Initial kontrola migracji z historii 1 ma rozpoznawać Initial po identyfikatorze z [Migration] jako najwcześniejszą i wykrywać zmianę jej pliku (np. przypięty skrót); dziś pomija ją po nazwie klasy, a has-pending-model-changes nie widzi zmiany jej Up (przegląd historii 1, 31.10.2026)."]
-
-[[entry]]
-id = 6
-type = "story"
-title = "Rollback do wskazanej wersji"
-description = "Ten sam krok wdrożenia z deploy.yml z historii 8 uruchamiany ręcznie (workflow_dispatch) z tagiem wcześniejszego obrazu, z plikami deploy/ z commita tego tagu; strona docs/admin/ o rollbacku i jego ograniczeniu (migracje tylko dodające). Ćwiczenie na serwerze."
-verify = "Autor uruchamia rollback z tagiem poprzedniego obrazu, workflow kończy się na zielono, a /health na serwerze pokazuje ten tag i odpowiada 200; ponowne wdrożenie z main przywraca bieżący tag."
-covers = ["R27", "R30"]
-after = [8]
-hitl = true # Autor przeprowadza ćwiczenie rollbacku na serwerze
-risk = "medium" # krok wdrożenia już działa; nowe są tylko parametr tagu i pliki deploy/ ze starego commita
-references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-20", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-21"]
-
-[[entry]]
 id = 7
 type = "story"
 title = "Refactor sweep"
-description = "Porządki odłożone w planach i przeglądach historii 1–6 i 8; zakres ustalany na starcie tej historii, wyłącznie sprzątanie."
-verify = "Workflow PR przechodzi bez ostrzeżeń builda; lista odłożonych uwag z planów historii 1–6 i 8 jest zamknięta albo przeniesiona do nowych historii."
+description = "Porządki odłożone w planach i przeglądach historii 1–5 (wdrożenie i rollback przeniesione do epiku 6); zakres ustalany na starcie tej historii, wyłącznie sprzątanie."
+verify = "Workflow PR przechodzi bez ostrzeżeń builda; lista odłożonych uwag z planów historii 1–5 jest zamknięta albo przeniesiona do nowych historii."
 covers = []
-after = [1, 2, 3, 4, 5, 6, 8]
+after = [1, 2, 3, 4, 5]
 hitl = false
 risk = "low" # wyłącznie sprzątanie bez nowego zakresu

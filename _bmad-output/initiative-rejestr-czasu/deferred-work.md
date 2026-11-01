@@ -23,3 +23,7 @@
 - source_plan: `_bmad-output/initiative-rejestr-czasu/tickets/epic-szkielet-i-slowniki/tickets/story-reportgrid-lista-z-filtrem-licznikiem-i-ikonami-akcji-plan.md`
   summary: Pakiet `Microsoft.FluentUI.AspNetCore.Components.Icons` 5.0.0 jest zbudowany pod Fluent UI 4.14.4 (`lib/net8.0`), a aplikacja używa Components 5.0.1 (medium, niezweryfikowane).
   evidence: Testy bUnit renderują ikony jako SVG i restore nie zgłasza ostrzeżeń NU; rozstrzygnie uruchomienie pierwszego ekranu z ikonami akcji w przeglądarce (historia 1.7) albo pakiet ikon wydany pod v5.
+
+- source_plan: `_bmad-output/initiative-rejestr-czasu/tickets/epic-szkielet-i-slowniki/tickets/story-ukad-aplikacji-z-menu-notify-i-confirm-plan.md`
+  summary: AD-11 w `architecture-rejestr-czasu.md` każe budować `Shared/Confirm` na `IDialogService.ShowMessageBoxAsync`, a historia 1.3 używa `ShowDialogAsync<ConfirmDialog>` (low).
+  evidence: W Fluent UI 5.0.1 przycisk główny okna komunikatu ma domyślny skrót Enter i nieustalony fokus, sprzeczne z resztą AD-11; zaktualizować AD-11 przez `bmad-architecture` przy najbliższej zmianie architektury.

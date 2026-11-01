@@ -1,0 +1,38 @@
+# Historie epiku Wdrożenie na serwer, w kolejności budowy.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Wdrożenie na Droplet pod czas-pracy.kandula-consulting.pl"
+description = "Używa obrazu z historii 4.5, workflow z historii 4.1 i pierwszego Administratora z historii 4.4. deploy/compose.yml (sieć compose 172.30.0.0/24, caddy:2.11, app z GHCR po APP_IMAGE_TAG z przekazanymi APP_IMAGE_TAG i ForwardedHeaders__KnownNetwork=172.30.0.0/24, postgres:18 na dysku Dropletu z portem tylko na 127.0.0.1, rotacja logów), deploy/Caddyfile z SITE_DOMAIN. Workflow .github/workflows/deploy.yml po merge do main: obraz do GHCR z tagiem pełnego skrótu commita, kopiowanie deploy/ na Droplet, ustawienie APP_IMAGE_TAG, docker compose pull && up -d, czekanie do 60 s na /health. Instrukcja docs/admin/: założenie Dropletu (FRA1) z kopiami, Cloud Firewall 80/443/22, SSH kluczem, DNS subdomeny, .env z kontraktem nazw z AD-13 (chmod 600), GitHub Secrets, rola rejestr_ro i dostęp do bazy tunelem SSH, przebieg wdrożenia w kolejności: pierwszy workflow, przełączenie pakietu GHCR na publiczny, ponowne uruchomienie workflow. To pierwsze wdrożenie: zamraża Initial z historii 4.2. Idzie po dostarczeniu funkcji z epików 1, 2, 3 i 5 (decyzja Autora 01.11.2026). Daje historii 2 krok wdrożenia z deploy.yml do uruchomienia ręcznego z tagiem, a historii 3 aplikację na serwerze do zbiorczej weryfikacji. Plan (dawniej historia 4.8) zostaje bez zmian treści."
+verify = "Merge do main kończy workflow na zielono, https://czas-pracy.kandula-consulting.pl pokazuje stronę logowania z ważnym certyfikatem, a /health odpowiada 200 z pełnym skrótem tego commita; na serwerze Autor loguje się kontem pierwszego Administratora, a zapytanie rolą rejestr_ro według docs/admin/ pokazuje u niego role Administrator i User; nowa rejestracja daje Konto Oczekuje, 5 złych haseł blokuje logowanie, dobrowolna zmiana hasła nie wylogowuje; port 5432 nie odpowiada z internetu; ćwiczenie z docs/admin/ (docker compose stop db przez SSH, ponowne uruchomienie workflow) kończy workflow na czerwono, a na serwerze zostaje nowy tag bez automatycznego powrotu; po docker compose start db /health znowu odpowiada 200; log workflow nie zawiera sekretów; docs/admin/ pozwala przejść przygotowanie serwera od zera."
+covers = ["R15", "R27", "R29"]
+after = ["4.1", "4.5", "epic-szkielet-i-slowniki", "epic-wpisy-i-lista", "epic-miesiac-i-zestawienie", "epic-administracja-kont-i-pomoc"]
+hitl = true # Autor zakłada Droplet z kopiami, Cloud Firewall, klucz SSH, rekord DNS, .env na serwerze, GitHub Secrets i przełącza pakiet GHCR na publiczny według docs/admin/
+risk = "high" # pierwszy kontakt z serwerem, DNS, certyfikatem i SSH z potoku; kroki człowieka w ustalonej kolejności
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-19", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-20", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-13", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-2", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-21"]
+notes = ["Subdomena: czas-pracy.kandula-consulting.pl (domena kandula-consulting.pl kupiona przez Autora).", "Dodatkowe sprawdzenie: nmap lub test portów z zewnątrz pokazuje tylko 22, 80 i 443.", "Po zamrożeniu Initial kontrola migracji z historii 4.1 ma rozpoznawać Initial po identyfikatorze z [Migration] jako najwcześniejszą i wykrywać zmianę jej pliku (np. przypięty skrót); dziś pomija ją po nazwie klasy, a has-pending-model-changes nie widzi zmiany jej Up (przegląd historii 4.1, 31.10.2026).", "Plan napisany 01.11.2026 jako historia 4.8, przed odłożeniem wdrożenia; przed startem sprawdzić go względem kodu, który przybył od tego czasu."]
+
+[[entry]]
+id = 2
+type = "story"
+title = "Rollback do wskazanej wersji"
+description = "Ten sam krok wdrożenia z deploy.yml z historii 1 uruchamiany ręcznie (workflow_dispatch) z tagiem wcześniejszego obrazu, z plikami deploy/ z commita tego tagu; strona docs/admin/ o rollbacku i jego ograniczeniu (migracje tylko dodające). Ćwiczenie na serwerze."
+verify = "Autor uruchamia rollback z tagiem poprzedniego obrazu, workflow kończy się na zielono, a /health na serwerze pokazuje ten tag i odpowiada 200; ponowne wdrożenie z main przywraca bieżący tag."
+covers = ["R27", "R30"]
+after = [1]
+hitl = true # Autor przeprowadza ćwiczenie rollbacku na serwerze
+risk = "medium" # krok wdrożenia już działa; nowe są tylko parametr tagu i pliki deploy/ ze starego commita
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-20", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-21"]
+
+[[entry]]
+id = 3
+type = "story"
+title = "Zbiorcza weryfikacja na serwerze, próba oddzielenia danych i odtworzenie z Kopii serwera"
+description = "Na serwerze z historii 1 Autor przechodzi listę sprawdzeń, które epiki 1–3 i 5 wykonały lokalnie: belka i menu zależne od roli z Wyloguj, ikona ? i komunikat o zerwanym połączeniu (1.3), Projekty i Typy pracy z regułami R1–R3 na dwóch Kontach (1.7, 1.8), Sesja wpisywania i Lista wpisów, Widok miesiąca z sumami równymi pobranemu Zestawieniu, ekran Użytkownicy. Próba SM-5 na Kontach Autora i znajomego. Ćwiczenie odtworzenia z Kopii serwera na tymczasowym serwerze bez ruszania produkcji i strona docs/admin/ o odtwarzaniu (przeniesione z epiku 5). Lista sprawdzeń trafia do docs/admin/, żeby dało się ją powtórzyć po większej zmianie. Błąd funkcji znaleziony tutaj to nowa historia w epiku właściciela."
+verify = "Na https://czas-pracy.kandula-consulting.pl każda pozycja listy sprawdzeń z docs/admin/ przechodzi, z wynikiem zapisanym w planie tej historii; Autor i znajomy z własnymi Projektami, Typami pracy i Wpisami nie widzą swoich danych w Liście wpisów, Widoku miesiąca ani Zestawieniu, a ten sam kod Projektu u obu nie koliduje; tymczasowy Droplet z Kopii serwera uruchamia aplikację z danymi z chwili kopii według docs/admin/ i zostaje usunięty, a produkcja przez cały czas odpowiada na /health 200; na serwerze nie ma prawdziwych danych wrześniowych."
+covers = ["R24", "R27"]
+after = [2]
+hitl = true # Autor przechodzi sprawdzenia na serwerze, zakłada Konto znajomego i tymczasowy Droplet z Kopii serwera
+risk = "medium" # pierwsze odtworzenie z Kopii serwera; sprawdzenia funkcji powtarzają te z epików
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-2", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-19", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-21"]

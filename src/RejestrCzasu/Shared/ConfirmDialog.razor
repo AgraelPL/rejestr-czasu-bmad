@@ -1,0 +1,23 @@
+@* Content of the Confirm window (AD-11): own buttons instead of the library footer, Anuluj focused, no shortcut. *@
+<FluentDialogBody>
+    <ChildContent>
+        <p class="confirm-message">@Message</p>
+    </ChildContent>
+    <ActionTemplate>
+        <FluentButton Appearance="ButtonAppearance.Primary" OnClick="ConfirmAsync" class="confirm-primary">@PrimaryLabel</FluentButton>
+        <FluentButton AutoFocus="true" OnClick="CancelAsync" class="confirm-cancel">Anuluj</FluentButton>
+    </ActionTemplate>
+</FluentDialogBody>
+
+@code {
+    /// <summary>The window instance cascaded by the library's dialog provider.</summary>
+    [CascadingParameter] public required IDialogInstance Dialog { get; set; }
+
+    [Parameter] public string Message { get; set; } = "";
+
+    [Parameter] public string PrimaryLabel { get; set; } = "";
+
+    private Task ConfirmAsync() => Dialog.CloseAsync();
+
+    private Task CancelAsync() => Dialog.CancelAsync();
+}

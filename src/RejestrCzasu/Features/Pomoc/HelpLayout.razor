@@ -1,0 +1,42 @@
+@inherits LayoutComponentBase
+@using System.Security.Claims
+@inject NavigationManager Navigation
+@* Layout of the help route (AD-22): anonymous topics (and the index for an anonymous visitor) in AccountLayout,
+   everything else in MainLayout. *@
+
+@if (_layout is not null)
+{
+    <LayoutView Layout="@_layout">@Body</LayoutView>
+    @if (_layout == typeof(AccountLayout))
+    {
+        @* AccountLayout serves static pages and has no marker; the help page is interactive (R31). *@
+        <ReconnectModal />
+    }
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    private Type? _layout;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var user = AuthenticationState is null ? new ClaimsPrincipal(new ClaimsIdentity()) : (await AuthenticationState).User;
+        _layout = UsesAccountLayout(TopicKey(Navigation.ToBaseRelativePath(Navigation.Uri)), user)
+            ? typeof(AccountLayout)
+            : typeof(MainLayout);
+    }
+
+    internal static bool UsesAccountLayout(string? topicKey, ClaimsPrincipal user) =>
+        string.IsNullOrEmpty(topicKey)
+            ? user.Identity?.IsAuthenticated != true
+            : HelpTopics.Find(topicKey)?.Access == HelpAccess.Anonymous;
+
+    /// <summary>The topic segment of <c>pomoc/{temat}</c> (base-relative path), or <c>null</c> for the index.</summary>
+    internal static string? TopicKey(string relativePath)
+    {
+        var path = relativePath.Split('?', '#')[0];
+        var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return segments.Length > 1 ? Uri.UnescapeDataString(segments[1]) : null;
+    }
+}

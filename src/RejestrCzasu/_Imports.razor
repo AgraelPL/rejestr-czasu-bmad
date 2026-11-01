@@ -1,5 +1,5 @@
 @* Main imports of every component; [Authorize] makes every page require a login (AD-15, one mechanism).
-   Only /konto/logowanie, /konto/rejestracja, /konto/brak-dostepu, NotFound and Error are [AllowAnonymous]. *@
+   Only /konto/logowanie, /konto/rejestracja, /konto/brak-dostepu, /pomoc/{temat} (access per topic, AD-22), NotFound and Error are [AllowAnonymous]. *@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms

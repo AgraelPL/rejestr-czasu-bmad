@@ -1,0 +1,13 @@
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@* The Pomoc "?" icon of the top bar (AD-11, AD-22): the help topic of the screen, without a topic the help index. *@
+<FluentAnchorButton Href="@Href" IconStart="@(new Icons.Regular.Size20.QuestionCircle())" IconOnly="true"
+                    Appearance="ButtonAppearance.Transparent" Title="Pomoc" aria-label="Pomoc" class="app-help" />
+
+@code {
+    /// <summary>Help topic key (AD-22), e.g. <c>start</c>.</summary>
+    [Parameter] public string? Topic { get; set; }
+
+    public static string HrefOf(string? topic) => string.IsNullOrEmpty(topic) ? "/pomoc" : $"/pomoc/{topic}";
+
+    private string Href => HrefOf(Topic);
+}

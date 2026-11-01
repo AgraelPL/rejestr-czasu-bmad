@@ -3,7 +3,7 @@ title: 'ReportGrid: lista z filtrem, licznikiem i ikonami akcji'
 type: 'feature'
 ticket: '5'
 created: '2026-10-31'
-status: 'built'
+status: done
 baseline_revision: '872b6ae2c4c8bb9ced1ae689bc415bce454c5c9d'
 route: 'full'
 route_source: 'auto'
