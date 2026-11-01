@@ -17,11 +17,25 @@ public sealed partial class AppClient : IAsyncDisposable
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public AppClient(PostgresFixture postgres)
+    /// <param name="configuration">Extra configuration on top of <see cref="PostgresFixture.ConfigurationOverrides"/>.</param>
+    /// <param name="configure">Extra host setup, e.g. an <c>IStartupFilter</c> that sets the connection address.</param>
+    public AppClient(
+        PostgresFixture postgres,
+        IReadOnlyDictionary<string, string?>? configuration = null,
+        Action<IWebHostBuilder>? configure = null)
     {
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-            builder.ConfigureAppConfiguration((_, configuration) =>
-                configuration.AddInMemoryCollection(postgres.ConfigurationOverrides)));
+        {
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(postgres.ConfigurationOverrides);
+                if (configuration is not null)
+                {
+                    config.AddInMemoryCollection(configuration);
+                }
+            });
+            configure?.Invoke(builder);
+        });
         Http = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
     }
 
@@ -32,11 +46,17 @@ public sealed partial class AppClient : IAsyncDisposable
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     /// <summary>Creates an Account through Identity (hashed password, role User) in the given state.</summary>
-    public async Task<int> CreateAccountAsync(string userName, string password, AccountStatus status)
+    public async Task<int> CreateAccountAsync(string userName, string password, AccountStatus status, bool mustChangePassword = false)
     {
         await using var scope = Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-        var user = new AppUser { UserName = userName, Status = status, RegisteredAt = DateTime.UtcNow };
+        var user = new AppUser
+        {
+            UserName = userName,
+            Status = status,
+            RegisteredAt = DateTime.UtcNow,
+            MustChangePassword = mustChangePassword,
+        };
         AssertSucceeded(await userManager.CreateAsync(user, password));
         AssertSucceeded(await userManager.AddToRoleAsync(user, AppRoles.User));
         return user.Id;

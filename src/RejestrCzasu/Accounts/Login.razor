@@ -39,16 +39,49 @@
     public const string PendingMessage = "Konto oczekuje na zatwierdzenie przez Administratora.";
     public const string BlockedMessage = "Konto jest zablokowane. Skontaktuj się z Administratorem.";
 
+    /// <summary>Query parameter with the Account state after a session ended in a circuit (AD-17): <c>pending</c> or <c>blocked</c>.</summary>
+    public const string ReasonParameter = "powod";
+
     private IReadOnlyList<string> _messages = [];
     private MessageBarIntent _intent = MessageBarIntent.Error;
 
     [SupplyParameterFromForm]
     private LoginInput Input { get; set; } = default!;
 
-    protected override void OnInitialized() => Input ??= new();
-
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = ReasonParameter)]
+    private string? Reason { get; set; }
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        Input ??= new();
+
+        // Already logged in (cookie checked by AccountCookieValidator on this request), e.g. another tab whose circuit
+        // still had the stamp from before a password change: no login form, back to the target page.
+        if (HttpMethods.IsGet(HttpContext.Request.Method) && HttpContext.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo(LocalUrl.OrHome(ReturnUrl));
+            return;
+        }
+
+        // The state message of an Account whose session has just ended; a login attempt replaces it.
+        var reasonMessage = Reason switch
+        {
+            "pending" => PendingMessage,
+            "blocked" => BlockedMessage,
+            _ => null,
+        };
+        if (reasonMessage is not null)
+        {
+            _messages = [reasonMessage];
+            _intent = MessageBarIntent.Warning;
+        }
+    }
 
     private async Task LoginAsync()
     {

@@ -19,3 +19,7 @@
 - „Po pierwszym wdrożeniu nic nie pilnuje zamrożenia `Initial`” — przeniesione do notatek historii 4.8.
 - „Dockerfile z historii 4.5 … SDK 10.0.403” — przeniesione do notatek historii 4.5.
 - „Tworzenie wiersza account_settings … koliduje z AD-16” — rozstrzygnięte: Decision z 31.10.2026 w epic-konta-i-wdrozenie (wiersz powstaje leniwie w epiku 3); opisy historii 4.3 i 4.4 to uwzględniają.
+
+- source_plan: `_bmad-output/initiative-rejestr-czasu/tickets/epic-szkielet-i-slowniki/tickets/story-reportgrid-lista-z-filtrem-licznikiem-i-ikonami-akcji-plan.md`
+  summary: Pakiet `Microsoft.FluentUI.AspNetCore.Components.Icons` 5.0.0 jest zbudowany pod Fluent UI 4.14.4 (`lib/net8.0`), a aplikacja używa Components 5.0.1 (medium, niezweryfikowane).
+  evidence: Testy bUnit renderują ikony jako SVG i restore nie zgłasza ostrzeżeń NU; rozstrzygnie uruchomienie pierwszego ekranu z ikonami akcji w przeglądarce (historia 1.7) albo pakiet ikon wydany pod v5.

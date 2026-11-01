@@ -9,10 +9,13 @@ namespace RejestrCzasu.Data;
 /// </summary>
 public sealed class UserDbContextFactory(IDbContextFactory<AppDbContext> contextFactory, CurrentUser currentUser)
 {
-    /// <summary>A context bound to the logged-in User; throws <see cref="NoCurrentUserException"/> without one.</summary>
+    /// <summary>
+    /// A context bound to the logged-in User; throws <see cref="NoCurrentUserException"/> without one and, in a Blazor
+    /// circuit, <see cref="AccountInactiveException"/> or <see cref="PasswordChangeRequiredException"/> (AD-17).
+    /// </summary>
     public async Task<AppDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
     {
-        var userId = await currentUser.GetUserIdAsync();
+        var userId = await currentUser.GetActiveUserIdAsync(cancellationToken);
         return await CreateDbContextAsync(userId, cancellationToken);
     }
 
