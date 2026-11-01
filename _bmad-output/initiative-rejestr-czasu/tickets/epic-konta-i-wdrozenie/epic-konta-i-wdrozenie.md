@@ -2,7 +2,7 @@
 type: epic
 title: "Konta i wdrożenie"
 parent: initiative-rejestr-czasu
-covers: [R15, R18, R19, R20, R24, R25, R27, R28, R29, R30]
+covers: [R15, R18, R19, R20, R24, R25, R27, R28]
 sources: []
 companions: []
 after: []
@@ -14,11 +14,11 @@ risk: high
 
 ## Description
 
-Platforma, na której stoją pozostałe epiki. Każda propozycja zmiany przechodzi build i testy, a merge do gałęzi głównej wdraża aplikację na serwer pod subdomeną z HTTPS. Przepisany schemat `Initial` ma `UserId` z globalnym filtrem oraz dane Konta (stan, data rejestracji, ostatnie logowanie, licznik nieudanych prób). Działają rejestracja, logowanie, wylogowanie, zmiana hasła na statycznej stronie (wymuszona i dobrowolna), role User i Administrator, pierwszy Administrator z sekretu i sprawdzanie stanu Konta przy każdej akcji. Buduje na zrobionej historii 1.1 z epic-szkielet-i-slowniki. Daje epic-szkielet-i-slowniki `UserId` z filtrem, logowanie, role, autoryzację tras, układ dla niezalogowanych i potok wdrożenia; daje epic-miesiac-i-zestawienie stronę `/konto/zmiana-hasla` (wiersz `account_settings` powstaje leniwie w epiku 3, AD-7); daje epic-administracja-kont-i-pomoc stan Konta, jego dane, sprawdzanie stanu i wymuszoną zmianę hasła.
+Platforma, na której stoją pozostałe epiki. Każda propozycja zmiany przechodzi build i testy, a obraz aplikacji jest gotowy do pracy za proxy i sprawdzony lokalnie; samo wdrożenie na serwer, rollback i sprawdzenia na serwerze należą do epic-wdrozenie-na-serwer. Przepisany schemat `Initial` ma `UserId` z globalnym filtrem oraz dane Konta (stan, data rejestracji, ostatnie logowanie, licznik nieudanych prób). Działają rejestracja, logowanie, wylogowanie, zmiana hasła na statycznej stronie (wymuszona i dobrowolna), role User i Administrator, pierwszy Administrator z sekretu i sprawdzanie stanu Konta przy każdej akcji. Buduje na zrobionej historii 1.1 z epic-szkielet-i-slowniki. Daje epic-szkielet-i-slowniki `UserId` z filtrem, logowanie, role, autoryzację tras i układ dla niezalogowanych; daje epic-wdrozenie-na-serwer obraz, workflow PR i pierwszego Administratora; daje epic-miesiac-i-zestawienie stronę `/konto/zmiana-hasla` (wiersz `account_settings` powstaje leniwie w epiku 3, AD-7); daje epic-administracja-kont-i-pomoc stan Konta, jego dane, sprawdzanie stanu i wymuszoną zmianę hasła.
 
 ## Outcome
 
-Autor rejestruje się i loguje na serwerze pod subdomeną, a jego merge do gałęzi głównej trafia tam bez ręcznych kroków (R18–R20, R28, R29; prd SM-4).
+Autor rejestruje się i loguje w aplikacji uruchomionej lokalnie i z obrazu, a propozycja zmiany z błędem nie może zostać włączona do gałęzi głównej (R18–R20, R28).
 
 ## Requirements
 
@@ -26,12 +26,10 @@ Autor rejestruje się i loguje na serwerze pod subdomeną, a jego merge do gał�
 - R18 (parent R18): Każdy zakłada Konto loginem i hasłem, bez e-maila; login jest unikalny bez względu na wielkość liter; formularz mówi jednym zdaniem, że Administrator ma przez bazę dostęp do wszystkich danych; nowe Konto jest w stanie Oczekuje i nie loguje się do zatwierdzenia.
 - R19 (parent R19): Zalogować się może tylko Konto Aktywne; Konto Oczekuje lub Zablokowane dostaje komunikat o stanie; po 5 nieudanych próbach z rzędu logowanie na Konto jest wstrzymane na 15 minut; User wylogowuje się z belki górnej.
 - R20 (parent R20): Pierwsze Konto Administratora powstaje przy wdrożeniu z sekretu w konfiguracji serwera, nie z formularza; Konto Autora ma role User i Administrator.
-- R24 (parent R24): User widzi i zmienia wyłącznie własne Słowniki i Wpisy, a Zestawienie zawiera tylko jego Wpisy; jedynym wyjątkiem jest liczba Wpisów na ekranie Użytkownicy; sprawdzają to próba na serwerze na dwóch Kontach i testy automatyczne w potoku. Tu: oddzielenie w warstwie danych i testy automatyczne; próba na dwóch Kontach w epic-administracja-kont-i-pomoc.
+- R24 (parent R24): User widzi i zmienia wyłącznie własne Słowniki i Wpisy, a Zestawienie zawiera tylko jego Wpisy; jedynym wyjątkiem jest liczba Wpisów na ekranie Użytkownicy; sprawdzają to próba na serwerze na dwóch Kontach i testy automatyczne w potoku. Tu: oddzielenie w warstwie danych i testy automatyczne; próba na dwóch Kontach w epic-wdrozenie-na-serwer.
 - R25 (parent R25): W Ustawieniach konta User ustawia prefiks pliku Zestawienia i zmienia własne hasło, podając obecne. Tu: strona zmiany hasła `/konto/zmiana-hasla`; ekran Ustawienia konta w epic-miesiac-i-zestawienie.
-- R27 (parent R27): Repozytorium zawiera instrukcję administratora w Markdownie, dostępną, gdy aplikacja nie działa, z tematami z addendum PRD (serwer, domena, sekrety, dostęp do bazy, wdrożenie, rollback, odtworzenie z Kopii serwera). Tu: wszystkie tematy poza odtworzeniem z Kopii serwera.
+- R27 (parent R27): Repozytorium zawiera instrukcję administratora w Markdownie, dostępną, gdy aplikacja nie działa, z tematami z addendum PRD (serwer, domena, sekrety, dostęp do bazy, wdrożenie, rollback, odtworzenie z Kopii serwera). Tu: ochrona gałęzi `main` i zmienne obrazu; pozostałe tematy w epic-wdrozenie-na-serwer.
 - R28 (parent R28): Każda propozycja zmiany do gałęzi głównej przechodzi automatycznie budowanie i wszystkie testy; zmiana z błędem nie może zostać włączona.
-- R29 (parent R29): Włączenie zmiany do gałęzi głównej wdraża ją na serwer bez ręcznych kroków; po wdrożeniu aplikacja sprawdza swój stan, a nieudane sprawdzenie kończy wdrożenie błędem widocznym dla Autora, bez automatycznego powrotu do poprzedniej wersji.
-- R30 (parent R30): Autor jednym poleceniem przywraca na serwerze wskazaną wcześniejszą wersję aplikacji; rollback jest przećwiczony co najmniej raz.
 
 ## Constraints
 
@@ -48,22 +46,21 @@ Autor rejestruje się i loguje na serwerze pod subdomeną, a jego merge do gał�
 ## Done when
 
 - Propozycja zmiany z błędem builda albo testu nie może zostać włączona do gałęzi głównej (R28).
-- Merge do gałęzi głównej wdraża aplikację na serwer, sprawdzenie stanu po wdrożeniu przechodzi, a nieudane kończy wdrożenie błędem bez automatycznego powrotu (R29).
-- Rollback do wskazanej wcześniejszej wersji przećwiczony raz na serwerze (R30).
-- Na serwerze: rejestracja daje Konto Oczekuje, pierwszy Administrator powstaje z sekretu z rolami Administrator i User, Konto Aktywne loguje się, 5 nieudanych prób wstrzymuje logowanie na 15 minut, zmiana własnego hasła nie wylogowuje (R18–R20, R25); wylogowanie przyciskiem z belki na serwerze potwierdza historia 1.3 z epic-szkielet-i-slowniki.
+- Lokalnie i z obrazu: rejestracja daje Konto Oczekuje, pierwszy Administrator powstaje z sekretu z rolami Administrator i User, Konto Aktywne loguje się, 5 nieudanych prób wstrzymuje logowanie na 15 minut, zmiana własnego hasła nie wylogowuje (R18–R20, R25); wylogowanie przyciskiem z belki potwierdza historia 1.3 z epic-szkielet-i-slowniki.
+- Obraz aplikacji uruchomiony lokalnie z bazą z `docker compose` odpowiada na `/health` 200 z tagiem obrazu (R15).
 - Testy automatyczne oddzielenia danych po `UserId` przechodzą w potoku; schemat `Initial` przepisany z `UserId` przed pierwszym wdrożeniem (R24; prd NFR-9).
-- Instrukcja administratora w `docs/admin/` opisuje serwer, domenę, sekrety, SSH, dostęp do bazy tylko do odczytu, wdrożenie i rollback (R27).
+- Instrukcja administratora w `docs/admin/` opisuje ochronę gałęzi `main` i umowę zmiennych obrazu (R27).
 
 ## Boundaries
 
 - Ekran Użytkownicy, odrzucanie, blokowanie, usuwanie Kont i ustawianie hasła przez Administratora należą do epic-administracja-kont-i-pomoc; ten epik daje tylko stan Konta i jego sprawdzanie.
 - Układ z menu, belka i mechanizm pomocy należą do epic-szkielet-i-slowniki.
 - Ekran Ustawienia konta (prefiks i link do zmiany hasła) należy do epic-miesiac-i-zestawienie; ten epik daje stronę zmiany hasła.
-- Strona o odtwarzaniu z Kopii serwera i ćwiczenie odtworzenia należą do epic-administracja-kont-i-pomoc.
+- Wdrożenie na serwer, rollback, strony `docs/admin/` o serwerze i odtworzeniu z Kopii serwera oraz sprawdzenia na serwerze należą do epic-wdrozenie-na-serwer.
 
 ## References
 
-- parent — _bmad-output/initiative-rejestr-czasu/initiative-rejestr-czasu.md, Requirements R15, R18–R20, R24, R25, R27–R30
+- parent — _bmad-output/initiative-rejestr-czasu/initiative-rejestr-czasu.md, Requirements R15, R18–R20, R24, R25, R27, R28
 - architecture — _bmad-output/initiative-rejestr-czasu/architecture-rejestr-czasu/architecture-rejestr-czasu.md, AD-2, AD-7, AD-13, AD-15–AD-21
 - prd addendum — _bmad-output/initiative-rejestr-czasu/prd-rejestr-czasu/addendum.md, Wdrożenie i infrastruktura
 - glossary — _bmad-output/initiative-rejestr-czasu/glossary.md
@@ -84,3 +81,4 @@ Autor rejestruje się i loguje na serwerze pod subdomeną, a jego merge do gał�
 - Decision (31.10.2026): bez tymczasowego przycisku Wyloguj — historia 3 sprawdza wylogowanie POST-em i testem, przycisk w belce sprawdza historia 1.3 (Autor).
 - Decision (31.10.2026): rejestracja i pierwszy Administrator nie tworzą wiersza `account_settings` — powstaje leniwie w epic-miesiac-i-zestawienie (decyzja Autora w przeglądzie historii 4.2; sprzeczność AD-7/AD-21 z AD-16).
 - Decision (31.10.2026): repozytorium staje się publiczne zgodnie z prd NFR-2, bo GitHub Free nie egzekwuje ochrony `main` w repozytorium prywatnym, a R28 wymaga blokady scalenia (Autor, po przeglądzie historii 1). Zasada ręczna z `docs/admin/README.md` była tylko przejściowa i znika razem z ramką „nieegzekwowana”; historia 1 zamyka się po sprawdzeniu blokady na publicznym repozytorium.
+- Decision (01.11.2026): Autor odkłada wdrożenie na Droplet na koniec, po dostarczeniu funkcji z epików 1–3 i 5: migracja `Initial` zostaje otwarta do pierwszego wdrożenia (NFR-9), bez kosztów i obsługi serwera, zanim aplikacja jest użyteczna. Wdrożenie, rollback i sprawdzenia na serwerze przeszły do nowego epic-wdrozenie-na-serwer (epik 6), przed Miesiącem „na serio”. Historie 8 i 6 przeniesione jako 6.1 i 6.2 (`tickets.py move`), Refactor sweep (7) nie czeka już na nie; R29 i R30 przeszły do epiku 6.

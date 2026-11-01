@@ -86,7 +86,7 @@ Autor wysyła Odbiorcy miesięczne Zestawienie prosto z eksportu na serwerze, pr
 - Brak e-maila w aplikacji (potwierdzania adresu, samodzielnego resetu hasła), układu pod telefon, układów Zestawienia per Odbiorca, środowiska przedprodukcyjnego i kodu kopii w aplikacji.
 - Brak wykresów, raportów według Projektu, stawek i kwot, timera, importu (w tym z notatek), eksportu CSV, zamykania Miesiąca i przypomnień.
 - Aplikacja nie zastępuje notatek i nie rozwiązuje „szacowania po fakcie”.
-- Touch point: Droplet DigitalOcean z Cloud Firewall i włączonymi kopiami Dropletu (Kopia serwera) — zakłada i utrzymuje Autor; owner: epic-konta-i-wdrozenie
+- Touch point: Droplet DigitalOcean z Cloud Firewall i włączonymi kopiami Dropletu (Kopia serwera) — zakłada i utrzymuje Autor; owner: epic-wdrozenie-na-serwer
 - Touch point: kupiona domena i DNS subdomeny; Caddy z Let's Encrypt — owner: epic-konta-i-wdrozenie
 - Touch point: GitHub Actions, GHCR, GitHub Secrets i ochrona gałęzi `main` — owner: epic-konta-i-wdrozenie
 - Touch point: Docker Desktop i obraz `postgres:18` lokalnie, środowisko testowe i Test wrześniowy — instaluje i uruchamia Autor; owner: epic-szkielet-i-slowniki (historia 1.1, zrobiona)
@@ -94,7 +94,7 @@ Autor wysyła Odbiorcy miesięczne Zestawienie prosto z eksportu na serwerze, pr
 - Touch point: Odbiorca — konsumuje Zestawienie w układzie z `export-layout.md`, wysyłane e-mailem przez Usera; owner: epic-miesiac-i-zestawienie
 - Touch point: źródłowy xlsx wrześniowy — tylko lokalnie, poza gitem, do Testu wrześniowego; owner: epic-miesiac-i-zestawienie
 - Touch point: notatki Autora — źródło ręczne, bez importu
-- Ścieżka przez epiki: Konta i wdrożenie (CI, Initial z UserId, logowanie, serwer) → Szkielet i Słowniki → Wpis w Sesji wpisywania → Widok miesiąca i Zestawienie sprawdzone Testem wrześniowym; Administracja Kont i pomoc równolegle po epiku Konta i wdrożenie, przed Miesiącem „na serio”.
+- Ścieżka przez epiki: Konta i wdrożenie (CI, Initial z UserId, logowanie, obraz) → Szkielet i Słowniki → Wpis w Sesji wpisywania → Widok miesiąca i Zestawienie sprawdzone Testem wrześniowym; Administracja Kont i pomoc równolegle po epiku Konta i wdrożenie; na końcu Wdrożenie na serwer ze zbiorczą weryfikacją, przed Miesiącem „na serio”.
 
 ## References
 
@@ -120,3 +120,4 @@ Autor wysyła Odbiorcy miesięczne Zestawienie prosto z eksportu na serwerze, pr
 - Decision (31.10.2026): odrzucona sugestia dodania forge chmura-konta-wdrożenie do `sources:` — PRD go destyluje.
 - Architecture invalidated (31.10.2026): AD-2 i AD-3 nieaktualne; brak decyzji o Identity, globalnym filtrze po `UserId`, sprawdzaniu stanu Konta w obwodzie, CI/CD, wdrożeniu i konwencji stron pomocy. Rozwiązane tego samego dnia: architektura zaktualizowana do AD-1…AD-22 (commit 7fdf616).
 - Decision (31.10.2026): zmiana własnego hasła (dobrowolna i wymuszona) tylko na statycznej `/konto/zmiana-hasla` (AD-15), budowanej w epiku Konta i wdrożenie; ekran Ustawienia konta z epiku Widok miesiąca i Zestawienie do niej linkuje. R25 bez zmiany treści, zmienia się podział (decyzja Autora w architekturze).
+- Decision (01.11.2026): Autor odkłada wdrożenie na Droplet na koniec, po dostarczeniu funkcji z epików 1–3 i 5: migracja `Initial` zostaje otwarta do pierwszego wdrożenia (NFR-9), bez kosztów i obsługi serwera, zanim aplikacja jest użyteczna. Wdrożenie, rollback i sprawdzenia na serwerze przeszły do nowego epic-wdrozenie-na-serwer (epik 6), przed Miesiącem „na serio”. Zmienia się sposób dostarczenia (kolejność i miejsce sprawdzeń), nie to, co wymagane: R1–R31 bez zmian treści. Wybrany wariant z nowym epikiem zamiast pozostawienia historii w epiku Konta i wdrożenie (Autor).

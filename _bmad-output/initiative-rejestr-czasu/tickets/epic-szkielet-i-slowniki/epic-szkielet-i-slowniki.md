@@ -14,11 +14,11 @@ risk: high
 
 ## Description
 
-Fundament ekranów, na którym stoją epiki 2, 3 i 5: aplikacja .NET 10 z Blazorem (szkielet z historii 1.1) ma układ z menu i belką, komunikaty, mechanizm stron pomocy i wspólną siatkę `ReportGrid` w pełnym zakresie AD-9. Na tym fundamencie, na serwerze, każdy User prowadzi własne Projekty i Typy pracy. Epik korzysta z epic-konta-i-wdrozenie (`UserId` z filtrem, logowanie, role, wdrożenie) i przekazuje kolejnym: `Domain/Czas`, `PolishCalendar`, `YearMonth`, `DictionaryOptions`, `MainLayout`, mechanizm pomocy, `Notify`, `Confirm`, `ReportGrid` i Testcontainers. Link Ustawienia konta w belce i pozycja Użytkownicy w menu do czasu budowy ich ekranów (epic-miesiac-i-zestawienie, epic-administracja-kont-i-pomoc) prowadzą do polskiej strony „nie znaleziono”.
+Fundament ekranów, na którym stoją epiki 2, 3 i 5: aplikacja .NET 10 z Blazorem (szkielet z historii 1.1) ma układ z menu i belką, komunikaty, mechanizm stron pomocy i wspólną siatkę `ReportGrid` w pełnym zakresie AD-9. Na tym fundamencie, lokalnie, każdy User prowadzi własne Projekty i Typy pracy. Epik korzysta z epic-konta-i-wdrozenie (`UserId` z filtrem, logowanie, role) i przekazuje kolejnym: `Domain/Czas`, `PolishCalendar`, `YearMonth`, `DictionaryOptions`, `MainLayout`, mechanizm pomocy, `Notify`, `Confirm`, `ReportGrid` i Testcontainers. Link Ustawienia konta w belce i pozycja Użytkownicy w menu do czasu budowy ich ekranów (epic-miesiac-i-zestawienie, epic-administracja-kont-i-pomoc) prowadzą do polskiej strony „nie znaleziono”.
 
 ## Outcome
 
-Autor po zalogowaniu na serwerze wpisuje swoje 7 Projektów i 2 Typy pracy na listach z filtrem wartości, ze stroną pomocy pod ikoną `?` (R1–R3, R17, R26).
+Autor po zalogowaniu w aplikacji uruchomionej lokalnie wpisuje swoje 7 Projektów i 2 Typy pracy na listach z filtrem wartości, ze stroną pomocy pod ikoną `?` (R1–R3, R17, R26).
 
 ## Requirements
 
@@ -44,7 +44,7 @@ Autor po zalogowaniu na serwerze wpisuje swoje 7 Projektów i 2 Typy pracy na li
 
 ## Done when
 
-- Na serwerze po zalogowaniu User dodaje, edytuje, dezaktywuje i usuwa własne Projekty i Typy pracy z regułami R1–R3, na listach z filtrem wartości i licznikiem (R17); drugi User nie widzi tych pozycji.
+- Lokalnie po zalogowaniu User dodaje, edytuje, dezaktywuje i usuwa własne Projekty i Typy pracy z regułami R1–R3, na listach z filtrem wartości i licznikiem (R17); drugi User nie widzi tych pozycji.
 - Belka ma Pomoc `?`, Ustawienia konta i Wyloguj; menu pokazuje sekcję Administracja tylko Administratorowi; ikona `?` otwiera stronę pomocy bieżącego ekranu (R19, R26).
 - Zerwanie połączenia pokazuje komunikat z prośbą o odświeżenie (R31).
 - `ReportGrid` ze stałym grupowaniem i sumą od ekranu ma testy bUnit; zapis do bazy ma testy na Testcontainers.
@@ -52,7 +52,7 @@ Autor po zalogowaniu na serwerze wpisuje swoje 7 Projektów i 2 Typy pracy na li
 
 ## Boundaries
 
-- Logowanie, rejestracja, role, `UserId` z filtrem i wdrożenie należą do epic-konta-i-wdrozenie; ten epik ich używa.
+- Logowanie, rejestracja, role i `UserId` z filtrem należą do epic-konta-i-wdrozenie; ten epik ich używa. Sprawdzenia tego epiku na serwerze powtarza epic-wdrozenie-na-serwer (historia 6.3).
 - Formularz Wpisu, Lista wpisów i Sesja wpisywania należą do epic-wpisy-i-lista; ukrywanie nieaktywnych pozycji w listach wyboru formularza (część R2) realizuje tamten epik przez `DictionaryOptions` z tego epiku.
 - `MonthReport`, Widok miesiąca, Zestawienie i Ustawienia konta należą do epic-miesiac-i-zestawienie.
 - Ekran Użytkownicy i strony pomocy ekranów bez logowania należą do epic-administracja-kont-i-pomoc.
@@ -77,4 +77,5 @@ Autor po zalogowaniu na serwerze wpisuje swoje 7 Projektów i 2 Typy pracy na li
 - Decision (30.10.2026): bez zamykającej historii testów end-to-end — źródła nie mają planu testów; ReportGrid podzielony na listę (historia 5) i stałe grupowanie (historia 6, ryzyko wysokie).
 - Decision (31.10.2026): re-slice po forge chmura-konta-wdrożenie (PRD 31.10.2026): R14 wycofane, dochodzą R19 (Wyloguj w belce), R26 (mechanizm pomocy) i R31 (zerwane połączenie) w historii 3; historie 3, 7, 8 i 9 czekają na epic-konta-i-wdrozenie; zrobiona historia 1 zostaje bez zmian.
 - Dropped: historia 2 „Kopia bazy przy starcie i odtwarzanie z README” (31.10.2026) — prd FR-14 usunięty, R14 wycofane; kopie zapewnia Kopia serwera dostawcy, a `docker exec pg_dump` nie działa w układzie z serwerem.
-- Waits on epic-konta-i-wdrozenie because: schemat `Initial` z `UserId` i globalnym filtrem, logowanie i wylogowanie, role, autoryzacja tras, układ dla niezalogowanych, wdrożenie na serwer.
+- Waits on epic-konta-i-wdrozenie because: schemat `Initial` z `UserId` i globalnym filtrem, logowanie i wylogowanie, role, autoryzacja tras, układ dla niezalogowanych.
+- Decision (01.11.2026): Autor odkłada wdrożenie na Droplet na koniec, po dostarczeniu funkcji z epików 1–3 i 5: migracja `Initial` zostaje otwarta do pierwszego wdrożenia (NFR-9), bez kosztów i obsługi serwera, zanim aplikacja jest użyteczna. Wdrożenie, rollback i sprawdzenia na serwerze przeszły do nowego epic-wdrozenie-na-serwer (epik 6), przed Miesiącem „na serio”. Historie 3 i 7 nie czekają już na wdrożenie (3 czeka na 4.4), a sprawdzenia „na serwerze” historii 3, 7 i 8 są lokalne; na serwerze powtarza je historia 6.3.

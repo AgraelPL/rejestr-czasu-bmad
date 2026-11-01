@@ -1,7 +1,7 @@
 ---
 title: 'Wdrożenie na Droplet pod czas-pracy.kandula-consulting.pl'
 type: 'feature'
-ticket: '8'
+ticket: 1
 created: '2026-11-01'
 status: 'ready-for-dev'
 baseline_revision: ''

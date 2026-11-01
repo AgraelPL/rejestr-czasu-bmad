@@ -14,7 +14,7 @@ risk: high
 
 ## Description
 
-Zamknięcie Miesiąca, na serwerze: User sprawdza Miesiąc w siatce grupowanej Tydzień → Dzień i pobiera Zestawienie xlsx we wspólnym układzie Odbiorcy, z Widoku miesiąca albo z ekranu Eksport, z prefiksem nazwy pliku z Ustawień konta. Epik buduje ekran Ustawienia konta (prefiks i link do strony zmiany hasła z epic-konta-i-wdrozenie, R25); wiersz `account_settings` powstaje przy pierwszym zapisie prefiksu, a Zestawienie bez wiersza używa pustego prefiksu (AD-7), do którego prowadzi link w belce z epic-szkielet-i-slowniki. Każdy ekran tego epiku dopisuje swoją stronę pomocy (R26). Epik posiada `MonthEntriesQuery` i `MonthReport.Build`, jedyne źródło sum (AD-5), oraz endpoint `/zestawienie/{rok}/{miesiac}` (AD-14).
+Zamknięcie Miesiąca, sprawdzane lokalnie: User sprawdza Miesiąc w siatce grupowanej Tydzień → Dzień i pobiera Zestawienie xlsx we wspólnym układzie Odbiorcy, z Widoku miesiąca albo z ekranu Eksport, z prefiksem nazwy pliku z Ustawień konta. Epik buduje ekran Ustawienia konta (prefiks i link do strony zmiany hasła z epic-konta-i-wdrozenie, R25); wiersz `account_settings` powstaje przy pierwszym zapisie prefiksu, a Zestawienie bez wiersza używa pustego prefiksu (AD-7), do którego prowadzi link w belce z epic-szkielet-i-slowniki. Każdy ekran tego epiku dopisuje swoją stronę pomocy (R26). Epik posiada `MonthEntriesQuery` i `MonthReport.Build`, jedyne źródło sum (AD-5), oraz endpoint `/zestawienie/{rok}/{miesiac}` (AD-14).
 
 ## Outcome
 
@@ -23,7 +23,7 @@ Test wrześniowy przechodzi: Zestawienie za wrzesień 2026 ma Sumy dnia, Sumy ty
 ## Done when
 
 - `MonthReport` ma testy xUnit na zanonimizowanych danych o kształcie września: sumy tygodni 30 / 16 / 18 / 25 / 14, RAZEM 103, złączanie i kolejność wierszy (R10, R11).
-- Widok miesiąca na serwerze po wdrożeniu z gałęzi głównej pokazuje sumy identyczne z pobranym Zestawieniem, także przy włączonym filtrze, sprawdzone na zanonimizowanych danych (R9, R10, R17).
+- Widok miesiąca lokalnie pokazuje sumy identyczne z pobranym Zestawieniem, także przy włączonym filtrze, sprawdzone na zanonimizowanych danych (R9, R10, R17).
 - Zestawienie otwiera się w Excelu w układzie z `export-layout.md`, z nazwą pliku według R13 i prefiksem z Ustawień konta; pusty Miesiąc daje komunikat (R12, R13).
 - W Ustawieniach konta User ustawia prefiks i przechodzi do zmiany hasła; ekrany Widok miesiąca, Eksport i Ustawienia konta mają strony pomocy (R25, R26).
 - Test wrześniowy wykonany lokalnie na prawdziwych danych, bez zapisu ich w repozytorium i na serwerze.
@@ -50,3 +50,4 @@ Test wrześniowy przechodzi: Zestawienie za wrzesień 2026 ma Sumy dnia, Sumy ty
 - Decision (31.10.2026): po aktualizacji architektury (AD-15) zmiana własnego hasła jest na statycznej `/konto/zmiana-hasla` z epic-konta-i-wdrozenie; Ustawienia konta tylko do niej linkują.
 - Waits on epic-konta-i-wdrozenie because: strona `/konto/zmiana-hasla`.
 - Decision (31.10.2026): wiersz `account_settings` powstaje leniwie przy pierwszym zapisie Ustawień konta w kontekście Usera; Zestawienie bez wiersza używa pustego prefiksu (decyzja Autora w przeglądzie historii 4.2, AD-7).
+- Decision (01.11.2026): Autor odkłada wdrożenie na Droplet na koniec, po dostarczeniu funkcji z epików 1–3 i 5: migracja `Initial` zostaje otwarta do pierwszego wdrożenia (NFR-9), bez kosztów i obsługi serwera, zanim aplikacja jest użyteczna. Wdrożenie, rollback i sprawdzenia na serwerze przeszły do nowego epic-wdrozenie-na-serwer (epik 6), przed Miesiącem „na serio”. Done when sprawdzany lokalnie; na serwerze powtarza go historia 6.3.
