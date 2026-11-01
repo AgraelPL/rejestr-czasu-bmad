@@ -46,6 +46,26 @@ public sealed class NotifyConfirmTests : BunitContext
     }
 
     [Fact]
+    public void Notify_MessagesHideThemselves_AfterFiveSeconds()
+    {
+        Assert.Equal(TimeSpan.FromSeconds(5), Notify.DefaultLifetime);
+        Assert.Equal(Notify.DefaultLifetime, Services.GetRequiredService<Notify>().Lifetime);
+    }
+
+    [Fact]
+    public async Task Notify_Message_DisappearsAfterLifetime()
+    {
+        var cut = Render<FluentMessageBarProvider>(p => p.Add(m => m.Section, Notify.Section));
+        var notify = Services.GetRequiredService<Notify>();
+        notify.Lifetime = TimeSpan.FromMilliseconds(200);
+
+        await cut.InvokeAsync(() => notify.Success("Zapisano."));
+        cut.WaitForElement("fluent-message-bar");
+
+        cut.WaitForAssertion(() => Assert.Empty(cut.FindAll("fluent-message-bar")), TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
     public async Task Notify_Navigation_ClearsMessages()
     {
         var cut = Render<FluentMessageBarProvider>(p => p.Add(m => m.Section, Notify.Section));

@@ -7,7 +7,8 @@ namespace RejestrCzasu.Shared;
 
 /// <summary>
 /// Screen messages (AD-11): a <c>FluentMessageBar</c> in the one message area of <see cref="MainLayout"/>, under the
-/// top bar. No toasts. Every message disappears when the User goes to another page.
+/// top bar. No toasts. Every message hides itself after <see cref="DefaultLifetime"/> and disappears when the User goes
+/// to another page.
 /// </summary>
 /// <remarks>
 /// Created by <c>Components/Routes.razor</c> before the Router attaches, so the clearing handler runs before the Router
@@ -18,6 +19,9 @@ public sealed class Notify : IDisposable
     /// <summary>The section of the <c>FluentMessageBarProvider</c> rendered by <see cref="MainLayout"/>.</summary>
     public const string Section = "app-messages";
 
+    /// <summary>How long every message stays visible, unless the User closes it earlier.</summary>
+    public static readonly TimeSpan DefaultLifetime = TimeSpan.FromSeconds(5);
+
     private readonly INotificationService notifications;
     private readonly NavigationManager navigation;
 
@@ -27,6 +31,9 @@ public sealed class Notify : IDisposable
         this.navigation = navigation;
         navigation.LocationChanged += OnLocationChanged;
     }
+
+    /// <summary>Visibility time of new messages; only tests shorten it.</summary>
+    internal TimeSpan Lifetime { get; set; } = DefaultLifetime;
 
     public Task Success(string message) => ShowAsync(MessageBarIntent.Success, message);
 
@@ -45,6 +52,7 @@ public sealed class Notify : IDisposable
             // The library renders the message as (sanitized) HTML; a message is plain text.
             options.Message = WebUtility.HtmlEncode(message);
             options.AllowDismiss = true;
+            options.Lifetime = Lifetime;
         });
     }
 
