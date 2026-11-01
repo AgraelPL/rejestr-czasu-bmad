@@ -3,7 +3,7 @@ title: 'Typy domeny: Czas, PolishCalendar, YearMonth'
 type: 'feature'
 ticket: '4'
 created: '2026-10-31'
-status: 'built'
+status: done
 baseline_revision: '872b6ae2c4c8bb9ced1ae689bc415bce454c5c9d'
 route: 'full'
 route_source: 'auto'
