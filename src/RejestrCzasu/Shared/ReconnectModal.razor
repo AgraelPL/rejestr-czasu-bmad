@@ -1,0 +1,21 @@
+@implements IDisposable
+@inject NavigationManager Navigation
+@* Lost connection (R31): shown only by CSS after the classes blazor.web.js sets on this element; no JS, no retry
+   button. The link loads the current page again (target="_top": not through the interactive router). Rendered by
+   every interactive layout: MainLayout and HelpLayout when it uses AccountLayout. *@
+<div id="components-reconnect-modal" data-nosnippet>
+    <div class="reconnect-box" role="alert">
+        <p class="reconnect-title">Utracono połączenie z serwerem.</p>
+        <p>Zmiany, których nie zapisano, mogą zostać utracone. Odśwież stronę, gdy serwer znowu będzie dostępny.</p>
+        <a href="@Navigation.Uri" target="_top" class="reconnect-reload">Odśwież stronę</a>
+    </div>
+</div>
+
+@code {
+    // The reload link follows the current page.
+    protected override void OnInitialized() => Navigation.LocationChanged += OnLocationChanged;
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+}

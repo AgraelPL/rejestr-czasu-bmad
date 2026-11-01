@@ -1,0 +1,31 @@
+@using System.Security.Claims
+@* One help topic for one User (AD-22): its content, the login page for an anonymous visitor of a non-public topic,
+   or the same "no access" view as /konto/brak-dostepu. *@
+@switch (HelpTopics.Decide(Topic, User))
+{
+    case HelpDecision.Allowed:
+        @if (Topic.Access == HelpAccess.Anonymous)
+        {
+            <AccountHelp Topic="@Topic.Key" />
+        }
+        <PageHeader Title="@Topic.Title" Topic="@Topic.Key" Breadcrumbs="@Crumbs" />
+        <div class="help-content">
+            <DynamicComponent Type="@Topic.Content" />
+        </div>
+        break;
+    case HelpDecision.LoginRequired:
+        <RedirectToLogin />
+        break;
+    default:
+        <PageTitle>Brak dostępu — @PageHeader.AppName</PageTitle>
+        <AccessDeniedContent />
+        break;
+}
+
+@code {
+    private static readonly IReadOnlyList<Breadcrumb> Crumbs = [new("Pomoc", HelpButton.HrefOf(null))];
+
+    [Parameter, EditorRequired] public HelpTopic Topic { get; set; } = default!;
+
+    [Parameter, EditorRequired] public ClaimsPrincipal User { get; set; } = default!;
+}

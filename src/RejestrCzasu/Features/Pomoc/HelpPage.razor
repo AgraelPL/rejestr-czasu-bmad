@@ -1,0 +1,55 @@
+@page "/pomoc/{Temat?}"
+@layout HelpLayout
+@attribute [AllowAnonymous]
+@using System.Security.Claims
+@inject NavigationManager Navigation
+@* The only help route (AD-22): access per topic is decided here from HelpTopics, not by [Authorize]. *@
+
+@if (_user is null)
+{
+    return;
+}
+@if (string.IsNullOrEmpty(Temat))
+{
+    <PageHeader Title="Pomoc" Subtitle="Spis tematów pomocy." />
+    @if (_available.Count == 0)
+    {
+        <p>Bez logowania nie ma dostępnych tematów pomocy. <a href="@AccountEndpoints.LoginPath">Zaloguj się</a>, aby zobaczyć spis tematów.</p>
+    }
+    else
+    {
+        <ul class="help-index">
+            @foreach (var topic in _available)
+            {
+                <li><a href="@HelpButton.HrefOf(topic.Key)">@topic.Title</a></li>
+            }
+        </ul>
+    }
+}
+else if (_topic is not null)
+{
+    <HelpTopicView Topic="@_topic" User="@_user" />
+}
+
+@code {
+    /// <summary>Topic key from the route; without it the page is the index of topics.</summary>
+    [Parameter] public string? Temat { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    private ClaimsPrincipal? _user;
+    private HelpTopic? _topic;
+    private IReadOnlyList<HelpTopic> _available = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _user = AuthenticationState is null ? new ClaimsPrincipal(new ClaimsIdentity()) : (await AuthenticationState).User;
+        _topic = HelpTopics.Find(Temat);
+        _available = HelpTopics.AvailableTo(_user);
+        if (!string.IsNullOrEmpty(Temat) && _topic is null)
+        {
+            // An unknown topic: the Polish "nie znaleziono" page of the Router (404 on a full page load).
+            Navigation.NotFound();
+        }
+    }
+}

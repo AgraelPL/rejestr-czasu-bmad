@@ -6,6 +6,7 @@ using RejestrCzasu.Components;
 using RejestrCzasu.Data;
 using RejestrCzasu.Localization;
 using RejestrCzasu.Options;
+using RejestrCzasu.Shared;
 using RejestrCzasu.Startup;
 
 var polish = CultureInfo.GetCultureInfo("pl-PL");
@@ -59,6 +60,9 @@ builder.Services.AddRazorComponents()
 // Fluent UI 5: components and services (incl. IDialogService); providers rendered by <FluentProviders /> in MainLayout.
 // Polish texts of the Fluent UI components (AD-6).
 builder.Services.AddFluentUIComponents(options => options.Localizer = new FluentLocalizer());
+// Screen messages and confirmations of every screen (AD-11), one instance per circuit.
+builder.Services.AddScoped<Notify>();
+builder.Services.AddScoped<Confirm>();
 
 var app = builder.Build();
 

@@ -1,0 +1,95 @@
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Sections
+@using RejestrCzasu.Data
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@inject IThemeService ThemeService
+@* Layout of the application screens (AD-11): top bar, side menu, message area and the screen; every screen sets its
+   header through PageHeader, which also gives the help topic of the "?" (AD-22). *@
+
+@* Default "?" (help index) for a screen without PageHeader; a PageHeader rendered later takes the section over. *@
+<SectionContent SectionName="@HelpSection">
+    <HelpButton />
+</SectionContent>
+
+<FluentLayout Height="var(--app-layout-height)">
+    <FluentLayoutItem Area="LayoutArea.Header" Class="app-header">
+        <AuthorizeView>
+            <Authorized>
+                <FluentLayoutHamburger PanelHeader="Menu">@Menu</FluentLayoutHamburger>
+            </Authorized>
+        </AuthorizeView>
+        <a class="app-name" href="/">@PageHeader.AppName</a>
+        <div class="app-header-actions">
+            <SectionOutlet SectionName="@HelpSection" />
+            <FluentButton IconStart="@(new Icons.Regular.Size20.WeatherMoon())" IconOnly="true"
+                          Appearance="ButtonAppearance.Transparent" Title="Motyw jasny lub ciemny"
+                          aria-label="Motyw jasny lub ciemny" OnClick="SwitchThemeAsync" class="app-theme" />
+            <AuthorizeView>
+                <Authorized>
+                    <FluentAnchorButton Href="/ustawienia-konta" IconStart="@(new Icons.Regular.Size20.Settings())"
+                                        Appearance="ButtonAppearance.Transparent" class="app-account-settings">
+                        Ustawienia konta
+                    </FluentAnchorButton>
+                    @* A plain form POST with antiforgery (AD-15): only an HTTP response clears the login cookie. *@
+                    <form method="post" action="@AccountEndpoints.LogoutPath" class="app-logout">
+                        <AntiforgeryToken />
+                        <FluentButton Type="ButtonType.Submit" IconStart="@(new Icons.Regular.Size20.SignOut())"
+                                      Appearance="ButtonAppearance.Transparent">
+                            Wyloguj
+                        </FluentButton>
+                    </form>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+    </FluentLayoutItem>
+    <AuthorizeView>
+        <Authorized>
+            <FluentLayoutItem Area="LayoutArea.Navigation" Class="app-nav">@Menu</FluentLayoutItem>
+        </Authorized>
+    </AuthorizeView>
+    <FluentLayoutItem Area="LayoutArea.Content" Class="app-content">
+        <FluentMessageBarProvider Section="@Notify.Section" class="app-messages" />
+        <AppErrorBoundary>
+            @Body
+        </AppErrorBoundary>
+    </FluentLayoutItem>
+</FluentLayout>
+
+<ReconnectModal />
+
+<FluentProviders />
+
+<div id="blazor-error-ui" data-nosnippet>
+    Wystąpił nieoczekiwany błąd.
+    <a href="." class="reload">Odśwież</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    /// <summary>The section with the "?" of the top bar, filled by <see cref="PageHeader"/>.</summary>
+    public const string HelpSection = "help-topic";
+
+    private Task SwitchThemeAsync() => ThemeService.SwitchThemeAsync();
+
+    // The menu, rendered in the side area and, in a narrow window, in the hamburger panel.
+    private RenderFragment Menu => @<nav class="app-menu" aria-label="Menu">
+        <FluentAnchorButton Href="/wpisy/nowy" Appearance="ButtonAppearance.Primary"
+                            IconStart="@(new Icons.Regular.Size20.Add())" class="app-new-entry">Nowy wpis</FluentAnchorButton>
+        <FluentNav>
+            <FluentNavCategory Title="Rejestr" Expanded="true">
+                <FluentNavItem Href="/miesiac">Widok miesiąca</FluentNavItem>
+                <FluentNavItem Href="/wpisy" Match="NavLinkMatch.All">Lista wpisów</FluentNavItem>
+                <FluentNavItem Href="/eksport">Eksport</FluentNavItem>
+            </FluentNavCategory>
+            <FluentNavCategory Title="Słowniki" Expanded="true">
+                <FluentNavItem Href="/projekty">Projekty</FluentNavItem>
+                <FluentNavItem Href="/typy-pracy">Typy pracy</FluentNavItem>
+            </FluentNavCategory>
+            <AuthorizeView Roles="@AppRoles.Administrator">
+                <FluentNavCategory Title="Administracja" Expanded="true">
+                    <FluentNavItem Href="/uzytkownicy">Użytkownicy</FluentNavItem>
+                </FluentNavCategory>
+            </AuthorizeView>
+        </FluentNav>
+    </nav>;
+}

@@ -1,6 +1,9 @@
-﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+@* Notify is created here, before the Router attaches: its LocationChanged handler clears old messages before the
+   Router renders the new page, so messages from the new page's initialization stay (AD-11). *@
+@inject Notify Notify
+<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Shared.MainLayout)">
             <Authorizing>
                 <p>Sprawdzanie uprawnień...</p>
             </Authorizing>

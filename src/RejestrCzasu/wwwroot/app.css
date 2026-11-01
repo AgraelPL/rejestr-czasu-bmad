@@ -4,8 +4,180 @@ html, body {
     margin: 0;
 }
 
-.content {
+/* Scale 90/100/110/125% by window width (AD-11), CSS only. The layout height is divided by the zoom, so the
+   zoomed layout still fills exactly one window. */
+:root {
+    --app-zoom: 1;
+    --app-layout-height: calc(100dvh / var(--app-zoom));
+}
+
+@media (max-width: 1279.98px) {
+    :root { --app-zoom: 0.9; }
+}
+
+@media (min-width: 1920px) {
+    :root { --app-zoom: 1.1; }
+}
+
+@media (min-width: 2560px) {
+    :root { --app-zoom: 1.25; }
+}
+
+body {
+    background: var(--colorNeutralBackground1, #fff);
+    color: var(--colorNeutralForeground1, #242424);
+    zoom: var(--app-zoom);
+}
+
+/* Top bar of MainLayout (AD-11). */
+.app-header {
+    align-items: center;
+    background: var(--colorBrandBackground, #0f6cbd);
+    color: var(--colorNeutralForegroundOnBrand, #fff);
+    display: flex;
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+}
+
+    .app-header fluent-button,
+    .app-header fluent-anchor-button {
+        color: var(--colorNeutralForegroundOnBrand, #fff);
+    }
+
+.app-name {
+    color: inherit;
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.app-header-actions {
+    align-items: center;
+    display: flex;
+    gap: 0.25rem;
+    margin-left: auto;
+}
+
+.app-logout {
+    display: inline-flex;
+    margin: 0;
+}
+
+/* Side menu. */
+.app-nav {
+    border-right: 1px solid var(--colorNeutralStroke2, #e0e0e0);
+}
+
+.app-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem 0.5rem;
+}
+
+.app-new-entry {
+    margin: 0 0.25rem;
+}
+
+/* Screen area: messages (Notify) under the top bar, then the screen. */
+.app-content {
     padding: 1rem 1.5rem;
+}
+
+.app-messages:not(:empty) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.app-error {
+    margin: 1rem 0;
+}
+
+/* PageHeader with own breadcrumbs (Fluent UI 5.0.1 has no breadcrumb). */
+.page-header {
+    margin-bottom: 1rem;
+}
+
+.page-header-row {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+    .page-header-row h1 {
+        font-size: 1.6rem;
+        margin: 0;
+    }
+
+.page-subtitle {
+    color: var(--colorNeutralForeground3, #616161);
+    margin: 0.25rem 0 0;
+}
+
+.page-breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+    list-style: none;
+    margin: 0 0 0.5rem;
+    padding: 0;
+}
+
+.page-breadcrumbs li + li::before {
+    color: var(--colorNeutralForeground3, #616161);
+    content: "›";
+    padding: 0 0.4rem;
+}
+
+.page-breadcrumbs a {
+    color: var(--colorBrandForegroundLink, #115ea3);
+}
+
+.help-content h2 {
+    font-size: 1.2rem;
+    margin: 1.25rem 0 0.5rem;
+}
+
+/* Lost connection (R31): hidden until blazor.web.js sets one of its classes on the element; no JS of our own. */
+#components-reconnect-modal {
+    display: none;
+}
+
+    #components-reconnect-modal.components-reconnect-show,
+    #components-reconnect-modal.components-reconnect-retrying,
+    #components-reconnect-modal.components-reconnect-failed,
+    #components-reconnect-modal.components-reconnect-paused,
+    #components-reconnect-modal.components-reconnect-resume-failed,
+    #components-reconnect-modal.components-reconnect-rejected {
+        align-items: center;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        inset: 0;
+        justify-content: center;
+        position: fixed;
+        z-index: 2000;
+    }
+
+.reconnect-box {
+    background: var(--colorNeutralBackground1, #fff);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    color: var(--colorNeutralForeground1, #242424);
+    max-width: 26rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.reconnect-title {
+    font-weight: 600;
+    margin-top: 0;
+}
+
+.reconnect-reload {
+    font-weight: 600;
 }
 
 h1:focus {
