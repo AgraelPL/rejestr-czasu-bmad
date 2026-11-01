@@ -5,6 +5,7 @@ using RejestrCzasu.Accounts;
 using RejestrCzasu.Components;
 using RejestrCzasu.Data;
 using RejestrCzasu.Features.Projekty;
+using RejestrCzasu.Features.TypyPracy;
 using RejestrCzasu.Localization;
 using RejestrCzasu.Options;
 using RejestrCzasu.Shared;
@@ -66,6 +67,8 @@ builder.Services.AddScoped<Notify>();
 builder.Services.AddScoped<Confirm>();
 // Data of the Projekty screen, on top of the scoped UserDbContextFactory (AD-4, AD-16).
 builder.Services.AddScoped<ProjectStore>();
+// Data of the Typy pracy screen, the same way.
+builder.Services.AddScoped<WorkTypeStore>();
 
 var app = builder.Build();
 

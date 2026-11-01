@@ -142,12 +142,14 @@ body {
     margin: 1.25rem 0 0.5rem;
 }
 
-/* Projekty: add button and the add/edit form above the grid. */
-.projects-add {
+/* Projekty and Typy pracy: add button and the add/edit form above the grid. */
+.projects-add,
+.work-types-add {
     margin-bottom: 1rem;
 }
 
-.project-form {
+.project-form,
+.work-type-form {
     border: 1px solid var(--colorNeutralStroke2, #e0e0e0);
     border-radius: 4px;
     display: flex;
@@ -158,12 +160,14 @@ body {
     padding: 1rem;
 }
 
-.project-form-title {
+.project-form-title,
+.work-type-form-title {
     font-size: 1.2rem;
     margin: 0;
 }
 
-.project-form-buttons {
+.project-form-buttons,
+.work-type-form-buttons {
     display: flex;
     gap: 0.5rem;
 }
