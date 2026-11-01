@@ -1,0 +1,48 @@
+# Historie epiku Wpisy w Sesji wpisywania i Lista wpisów, w kolejności budowy.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Nowy wpis i Sesja wpisywania"
+description = "Shared/EntryForm (jeden komponent na dwa hosty, AD-10) hostowany na stronie /wpisy/nowy (przycisk Nowy wpis w menu): data domyślnie PolishCalendar.Today przy każdym otwarciu, Projekt i Typ pracy z Data/DictionaryOptions (tylko aktywne), wymagany opis, Czas w h:mm przez Domain/Czas (0:15–24:00, wielokrotność 15 min), dzień tygodnia z daty przez PolishCalendar; walidator FluentValidation przez Blazilla; kolejność fokusu data → Projekt → Typ pracy → opis → Czas, zapis Enterem bez okna potwierdzenia; po zapisie formularz zostaje z tą samą datą, a pozostałe pola są puste, fokus wraca na Projekt. Zapis przez klasę danych na UserDbContextFactory (AD-4, AD-16). Shared/EntryDateMemory pamięta datę ustawioną na /wpisy/nowy według UserId (w pamięci serwera). Komponent wyboru Projektu i Typu pracy z klawiatury ustalany tu (Fluent UI 5, bez komponentów z AD-12). Temat pomocy wpisy-nowy. Daje historiom 2 i 3 EntryForm i klasę danych Wpisu."
+verify = "Lokalnie: kilkanaście Wpisów z różnych dni samą klawiaturą, każdy w nie więcej niż 10 s; po zapisie data zostaje, pola są puste; Czas 0:10, 24:15 i 0:00 odrzucony z polskim komunikatem, 24:00 przyjęty; nieaktywny Projekt nie występuje na liście; testy na Testcontainers (zapis z user_id Usera, oddzielenie) i bUnit (kolejność fokusu, Enter zapisuje, data po zapisie, EntryDateMemory); strona pomocy wpisy-nowy istnieje."
+covers = ["R2", "R4", "R5", "R16", "R26"]
+after = ["1.9", "1.3"]
+hitl = false
+risk = "high" # klawiatura i czas 10 s; wybór pozycji z listy w Fluent UI 5 bez komponentów z AD-12
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-10", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-6", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-8", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-4"]
+
+[[entry]]
+id = 2
+type = "story"
+title = "Lista wpisów z filtrem zakresu, Projektu i Typu pracy"
+description = "Ekran /wpisy na ReportGrid: kolumny Data, Dzień, Projekt (kod), Typ pracy, Opis, Czas (h:mm); filtry ekranu: zakres dat (domyślnie bieżący Miesiąc według PolishCalendar.Today), Projekt i Typ pracy (wszystkie pozycje Usera, także nieaktywne); sortowanie od najnowszej daty; liczba Wpisów i suma Czasu (Domain/Czas, sumy ponad 24 h) dla filtrów ekranu; filtr wartości kolumn i licznik z ReportGrid. Dane przez klasę danych Wpisu z historii 1 (zapytanie z filtrami, wynik zmaterializowany). Temat pomocy wpisy."
+verify = "Lokalnie: lista pokazuje Wpisy bieżącego Miesiąca od najnowszych, zmiana zakresu i filtra Projektu zmienia liczbę i sumę; nieaktywny Projekt jest w filtrze; testy na Testcontainers: filtry, sortowanie, suma, a Wpisy drugiego Usera nigdy się nie pojawiają (AD-16); bUnit: domyślny zakres, liczba i suma; strona pomocy wpisy istnieje."
+covers = ["R2", "R8", "R17", "R26"]
+after = [1, "1.5"]
+hitl = false
+risk = "medium"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-9", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-16", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-6"]
+
+[[entry]]
+id = 3
+type = "story"
+title = "Edycja, kopia i usuwanie Wpisu z Listy wpisów"
+description = "Ikony Edytuj, Kopiuj i Usuń w wierszu Listy wpisów. Edycja i kopia otwierają EntryForm z historii 1 w oknie dialogowym (IDialogService): edycja z wartościami Wpisu i opcjami DictionaryOptions z bieżącą wartością (także nieaktywną); kopia z Projektem, Typem pracy, opisem i Czasem oryginału oraz datą z EntryDateMemory (bez niej PolishCalendar.Today), nieaktywny Projekt lub Typ pracy zostawia pole puste; zapis zamyka okno, Anuluj nic nie zapisuje. Usunięcie przez jedną operację DeleteEntry po Shared/Confirm. Po każdej zmianie lista wczytuje dane z bazy. Daje epikowi 3 okno dialogowe Wpisu i DeleteEntry."
+verify = "Lokalnie: edycja zmienia Wpis z poprzedniego Miesiąca, kopia ma datę z ostatniego Nowego wpisu i niczego nie zapisuje przed Zapisz, kopia Wpisu z nieaktywnym Projektem ma puste pole Projektu, usunięcie wymaga potwierdzenia; testy na Testcontainers (edycja, kopia, usunięcie tylko własnego Wpisu) i bUnit (okno, dane kopii, Anuluj)."
+covers = ["R6", "R7", "R8"]
+after = [2]
+hitl = false
+risk = "medium"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-10", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11"]
+
+[[entry]]
+id = 4
+type = "story"
+title = "Refactor sweep"
+description = "Porządki odłożone w planach i przeglądach historii 1–3; zakres ustalany na starcie tej historii, wyłącznie sprzątanie."
+verify = "dotnet build bez ostrzeżeń i dotnet test przechodzą; lista odłożonych uwag z planów historii 1–3 jest zamknięta albo przeniesiona do nowych historii."
+covers = []
+after = [1, 2, 3]
+hitl = false
+risk = "low"
