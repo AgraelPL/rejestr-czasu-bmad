@@ -3,7 +3,7 @@ title: 'Pierwszy Administrator, stan Konta w sesji i zmiana hasła'
 type: 'feature'
 ticket: '4'
 created: '2026-10-31'
-status: 'built'
+status: done
 baseline_revision: '4c807aa99c42715c6f098a108b73538d1bea2043'
 route: 'full'
 route_source: 'auto'

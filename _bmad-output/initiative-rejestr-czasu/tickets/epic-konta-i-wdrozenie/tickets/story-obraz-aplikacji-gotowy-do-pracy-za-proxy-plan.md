@@ -3,7 +3,7 @@ title: 'Obraz aplikacji gotowy do pracy za proxy'
 type: 'feature'
 ticket: '5'
 created: '2026-10-31'
-status: 'built'
+status: done
 baseline_revision: '9b095294c6c72a67ea0800af2a529b33e1b78504'
 route: 'full'
 route_source: 'auto'
