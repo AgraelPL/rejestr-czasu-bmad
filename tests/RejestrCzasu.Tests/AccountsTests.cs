@@ -34,7 +34,7 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Contains("oczekuje na zatwierdzenie przez Administratora", html);
 
         await using var db = postgres.CreateContext();
-        var user = await db.Users.SingleAsync(Ct);
+        var user = await NonAdministrators(db).SingleAsync(Ct);
         Assert.Equal("nowy.user", user.UserName);
         Assert.Equal(AccountStatus.Pending, user.Status);
         Assert.InRange(user.RegisteredAt, before.AddSeconds(-5), DateTime.UtcNow.AddSeconds(5));
@@ -70,7 +70,7 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
         var html = await TextAsync(response);
         Assert.Contains("Login „kOWALSKI” jest już zajęty.", html);
         await using var db = postgres.CreateContext();
-        Assert.Equal(1, await db.Users.CountAsync(Ct));
+        Assert.Equal(1, await NonAdministrators(db).CountAsync(Ct));
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
         var html = await TextAsync(response);
         Assert.Contains("Hasło musi mieć co najmniej 6 znaków.", html);
         await using var db = postgres.CreateContext();
-        Assert.Equal(0, await db.Users.CountAsync(Ct));
+        Assert.Equal(0, await NonAdministrators(db).CountAsync(Ct));
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains(IdentitySetup.UserNameTooLongMessage, await TextAsync(response));
         await using var db = postgres.CreateContext();
-        Assert.Equal(0, await db.Users.CountAsync(Ct));
+        Assert.Equal(0, await NonAdministrators(db).CountAsync(Ct));
     }
 
     [Fact]
@@ -243,7 +243,7 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
     {
         await using var app = await LoggedInAsync();
         // A token issued for the logged-in User (any page with a form; the logout button comes with story 1.3).
-        var (_, fields) = await app.GetPageAsync("/konto/logowanie");
+        var (_, fields) = await app.GetPageAsync(AccountEndpoints.ChangePasswordPath);
         Assert.True(fields.ContainsKey("__RequestVerificationToken"));
 
         using var response = await app.Http.PostAsync("/konto/wyloguj", new FormUrlEncodedContent(fields), Ct);
@@ -361,7 +361,7 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task CurrentUser_InHttpRequest_ReadsNameIdentifier_FromHttpContextUser()
     {
         var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext { User = Principal(42) } };
-        var currentUser = new CurrentUser(accessor, new ServerAuthenticationStateProvider());
+        var currentUser = new CurrentUser(accessor, new ServerAuthenticationStateProvider(), postgres.ContextFactory);
 
         Assert.Equal(42, await currentUser.GetUserIdAsync());
 
@@ -376,7 +376,7 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
         var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext { User = Principal(1) } };
         var provider = new ServerAuthenticationStateProvider();
         provider.SetAuthenticationState(Task.FromResult(new AuthenticationState(Principal(7))));
-        var currentUser = new CurrentUser(accessor, provider);
+        var currentUser = new CurrentUser(accessor, provider, postgres.ContextFactory);
         _ = new CurrentUserCircuitHandler(currentUser);
 
         Assert.Equal(7, await currentUser.GetUserIdAsync());
@@ -391,7 +391,7 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
         var userId = await postgres.CreateUserAsync("kontekst");
         var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext { User = Principal(userId) } };
         var factory = new UserDbContextFactory(
-            postgres.ContextFactory, new CurrentUser(accessor, new ServerAuthenticationStateProvider()));
+            postgres.ContextFactory, new CurrentUser(accessor, new ServerAuthenticationStateProvider(), postgres.ContextFactory));
 
         await using var db = await factory.CreateDbContextAsync(Ct);
 
@@ -418,6 +418,10 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         return app;
     }
+
+    /// <summary>Accounts other than the first Administrator, which every started application creates (AD-21).</summary>
+    private static IQueryable<AppUser> NonAdministrators(AppDbContext db) =>
+        db.Users.Where(u => u.UserName != PostgresFixture.FirstAdminUserName);
 
     private static ClaimsPrincipal Principal(int userId) =>
         new(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId.ToString(System.Globalization.CultureInfo.InvariantCulture))], "test"));

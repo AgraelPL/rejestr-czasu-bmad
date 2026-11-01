@@ -3,7 +3,7 @@ title: 'Rejestracja, logowanie i wylogowanie'
 type: 'feature'
 ticket: '3'
 created: '2026-10-31'
-status: 'built'
+status: done
 baseline_revision: '8f63f2c93d2a0afb82c843e3a389814b90594200'
 route: 'full'
 route_source: 'auto'

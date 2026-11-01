@@ -9,6 +9,7 @@ public static class AccountEndpoints
 {
     public const string LogoutPath = "/konto/wyloguj";
     public const string LoginPath = "/konto/logowanie";
+    public const string ChangePasswordPath = "/konto/zmiana-hasla";
 
     public const string InvalidLogoutMessage = "Nieprawidłowe żądanie wylogowania. Odśwież stronę i spróbuj ponownie.";
 
@@ -29,7 +30,8 @@ public static class AccountEndpoints
                 await signInManager.SignOutAsync();
                 return Results.LocalRedirect(LoginPath);
             })
-            .RequireAuthorization();
+            .RequireAuthorization()
+            .AllowDuringPasswordChange();
         return endpoints;
     }
 }

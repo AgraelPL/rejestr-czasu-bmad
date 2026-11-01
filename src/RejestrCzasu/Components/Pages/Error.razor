@@ -1,6 +1,8 @@
 @page "/Error"
 @using System.Diagnostics
 @attribute [AllowAnonymous]
+@* Exception handler re-execution must not be redirected during a required password change (AD-15). *@
+@attribute [AllowedDuringPasswordChange]
 
 <PageTitle>Błąd</PageTitle>
 

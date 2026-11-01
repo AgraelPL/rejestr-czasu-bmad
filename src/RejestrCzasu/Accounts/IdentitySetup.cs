@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Identity;
 using RejestrCzasu.Data;
@@ -59,14 +60,20 @@ public static class IdentitySetup
             options.AccessDeniedPath = "/konto/brak-dostepu";
             options.ExpireTimeSpan = CookieLifetime;
             options.SlidingExpiration = true;
+            // Replaces Identity's interval-based SecurityStampValidator: the Account state on every request (AD-17).
+            options.Events.OnValidatePrincipal = AccountCookieValidator.ValidatePrincipalAsync;
         });
 
         services.AddSingleton<IEmailSender<AppUser>, NoOpEmailSender>();
         services.AddScoped<AccountSignIn>();
+        services.AddScoped<AccountPassword>();
 
         services.AddHttpContextAccessor();
         services.AddScoped<CurrentUser>();
         services.AddScoped<CircuitHandler, CurrentUserCircuitHandler>();
+        // Circuits re-check the security stamp and status every minute (AD-17); registered before
+        // AddInteractiveServerComponents, whose default provider is only a fallback (TryAdd).
+        services.AddScoped<AuthenticationStateProvider, AccountRevalidatingAuthenticationStateProvider>();
 
         services.AddAccountRateLimit();
         return services;

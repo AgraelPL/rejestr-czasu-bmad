@@ -8,14 +8,15 @@ namespace RejestrCzasu.Startup;
 
 /// <summary>
 /// Startup sequence from AD-21, run by <c>Program</c> after the app is built and before the server starts:
-/// (1) database connection check, (2) migrations. The first Administrator step (3) is added by a later story;
-/// then (4) the server starts.
+/// (1) database connection check, (2) migrations, (3) the first Administrator (<see cref="FirstAdministrator"/>,
+/// in its own scope); then (4) the server starts.
 /// A failure of any step throws <see cref="DatabaseStartupException"/>; <c>Program</c> prints its
 /// message and exits with code 1 without starting the server.
 /// </summary>
 public sealed class DatabaseStartup(
     IOptions<DatabaseOptions> databaseOptions,
     IDbContextFactory<AppDbContext> contextFactory,
+    IServiceScopeFactory scopeFactory,
     ILogger<DatabaseStartup> logger)
 {
     public const int ConnectionTimeoutSeconds = 3;
@@ -34,6 +35,22 @@ public sealed class DatabaseStartup(
 
         // Step 2: migrations.
         await MigrateAsync(cancellationToken);
+
+        // Step 3: the first Administrator (Identity needs a scope: UserManager and the scoped AppDbContext).
+        await EnsureFirstAdministratorAsync(cancellationToken);
+    }
+
+    private async Task EnsureFirstAdministratorAsync(CancellationToken cancellationToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        try
+        {
+            await scope.ServiceProvider.GetRequiredService<FirstAdministrator>().EnsureAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is not DatabaseStartupException && !cancellationToken.IsCancellationRequested)
+        {
+            throw new DatabaseStartupException($"Utworzenie pierwszego Administratora nie powiodło się: {ex.Message}", ex);
+        }
     }
 
     private async Task CheckConnectionAsync(CancellationToken cancellationToken)
@@ -71,5 +88,26 @@ public sealed class DatabaseStartup(
 }
 
 /// <summary>Startup failure with a message meant for the console (Polish, without a stack trace).</summary>
-public sealed class DatabaseStartupException(string message, Exception innerException)
-    : Exception(message, innerException);
+public sealed class DatabaseStartupException : Exception
+{
+    public DatabaseStartupException(string message)
+        : base(message)
+    {
+    }
+
+    public DatabaseStartupException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
+}
+
+/// <summary>Registration of the startup sequence (AD-21), shared by <c>Program</c> and the tests.</summary>
+public static class StartupServiceCollectionExtensions
+{
+    public static IServiceCollection AddStartupSequence(this IServiceCollection services)
+    {
+        services.AddTransient<DatabaseStartup>();
+        services.AddScoped<FirstAdministrator>();
+        return services;
+    }
+}
