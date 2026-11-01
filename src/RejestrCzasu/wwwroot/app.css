@@ -142,6 +142,32 @@ body {
     margin: 1.25rem 0 0.5rem;
 }
 
+/* Projekty: add button and the add/edit form above the grid. */
+.projects-add {
+    margin-bottom: 1rem;
+}
+
+.project-form {
+    border: 1px solid var(--colorNeutralStroke2, #e0e0e0);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    max-width: 32rem;
+    padding: 1rem;
+}
+
+.project-form-title {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.project-form-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
 /* Lost connection (R31): hidden until blazor.web.js sets one of its classes on the element; no JS of our own. */
 #components-reconnect-modal {
     display: none;

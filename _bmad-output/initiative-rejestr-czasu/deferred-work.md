@@ -27,3 +27,7 @@
 - source_plan: `_bmad-output/initiative-rejestr-czasu/tickets/epic-szkielet-i-slowniki/tickets/story-ukad-aplikacji-z-menu-notify-i-confirm-plan.md`
   summary: AD-11 w `architecture-rejestr-czasu.md` każe budować `Shared/Confirm` na `IDialogService.ShowMessageBoxAsync`, a historia 1.3 używa `ShowDialogAsync<ConfirmDialog>` (low).
   evidence: W Fluent UI 5.0.1 przycisk główny okna komunikatu ma domyślny skrót Enter i nieustalony fokus, sprzeczne z resztą AD-11; zaktualizować AD-11 przez `bmad-architecture` przy najbliższej zmianie architektury.
+
+- source_plan: `_bmad-output/initiative-rejestr-czasu/tickets/epic-szkielet-i-slowniki/tickets/story-projekty-lista-dodawanie-edycja-dezaktywacja-i-usuwanie-plan.md`
+  summary: Kliknięcie ikony akcji w `ReportGrid` odświeża tylko siatkę, nie ekran; Projekty obchodzą to opakowaniem `ThenRender`, które musi powtórzyć każdy kolejny ekran (low).
+  evidence: Akcja wiersza to `Func<T, Task>` wywoływany z handlera komponentu `ReportGrid`; poprawka w siatce (np. `EventCallback` lub odświeżenie rodzica) usunie obejście z ekranów — kandydat do Refactor sweep 1.10.
