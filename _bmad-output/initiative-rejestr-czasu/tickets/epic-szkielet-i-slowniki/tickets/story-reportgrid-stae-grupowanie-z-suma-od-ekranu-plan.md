@@ -3,7 +3,7 @@ title: 'ReportGrid: stałe grupowanie z sumą od ekranu'
 type: 'feature'
 ticket: '6'
 created: '2026-11-01'
-status: 'built'
+status: done
 baseline_revision: 'a0482a34e5536fce00728d6b5e0adf28bb51b011'
 route: 'full'
 route_source: 'auto'
