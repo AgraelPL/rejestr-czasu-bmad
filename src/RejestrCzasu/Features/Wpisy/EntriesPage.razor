@@ -3,13 +3,16 @@
 @using RejestrCzasu.Features.Pomoc
 @using RejestrCzasu.Features.Projekty
 @using RejestrCzasu.Features.TypyPracy
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
 @inject EntryStore Store
+@inject EntryDialogs Dialogs
 @inject ProjectStore Projects
 @inject WorkTypeStore WorkTypes
 @inject TimeProvider TimeProvider
 @* Lista wpisów (R8, R17, R2): the User's Entries with the screen filters (date range, Projekt, Typ pracy) above the
    grid. The count and the sum of Czas come from the query result, i.e. from the screen filters only; the grid's value
-   filter never changes them (AD-9). Data only through the stores (AD-4, AD-16). *@
+   filter never changes them (AD-9). Data only through the stores (AD-4, AD-16). The row icons edit, copy and delete
+   the Entry through EntryDialogs (R6, R7); after a change the list is read again from the database. *@
 
 <PageHeader Title="Lista wpisów" Subtitle="Twoje Wpisy z zakresu dat, Projektu i Typu pracy, od najnowszych."
             Topic="@HelpTopics.Wpisy" />
@@ -33,7 +36,7 @@
 
 @if (_rows is not null)
 {
-    <ReportGrid T="EntryRow" Items="_rows" Columns="Columns" />
+    <ReportGrid T="EntryRow" Items="_rows" Columns="Columns" Actions="_actions" />
     <p class="entries-summary">@Summary(_rows)</p>
 }
 
@@ -52,6 +55,7 @@
         new("Czas", e => e.CzasText),
     ];
 
+    private IReadOnlyList<ReportAction<EntryRow>> _actions = [];
     private DateOnly? _from;
     private DateOnly? _to;
     private FilterOption _project = All;
@@ -76,6 +80,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _actions =
+        [
+            new(new Icons.Regular.Size20.Edit(), "Edytuj", e => ReloadAfterAsync(Dialogs.EditAsync(e.Id))),
+            new(new Icons.Regular.Size20.Copy(), "Kopiuj", e => ReloadAfterAsync(Dialogs.CopyAsync(e.Id))),
+            new(new Icons.Regular.Size20.Delete(), "Usuń", e => ReloadAfterAsync(Dialogs.DeleteAsync(e.Id))),
+        ];
         var month = YearMonth.From(PolishCalendar.Today(TimeProvider));
         _from = month.FirstDay;
         _to = month.LastDay;
@@ -85,6 +95,14 @@
         _projectOptions = [All, .. projects.Select(p => new FilterOption(p.Id, $"{p.Code} — {p.Name}{Inactive(p.IsActive)}"))];
         _workTypeOptions = [All, .. workTypes.Select(w => new FilterOption(w.Id, $"{w.Name}{Inactive(w.IsActive)}"))];
         await ReloadAsync();
+    }
+
+    private async Task ReloadAfterAsync(Task<bool> action)
+    {
+        if (await action)
+        {
+            await ReloadAsync();
+        }
     }
 
     private async Task ReloadAsync()

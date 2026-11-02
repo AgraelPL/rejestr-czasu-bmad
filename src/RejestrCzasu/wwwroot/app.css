@@ -181,6 +181,13 @@ body {
     gap: 0.5rem;
 }
 
+/* Entry window (EntryDialog): Anuluj in its own row right under the Zapisz row of EntryForm. */
+.entry-dialog-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
 /* Lista wpisów: screen filters above the grid, summary under it. */
 .entries-filters {
     align-items: flex-end;

@@ -4,7 +4,7 @@ using RejestrCzasu.Features.Wpisy;
 
 namespace RejestrCzasu.Tests.Features;
 
-/// <summary>Adding and listing Entries (R4, R8, AD-4, AD-7, AD-16) on PostgreSQL.</summary>
+/// <summary>Adding, listing, finding, editing and deleting Entries (R4, R6, R8, AD-4, AD-7, AD-16) on PostgreSQL.</summary>
 public sealed class EntryStoreTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -193,8 +193,134 @@ public sealed class EntryStoreTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Empty(byOtherWorkType);
     }
 
-    private static async Task AddAsync(EntryStore store, DateOnly date, int projectId, int workTypeId, string description) =>
-        Assert.IsType<EntryChange.Done>(await store.AddAsync(date, projectId, workTypeId, description, "1h", Ct));
+    [Fact]
+    public async Task Find_ReturnsRowOfTheUser_NullForAnotherUserOrMissing()
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+        var id = await AddAsync(StoreFor(_user), new DateOnly(2026, 8, 20), projectId, workTypeId, "Sierpień");
+
+        var row = await StoreFor(_user).FindAsync(id, Ct);
+
+        Assert.NotNull(row);
+        Assert.Equal((id, new DateOnly(2026, 8, 20), "RDZ", "Development", "Sierpień", 60),
+            (row.Id, row.Date, row.ProjectCode, row.WorkTypeName, row.Description, row.Minutes));
+        Assert.Null(await StoreFor(_otherUser).FindAsync(id, Ct));
+        Assert.Null(await StoreFor(_user).FindAsync(id + 1000, Ct));
+    }
+
+    [Fact]
+    public async Task Update_ChangesEveryField_InAPastMonth()
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+        var (otherProjectId, otherWorkTypeId) = await AddInactiveDictionariesAsync(_user);
+        var store = StoreFor(_user);
+        var id = await AddAsync(store, new DateOnly(2026, 8, 20), projectId, workTypeId, "Sierpień");
+
+        var change = await store.UpdateAsync(id, new DateOnly(2026, 7, 31), otherProjectId, otherWorkTypeId, "  Lipiec ", "2h 15m", Ct);
+
+        Assert.Equal(new EntryChange.Done(id, 135), change);
+        await using var db = await postgres.CreateUserContextAsync(_user);
+        var entry = Assert.Single(await db.TimeEntries.ToListAsync(Ct));
+        Assert.Equal(
+            (new DateOnly(2026, 7, 31), otherProjectId, otherWorkTypeId, "Lipiec", 135),
+            (entry.Date, entry.ProjectId, entry.WorkTypeId, entry.Description, entry.Minutes));
+    }
+
+    [Fact]
+    public async Task Update_AnotherUsersEntry_IsNotFound_AndUntouched()
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+        var (otherProjectId, otherWorkTypeId) = await SeedDictionariesAsync(_otherUser);
+        var id = await AddAsync(StoreFor(_user), new DateOnly(2026, 9, 3), projectId, workTypeId, "Mój");
+
+        var change = await StoreFor(_otherUser).UpdateAsync(id, new DateOnly(2026, 9, 4), otherProjectId, otherWorkTypeId, "Cudzy", "2h", Ct);
+
+        Assert.IsType<EntryChange.NotFound>(change);
+        await using var db = await postgres.CreateUserContextAsync(_user);
+        var entry = Assert.Single(await db.TimeEntries.ToListAsync(Ct));
+        Assert.Equal((new DateOnly(2026, 9, 3), "Mój", 60), (entry.Date, entry.Description, entry.Minutes));
+    }
+
+    [Fact]
+    public async Task Update_WithAnotherUsersDictionaryItem_IsMissingDictionaryItem_AndUntouched()
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+        var (otherProjectId, otherWorkTypeId) = await SeedDictionariesAsync(_otherUser);
+        var store = StoreFor(_user);
+        var id = await AddAsync(store, new DateOnly(2026, 9, 3), projectId, workTypeId, "Mój");
+
+        Assert.IsType<EntryChange.MissingDictionaryItem>(
+            await store.UpdateAsync(id, new DateOnly(2026, 9, 3), otherProjectId, workTypeId, "Mój", "1h", Ct));
+        Assert.IsType<EntryChange.MissingDictionaryItem>(
+            await store.UpdateAsync(id, new DateOnly(2026, 9, 3), projectId, otherWorkTypeId, "Mój", "1h", Ct));
+
+        await using var db = await postgres.CreateUserContextAsync(_user);
+        var entry = Assert.Single(await db.TimeEntries.ToListAsync(Ct));
+        Assert.Equal((projectId, workTypeId), (entry.ProjectId, entry.WorkTypeId));
+    }
+
+    [Fact]
+    public async Task Update_MissingEntry_IsNotFound()
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+
+        var change = await StoreFor(_user).UpdateAsync(12345, new DateOnly(2026, 9, 3), projectId, workTypeId, "Opis", "1h", Ct);
+
+        Assert.IsType<EntryChange.NotFound>(change);
+    }
+
+    [Theory]
+    [InlineData("0:10")]
+    [InlineData("")]
+    public async Task Update_InvalidCzas_Throws(string czas)
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+        var id = await AddAsync(StoreFor(_user), new DateOnly(2026, 9, 3), projectId, workTypeId, "Opis");
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            StoreFor(_user).UpdateAsync(id, new DateOnly(2026, 9, 3), projectId, workTypeId, "Opis", czas, Ct));
+    }
+
+    [Fact]
+    public async Task Delete_RemovesEntry_ThenNotFound()
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+        var store = StoreFor(_user);
+        var id = await AddAsync(store, new DateOnly(2026, 8, 20), projectId, workTypeId, "Sierpień");
+        var kept = await AddAsync(store, new DateOnly(2026, 9, 3), projectId, workTypeId, "Zostaje");
+
+        Assert.Equal(new EntryChange.Done(id, 60), await store.DeleteAsync(id, Ct));
+        Assert.IsType<EntryChange.NotFound>(await store.DeleteAsync(id, Ct));
+
+        await using var db = await postgres.CreateUserContextAsync(_user);
+        Assert.Equal(kept, Assert.Single(await db.TimeEntries.ToListAsync(Ct)).Id);
+    }
+
+    [Fact]
+    public async Task Delete_AnotherUsersEntry_IsNotFound_AndUntouched()
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+        var id = await AddAsync(StoreFor(_user), new DateOnly(2026, 9, 3), projectId, workTypeId, "Mój");
+
+        Assert.IsType<EntryChange.NotFound>(await StoreFor(_otherUser).DeleteAsync(id, Ct));
+
+        await using var db = await postgres.CreateUserContextAsync(_user);
+        Assert.Single(await db.TimeEntries.ToListAsync(Ct));
+    }
+
+    private static async Task<int> AddAsync(EntryStore store, DateOnly date, int projectId, int workTypeId, string description) =>
+        Assert.IsType<EntryChange.Done>(await store.AddAsync(date, projectId, workTypeId, description, "1h", Ct)).Id;
+
+    private async Task<(int ProjectId, int WorkTypeId)> AddInactiveDictionariesAsync(int userId)
+    {
+        await using var db = await postgres.CreateUserContextAsync(userId);
+        var project = new Project { Code = "OLD", Name = "Stary", IsActive = false };
+        var workType = new WorkType { Name = "Archiwalny", IsActive = false };
+        db.Projects.Add(project);
+        db.WorkTypes.Add(workType);
+        await db.SaveChangesAsync(Ct);
+        return (project.Id, workType.Id);
+    }
 
     private EntryStore StoreFor(int userId) => new(postgres.CreateLoggedInUserDbContextFactory(userId));
 
