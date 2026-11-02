@@ -37,6 +37,3 @@
   - AD-11 zaktualizowane: `Confirm` na `ShowDialogAsync` z `ConfirmDialog`; komunikaty `Notify` znikają po 5 s, w pływającym panelu w prawym górnym rogu.
   - Pakiet ikon: `Microsoft.FluentUI.AspNetCore.Components.Icons` ma własną numerację i deklaruje zależność minimalną od rdzenia 4.14.x (także najnowsza 5.0.1), więc z Components 5.0.1 jest zgodny; podniesiony do 5.0.1, ikony renderują się w testach i w przeglądarce.
 
-- source_plan: `_bmad-output/initiative-rejestr-czasu/tickets/epic-wpisy-i-lista/tickets/story-lista-wpisow-z-filtrem-zakresu-projektu-i-typu-pracy-plan.md`
-  summary: Sprawdzić w przeglądarce, że wybór opcji w filtrach Projekt i Typ pracy na /wpisy (FluentSelect z rekordem FilterOption, bez OptionValue) wywołuje ValueChanged z właściwą opcją, a „Wszystkie” jest zaznaczone na starcie.
-  evidence: Niezweryfikowane (maybe-false, medium gdyby prawdziwe) — testy bUnit wywołują ValueChanged bezpośrednio, to pierwszy FluentSelect w aplikacji; rozstrzyga ręczne dotnet run.
