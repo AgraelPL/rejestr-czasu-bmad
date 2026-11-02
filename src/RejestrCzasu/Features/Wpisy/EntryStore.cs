@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using RejestrCzasu.Data;
 using RejestrCzasu.Domain;
@@ -16,7 +15,7 @@ public sealed record EntryRow(
     int Id, DateOnly Date, int ProjectId, string ProjectCode, int WorkTypeId, string WorkTypeName, string Description, int Minutes)
 {
     /// <summary>Text of the Data column (<c>dd.MM.yyyy</c>).</summary>
-    public string DateText => Date.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
+    public string DateText => EntryMessages.Date(Date);
 
     /// <summary>Text of the Dzień column.</summary>
     public string DayName => PolishCalendar.DayName(Date);

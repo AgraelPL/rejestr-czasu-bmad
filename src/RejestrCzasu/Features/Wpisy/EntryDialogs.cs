@@ -22,8 +22,6 @@ public sealed class EntryDialogs(
     Confirm confirm,
     Notify notify)
 {
-    internal const string NotFoundMessage = "Ten Wpis już nie istnieje. Lista została wczytana ponownie.";
-
     /// <summary>Opens the „Edycja Wpisu” window with the Entry as saved; <c>true</c> after a save or a missing Entry.</summary>
     public async Task<bool> EditAsync(int entryId)
     {
@@ -64,34 +62,27 @@ public sealed class EntryDialogs(
         {
             return true;
         }
-        if (!await confirm.AskAsync("Usuń Wpis", DeleteQuestion(row), "Usuń"))
+        if (!await confirm.AskAsync("Usuń Wpis", EntryMessages.DeleteQuestion(row), "Usuń"))
         {
             return false;
         }
         if (await store.DeleteAsync(entryId) is EntryChange.Done)
         {
-            await notify.Success(DeletedMessage(row));
+            await notify.Success(EntryMessages.Deleted(row));
         }
         else
         {
-            await notify.Warning(NotFoundMessage);
+            await notify.Warning(EntryMessages.NotFound);
         }
         return true;
     }
-
-    /// <summary>The question of the delete confirmation.</summary>
-    internal static string DeleteQuestion(EntryRow row) =>
-        $"Usunąć Wpis z {row.DateText} ({row.ProjectCode}, {row.CzasText}): {row.Description}?";
-
-    /// <summary>The message after a deleted Entry.</summary>
-    internal static string DeletedMessage(EntryRow row) => $"Usunięto Wpis: {row.DateText}, {row.ProjectCode}, {row.CzasText}.";
 
     private async Task<EntryRow?> FindAsync(int entryId)
     {
         var row = await store.FindAsync(entryId);
         if (row is null)
         {
-            await notify.Warning(NotFoundMessage);
+            await notify.Warning(EntryMessages.NotFound);
         }
         return row;
     }
@@ -123,8 +114,7 @@ public sealed class EntryDialogs(
             dialog.Header.Title = WebUtility.HtmlEncode(title);
             // The library footer stays hidden and without shortcuts, as in Confirm: Zapisz is in EntryForm, Anuluj in
             // EntryDialog. Escape closes the native dialog, which the library reports as Cancel.
-            HideLibraryAction(dialog.Footer.PrimaryAction);
-            HideLibraryAction(dialog.Footer.SecondaryAction);
+            Confirm.HideLibraryFooter(dialog);
             dialog.Parameters.Add(nameof(EntryDialog.Model), input);
             dialog.Parameters.Add(nameof(EntryDialog.Projects), projects);
             dialog.Parameters.Add(nameof(EntryDialog.WorkTypes), workTypes);
@@ -133,12 +123,5 @@ public sealed class EntryDialogs(
             dialog.Parameters.Add(nameof(EntryDialog.CurrentWorkTypeId), currentWorkTypeId);
         });
         return !result.Cancelled;
-    }
-
-    private static void HideLibraryAction(DialogOptionsFooterAction action)
-    {
-        action.Label = null;
-        action.Visible = false;
-        action.ShortCut = null;
     }
 }

@@ -23,12 +23,21 @@ public sealed class Confirm(IDialogService dialogs)
             options.Header.Title = WebUtility.HtmlEncode(title);
             // The library footer stays hidden and without shortcuts (its primary default is Enter); the buttons are in
             // ConfirmDialog. Escape closes the native dialog, which the library reports as Cancel.
-            HideLibraryAction(options.Footer.PrimaryAction);
-            HideLibraryAction(options.Footer.SecondaryAction);
+            HideLibraryFooter(options);
             options.Parameters.Add(nameof(ConfirmDialog.Message), message);
             options.Parameters.Add(nameof(ConfirmDialog.PrimaryLabel), primaryLabel);
         });
         return !result.Cancelled;
+    }
+
+    /// <summary>
+    /// Hides the library footer of a window and removes its shortcuts (its primary default is Enter); the window's own
+    /// buttons are in its content. Also used by the Entry window.
+    /// </summary>
+    internal static void HideLibraryFooter(DialogOptions options)
+    {
+        HideLibraryAction(options.Footer.PrimaryAction);
+        HideLibraryAction(options.Footer.SecondaryAction);
     }
 
     private static void HideLibraryAction(DialogOptionsFooterAction action)

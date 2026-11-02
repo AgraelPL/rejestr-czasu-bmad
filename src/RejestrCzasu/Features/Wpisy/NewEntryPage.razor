@@ -1,5 +1,4 @@
 @page "/wpisy/nowy"
-@using System.Globalization
 @using RejestrCzasu.Data
 @using RejestrCzasu.Domain
 @using RejestrCzasu.Features.Pomoc
@@ -23,17 +22,11 @@
 }
 
 @code {
-    internal const string MissingDictionaryItemMessage = "Wybrany Projekt lub Typ pracy już nie istnieje.";
-
     private EntryForm? _form;
     private EntryInput _input = new();
     private IReadOnlyList<ProjectOption>? _projects;
     private IReadOnlyList<WorkTypeOption>? _workTypes;
     private int _userId;
-
-    /// <summary>The short description of a saved Entry: date, Project code and Czas.</summary>
-    internal static string SavedMessage(DateOnly date, string projectCode, int minutes) =>
-        $"Zapisano Wpis: {date.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)}, {projectCode}, {Czas.Format(minutes)}.";
 
     protected override async Task OnInitializedAsync()
     {
@@ -64,7 +57,7 @@
         switch (change)
         {
             case EntryChange.Done done:
-                var message = SavedMessage(input.Date.Value, input.Project.Code, done.Minutes);
+                var message = EntryMessages.Saved(input.Date.Value, input.Project.Code, done.Minutes);
                 input.ClearAfterSave();
                 if (_form is not null)
                 {
@@ -74,7 +67,7 @@
                 break;
             case EntryChange.MissingDictionaryItem:
                 // The form keeps the typed values; the lists no longer offer the missing item.
-                await Notify.Error(MissingDictionaryItemMessage);
+                await Notify.Error(EntryMessages.MissingDictionaryItem);
                 await LoadOptionsAsync();
                 break;
         }

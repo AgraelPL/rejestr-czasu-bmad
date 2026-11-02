@@ -377,9 +377,4 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
             .Select(w => new WorkTypeOption(w.Id, w.Name, w.IsActive)).ToListAsync(cancellationToken);
         return (projects.ToDictionary(p => p.Code), workTypes.ToDictionary(w => w.Name));
     }
-
-    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => utcNow;
-    }
 }

@@ -599,9 +599,4 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         await other.SaveChangesAsync(Ct);
         return ids;
     }
-
-    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => utcNow;
-    }
 }

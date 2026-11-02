@@ -55,15 +55,15 @@
         {
             case EntryChange.Done done:
                 await Dialog.CloseAsync();
-                await Notify.Success(NewEntryPage.SavedMessage(date, project.Code, done.Minutes));
+                await Notify.Success(EntryMessages.Saved(date, project.Code, done.Minutes));
                 break;
             case EntryChange.NotFound:
                 await Dialog.CloseAsync();
-                await Notify.Warning(EntryDialogs.NotFoundMessage);
+                await Notify.Warning(EntryMessages.NotFound);
                 break;
             case EntryChange.MissingDictionaryItem:
                 // The window stays open with the typed values; the lists no longer offer the missing item.
-                await Notify.Error(NewEntryPage.MissingDictionaryItemMessage);
+                await Notify.Error(EntryMessages.MissingDictionaryItem);
                 _projects = await Options.ProjectsAsync(CurrentProjectId, CancellationToken.None);
                 _workTypes = await Options.WorkTypesAsync(CurrentWorkTypeId, CancellationToken.None);
                 break;
