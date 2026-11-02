@@ -6,7 +6,7 @@ covers: [R17, R26, R31]
 sources: []
 companions: []
 after: []
-refined: false
+refined: true
 risk: high
 ---
 
@@ -19,6 +19,20 @@ Lokalnie każdy istniejący ekran — Projekty, Typy pracy, Nowy wpis, Lista wpi
 ## Outcome
 
 User pracuje we wszystkich dotychczasowych ekranach w wyglądzie wzorca eod-ui bez utraty żadnej funkcji, a kolejne epiki budują ekrany wyłącznie z komponentów wzorca.
+
+## Requirements
+
+- R1 (parent R17): Każdy raport (Widok miesiąca, Lista wpisów) i lista Słownika ma filtr wartości w każdej kolumnie i licznik pozycji; filtr nie zmienia sum liczonych dla Miesiąca; brak eksportu CSV.
+- R2 (parent R26): Aplikacja ma strony pomocy po polsku; ikona `?` w belce otwiera stronę bieżącego ekranu, a z niej spis tematów; strona o administracji jest tylko dla Administratora; każdy ekran ma stronę pomocy zgodną z jego działaniem.
+- R3 (parent R31): Gdy połączenie z serwerem się zerwie, aplikacja pokazuje komunikat z prośbą o odświeżenie; niezapisany Wpis może przepaść.
+
+## Constraints
+
+- prd NFR-1: bez połączeń wychodzących; CSP `script-src 'self'` bez wyjątków (AD-12).
+- prd NFR-2: repozytoria aplikacji i eod-ui prywatne; sekrety tylko w GitHub Secrets i na serwerze.
+- prd NFR-6: belka z Pomocą `?`, Ustawieniami konta i Wyloguj; menu Nowy wpis; Rejestr; Słowniki; Administracja tylko dla Administratora.
+- architecture AD-1, AD-9, AD-11, AD-12, AD-22, AD-23: podmoduł `ui/`, `EodReport` dla raportów i list, `UiMessages`, `EodShell`/`EodPage`, `PageHelp`, kontrakt zmian we wzorcu.
+- Zachowanie R1–R8, R16, R18, R19, R25 bez zmian; istniejące testy Testcontainers przechodzą bez zmian logiki.
 
 ## Done when
 
@@ -48,4 +62,5 @@ User pracuje we wszystkich dotychczasowych ekranach w wyglądzie wzorca eod-ui b
 - Decision (02.11.2026): R17 bez zmian — eksport CSV w `EodReport` wyłączany parametrem dodanym we wzorcu.
 - Decision (02.11.2026): potwierdzenie w `UiMessages` bez skrótu Enter, fokus na Anuluj — zmiana we wzorcu; jedna droga potwierdzeń, zasada AD-11 zostaje.
 - Decision (02.11.2026): `EodReport` przyjmuje sumy grup i całości od ekranu (Widok miesiąca z `MonthReport`, AD-5, R9, R10) — zmiana we wzorcu.
-- Open question: kolejność i podział zmian w repozytorium eod-ui względem historii tego epiku — przy refinemencie epiku po aktualizacji architektury.
+- Decision (02.11.2026): refinement — wymagania epiku to linie rodzica R17, R26, R31; zmiany we wzorcu robi agent BMad w osobnym klonie eod-ui (gałąź i PR do eod-ui), PR otwiera i scala Autor (token bez uprawnień do PR), więc historie 1 i 2 mają hitl; zmiany we wzorcu w dwóch historiach: EodReport (AD-23 poz. 1–5) i reszta (poz. 6–10). Zamyka Open question o kolejności zmian we wzorcu.
+- Decision (02.11.2026): tracer bullet — historia 3 (podmoduł, CI z prywatnym podmodułem, obraz, szkielet EodShell, UiMessages); najmniej pewna — historia 5 (Lista wpisów na EodReport z sumą od ekranu, R16 w nowym szkielecie); historie 1 i 2 mogą iść równolegle, 4 i 6 równolegle po 3; zamyka Refactor sweep (historia 7). Jeden PR epiku po stronie Rejestru, osobne PR w eod-ui dla historii 1 i 2.
