@@ -1,0 +1,585 @@
+/* ════════════════════════════════════════════════════════════════════════
+   MOJE EOD – wzorzec UI (Eod.Platform.UI/eod.css)
+   Układ: FluentLayout (belka · menu boczne · treść). Strony = karty + siatki.
+   Kolory, typografia i odstępy wyłącznie z tokenów Fluent 2 – tokeny jasne/ciemne ustawia biblioteka (IThemeService).
+   Klasy fluent-*  = znaczniki/klasy biblioteki Fluent UI Blazor v5 (CSS biblioteki jest globalny).
+   Klasy eod-*     = wzorce aplikacji – renderują je komponenty Eod* z tej biblioteki.
+   Arkusz ładuje się po stylach biblioteki (EodHead), więc przy tej samej specyficzności wygrywa.
+   ════════════════════════════════════════════════════════════════════════ */
+:root {
+  --eod-nav-width: 264px;
+  --eod-header-height: 48px;
+  --eod-gutter: 24px;
+  --eod-casebar-h: 0px;
+  --eod-zoom: 1;
+}
+/* ── Rozmiar interfejsu ──────────────────────────────────────────────────
+   Jedna skala dla tekstu, kontrolek i odstępów (CSS zoom na <body>).
+   Tryb automatyczny: okno węższe niż 1440 px (np. 1280×720, 1366×768) → 90%,
+   1440–2199 px (1536×864, 1920×1080) → 100%, od 2200 px (2560×1440) → 110%.
+   Wybór ręczny zapisuje atrybut data-scale na <html>. */
+@media (min-width: 901px) and (max-width: 1439px) { :root:not([data-scale]) { --eod-zoom: .9; } }
+@media (min-width: 2200px) { :root:not([data-scale]) { --eod-zoom: 1.1; } }
+:root[data-scale="90"] { --eod-zoom: .9; }
+:root[data-scale="100"] { --eod-zoom: 1; }
+:root[data-scale="110"] { --eod-zoom: 1.1; }
+:root[data-scale="125"] { --eod-zoom: 1.25; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  zoom: var(--eod-zoom);
+  margin: 0;
+  background: var(--colorNeutralBackground3);
+  color: var(--colorNeutralForeground1);
+  font-family: var(--fontFamilyBase);
+  font-size: var(--fontSizeBase300);
+  line-height: var(--lineHeightBase300);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, p, dl, dd, ol, ul { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+a { color: var(--colorBrandForegroundLink); }
+:focus-visible { outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2); outline-offset: 1px; }
+
+/* ── Ikony (Fluent System Icons, domyślnie Regular 20) ───────────────── */
+.ic { width: 20px; height: 20px; fill: currentColor; flex: none; display: inline-block; vertical-align: middle; }
+.ic-16 { width: 16px; height: 16px; }
+.ic-24 { width: 24px; height: 24px; }
+.ic-32 { width: 32px; height: 32px; }
+.ic-48 { width: 48px; height: 48px; }
+.c-brand { color: var(--colorBrandForeground1); }
+.c-success { color: var(--colorStatusSuccessForeground1); }
+.c-warning { color: var(--colorStatusWarningForeground1); }
+.c-danger { color: var(--colorStatusDangerForeground1); }
+.c-muted { color: var(--colorNeutralForeground3); }
+
+/* ── Typografia (rampa Fluent 2) ─────────────────────────────────────── */
+.eod-h1 { font-size: var(--fontSizeBase600); line-height: var(--lineHeightBase600); font-weight: var(--fontWeightSemibold); text-wrap: balance; }
+.eod-h2 { font-size: var(--fontSizeBase400); line-height: var(--lineHeightBase400); font-weight: var(--fontWeightSemibold); }
+.eod-h3 { font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); font-weight: var(--fontWeightSemibold); }
+.eod-caption { font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground3); }
+.eod-overline { font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground3); font-weight: var(--fontWeightSemibold); letter-spacing: .02em; }
+.eod-num { font-variant-numeric: tabular-nums; }
+.eod-code { font-family: var(--fontFamilyMonospace); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground2); background: var(--colorNeutralBackground3); border-radius: var(--borderRadiusMedium); padding: 2px 6px; overflow-wrap: anywhere; }
+
+/* ── FluentLayout: uzupełnienia (w Blazor część ustawia komponent) ───── */
+div:has(> .fluent-layout.eod-shell) { height: 100%; }
+.fluent-layout.eod-shell { height: 100%; }
+/* min-width: 0 – belka (obejmuje wszystkie kolumny siatki) nie może rozpychać układu na wąskim ekranie */
+.eod-shell > .fluent-layout-item[area="header"] { gap: 4px; padding: 0 12px; overflow: visible; min-width: 0; }
+.eod-shell > .fluent-layout-item[area="nav"] { display: flex; flex-direction: column; background: var(--colorNeutralBackground4); border-right: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-shell > .fluent-layout-item[area="content"] { min-width: 0; background: var(--colorNeutralBackground3); scroll-behavior: smooth; }
+.eod-nav { display: flex; flex-direction: column; min-height: 100%; }
+.eod-nav > .fluent-nav { flex: 1; }
+
+/* Belka górna */
+.eod-appname { font-size: var(--fontSizeBase400); font-weight: var(--fontWeightSemibold); letter-spacing: .06em; white-space: nowrap; color: inherit; text-decoration: none; padding: 4px 8px; border-radius: var(--borderRadiusMedium); }
+.eod-header-sep { width: 1px; height: 24px; background: currentColor; opacity: .35; margin-inline: 4px; flex: none; }
+.eod-header-spacer { flex: 1; min-width: 4px; }
+.eod-onbrand, .eod-onbrand:hover, .eod-onbrand:active, .eod-onbrand[aria-expanded="true"] { color: var(--colorNeutralForegroundOnBrand); }
+.eod-onbrand:hover, .eod-onbrand[aria-expanded="true"] { background: var(--colorBrandBackgroundHover); }
+.eod-onbrand:active { background: var(--colorBrandBackgroundPressed); }
+.eod-userbtn > [slot="start"] { display: inline-flex; }
+.eod-userbtn fluent-avatar { margin-inline: -4px 2px; }
+.eod-ctx-label { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Menu boczne */
+.eod-nav-top { padding: 12px 12px 8px; }
+.eod-nav-top fluent-menu { display: block; }
+.eod-nav-top fluent-menu-button { width: 100%; }
+.eod-nav-top fluent-menu-button::part(content) { flex: 0 1 auto; }
+.fluent-nav { background: transparent; flex: 1; padding-top: 4px; }
+.fluent-nav .fluent-navitem { align-items: center; gap: 10px; font: inherit; }
+.fluent-nav .fluent-navitem .ic { color: var(--colorNeutralForeground2); }
+.fluent-nav .fluent-navitem.active .ic { color: var(--colorCompoundBrandForeground1); }
+.fluent-nav .fluent-navitem.active { color: var(--colorNeutralForeground1); background: var(--colorNeutralBackground4Hover); }
+.fluent-nav .fluent-navitem.active::after { left: 16px; top: 10px; }
+.fluent-nav .fluent-navitem > fluent-counter-badge { margin-inline-start: auto; }
+.fluent-nav .fluent-navsectionheader { margin-block: 16px 4px; color: var(--colorNeutralForeground3); }
+.eod-nav-foot { padding: 8px 16px 12px; border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+
+/* Strona: treść zajmuje całą szerokość i wysokość obszaru roboczego (bez limitu szerokości i bez centrowania).
+   Szerokość czytelną zapewnia siatka FluentGrid wewnątrz kart, nie margines strony. */
+.eod-page { min-height: 100%; padding-block: 20px 24px; padding-inline: var(--eod-gutter); display: flex; flex-direction: column; gap: 16px; }
+.eod-page-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 16px; }
+.eod-page-head > :first-child { flex: 1; min-width: min(100%, 260px); }
+.eod-stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.eod-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.eod-grow { flex: 1; min-width: 0; }
+.eod-messages { display: flex; flex-direction: column; gap: 8px; }
+.eod-messages:not(:has(fluent-message-bar)) { display: none; }
+fluent-message-bar { width: 100%; }
+fluent-message-bar .title { font-weight: var(--fontWeightSemibold); margin-inline-end: 6px; }
+
+/* ── Karta (powierzchnia) ─────────────────────────────────────────────── */
+.eod-card { background: var(--colorNeutralBackground1); border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusXLarge); min-width: 0; }
+.eod-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); min-height: 56px; }
+.eod-card-head > .eod-h2 { flex: 1; min-width: 140px; }
+.eod-card-body { padding: 16px; }
+.eod-card-body.flush { padding: 0; }
+/* Karta i wiersz siatki, które pochłaniają wolną wysokość strony (ostatni wiersz strony startowej, raport) */
+.eod-page > .eod-stack { flex: 1 0 auto; }
+.eod-grid-fill { flex: 1 0 auto; }
+.eod-grid-fill > div { display: flex; flex-direction: column; }
+.eod-grid-fill > div > * { flex: 1 0 auto; }
+.eod-grid-fill .eod-stack > :last-child { flex: 1 0 auto; }
+.eod-card-fill { display: flex; flex-direction: column; }
+.eod-page > .eod-card-fill { flex: 1 0 auto; }
+.eod-card-fill > .eod-table-wrap, .eod-card-fill > .eod-list { flex: 1 0 auto; }
+.eod-card-foot { padding: 8px 16px; border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* Kafle z liczbami (strona główna procesu) */
+.eod-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.eod-tile { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; text-align: start; font: inherit; color: inherit; cursor: pointer; }
+.eod-tile:hover { background: var(--colorNeutralBackground1Hover); }
+.eod-tile-value { font-size: var(--fontSizeHero800); line-height: var(--lineHeightHero800); font-weight: var(--fontWeightSemibold); font-variant-numeric: tabular-nums; }
+.eod-tile-label { color: var(--colorNeutralForeground2); }
+
+/* ── FluentDataGrid: uzupełnienia ─────────────────────────────────────── */
+.eod-table-wrap { overflow-x: auto; }
+.fluent-data-grid { width: 100%; border-spacing: 0; }
+.fluent-data-grid th[cell-type="columnheader"] { text-align: start; color: var(--colorNeutralForeground2); white-space: nowrap; padding: 4px 6px; }
+.fluent-data-grid td { height: 44px; }
+.fluent-data-grid td:not([col-select="true"]) { max-width: 420px; }
+/* Kolumna opisowa (numer + przedmiot): 42% szerokości. W trybie Table siatka ma table-layout: fixed – szerokość bierze się z nagłówka. */
+.fluent-data-grid :is(th, td).eod-col-flex { max-width: 0; width: 42%; }
+.eod-due { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding-block: 4px; }
+.fluent-data-grid td.eod-cell-actions { padding: 0 8px; text-align: end; white-space: nowrap; overflow: visible; }
+.fluent-data-grid tbody tr:last-child td { border-bottom-color: transparent; }
+.fluent-data-grid td .eod-caption { display: block; overflow: hidden; text-overflow: ellipsis; }
+.fluent-data-grid td fluent-text-input, .fluent-data-grid td fluent-dropdown { width: 100%; min-width: 110px; }
+.eod-cell-main { font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); text-decoration: none; }
+/* Kolumna typu link: etykieta w kolorze linku (FluentLink), podkreślenie po najechaniu */
+a.eod-cell-main { color: var(--colorBrandForegroundLink); }
+a.eod-cell-main:hover { text-decoration: underline; color: var(--colorBrandForegroundLinkHover); }
+a.eod-cell-main:active { color: var(--colorBrandForegroundLinkPressed); }
+.eod-paginator { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 8px 12px; border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); }
+.eod-paginator > :first-child { flex: 1; }
+
+/* Listy (regulacje, komunikaty, powiadomienia) */
+.eod-list > li { display: flex; gap: 12px; padding: 10px 16px; align-items: flex-start; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-list > li:last-child { border-bottom: 0; }
+.eod-list .eod-grow > a, .eod-list .eod-grow > strong { font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); text-decoration: none; display: block; }
+.eod-list .eod-grow > a:hover { color: var(--colorBrandForegroundLink); text-decoration: underline; }
+.eod-news { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.eod-news article { display: flex; flex-direction: column; gap: 6px; }
+.eod-news h3 a { color: inherit; text-decoration: none; }
+.eod-news h3 a:hover { color: var(--colorBrandForegroundLink); text-decoration: underline; }
+.eod-news p { color: var(--colorNeutralForeground2); }
+
+/* ── Formularz sprawy ─────────────────────────────────────────────────── */
+.eod-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); }
+
+/* Sekcja główna: tytuł, status, sektor przycisków – przyklejona u góry treści */
+.eod-sticky { position: sticky; top: 0; z-index: 20; display: flex; flex-direction: column; gap: 8px; margin-top: -20px; }
+/* Tło pod paskami komunikatów: treść przewijana pod spodem nie prześwituje w odstępach */
+.eod-sticky:has(fluent-message-bar) { background: var(--colorNeutralBackground3); padding-bottom: 8px; margin-bottom: -8px; }
+.eod-casebar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px 12px 20px; box-shadow: var(--shadow4); border-top-left-radius: 0; border-top-right-radius: 0; border-top: 0; }
+.eod-sticky fluent-message-bar { box-shadow: var(--shadow4); }
+.eod-casebar-title { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.eod-casebar-title .eod-h1 { font-size: var(--fontSizeBase500); line-height: var(--lineHeightBase500); }
+.eod-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.eod-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.eod-actions-sep { width: 1px; height: 24px; background: var(--colorNeutralStroke2); }
+
+.eod-case-meta { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 32px; align-items: center; padding: 16px 20px; }
+.eod-facts { display: flex; flex-wrap: wrap; gap: 12px 40px; }
+.eod-facts dt { font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground3); }
+.eod-facts dd { font-weight: var(--fontWeightSemibold); overflow-wrap: anywhere; }
+.eod-executor { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusLarge); background: var(--colorNeutralBackground2); min-width: 0; }
+.eod-executor-who { min-width: 0; margin-inline-end: 8px; }
+.eod-executor-who strong { display: block; font-weight: var(--fontWeightSemibold); }
+
+/* Kamienie milowe = FluentWizard StepperPosition="Top", tylko do odczytu */
+.eod-milestones { border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); padding: 6px 8px 10px; overflow-x: auto; }
+.eod-milestones .fluent-wizard { min-width: 720px; }
+.fluent-wizard { height: auto; }
+.fluent-wizard > ol > li { position: relative; display: flex; }
+.fluent-wizard[position="top"] > ol > li { flex: 1; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+.fluent-wizard[position="left"] > ol > li { gap: 10px; padding-bottom: 20px; cursor: pointer; }
+.fluent-wizard[position="left"] > ol > li:last-child { padding-bottom: 0; }
+.fluent-wizard-icon > .ic { width: var(--fluent-wizard-circle-size); height: var(--fluent-wizard-circle-size); color: var(--colorCompoundBrandBackground); display: block; }
+.fluent-wizard-icon-number { font-size: var(--fontSizeBase200); font-weight: var(--fontWeightSemibold); line-height: var(--fluent-wizard-circle-size); }
+.fluent-wizard-step-labels { min-width: 0; }
+.fluent-wizard-title, .fluent-wizard-summary { display: block; }
+.fluent-wizard-summary { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); }
+li[status="current"] .fluent-wizard-title { font-weight: var(--fontWeightSemibold); }
+li[status="previous"] > .fluent-wizard-step-connector { background-color: var(--colorCompoundBrandBackground); }
+li[data-state="error"] .fluent-wizard-icon > .ic, li[data-state="error"] .fluent-wizard-summary { color: var(--colorStatusDangerForeground1); }
+li[data-state="warning"] .fluent-wizard-summary { color: var(--colorStatusWarningForeground1); }
+
+/* Karty (FluentTabs) */
+.fluent-tabs > fluent-tablist { padding: 4px 8px 0; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); display: flex; max-width: 100%; overflow-x: auto; }
+.eod-tab-label { display: inline-flex; align-items: center; gap: 6px; }
+fluent-tab { white-space: nowrap; flex: none; }
+[role="tabpanel"] { min-width: 0; }
+
+/* Formularz = FluentWizard StepperPosition="Left" + sekcje jako FluentGrid */
+.eod-formbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-formbar-progress { flex: 1 1 220px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.eod-form.fluent-wizard[position="left"] { grid-template-columns: 232px minmax(0, 1fr); }
+.eod-form.fluent-wizard > ol { padding: 20px 12px 20px 16px; position: sticky; top: calc(var(--eod-casebar-h) + 8px); align-self: start; }
+.eod-form.fluent-wizard[position="left"] .fluent-wizard-content { margin: 0; border-inline-start: var(--strokeWidthThin) solid var(--colorNeutralStroke2); min-width: 0; }
+.eod-form.fluent-wizard .fluent-wizard-buttons { gap: 8px; padding: 12px 16px; border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-inline-start: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-form[data-mode="all"] .fluent-wizard-buttons { display: none; }
+.eod-form[data-mode="step"] .eod-section:not([data-active]) { display: none; }
+
+.eod-section { padding: 20px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); scroll-margin-top: calc(var(--eod-casebar-h) + 8px); }
+.eod-section:last-child { border-bottom: 0; }
+.eod-section-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-bottom: 16px; }
+.eod-section-head .eod-h2 { flex: 1; min-width: 160px; }
+.eod-section-head .eod-caption { flex-basis: 100%; }
+.eod-section[data-readonly] { background: var(--colorNeutralBackground2); }
+
+/* Pola: kontrolki wypełniają komórkę siatki */
+.fluent-grid fluent-field, .eod-fill fluent-field, .eod-fields fluent-field { display: grid; width: 100%; }
+.fluent-grid fluent-field[label-position="after"],
+fluent-radio-group fluent-field, :is(.fluent-grid, .eod-fill, .eod-fields) fluent-radio-group fluent-field { display: inline-grid; width: auto; }
+.fluent-grid fluent-text-input, .fluent-grid fluent-dropdown, .fluent-grid fluent-textarea,
+.eod-fill fluent-text-input, .eod-fill fluent-dropdown, .eod-fill fluent-textarea,
+.eod-fields fluent-text-input, .eod-fields fluent-dropdown, .eod-fields fluent-textarea { width: 100%; max-width: none; }
+.eod-fields { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 600px) { .eod-fields[data-columns="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 960px) { .eod-fields:is([data-columns="2"], [data-columns="3"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1280px) {
+  .eod-fields[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .eod-fields[data-columns="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.eod-field[data-width="full"] { grid-column: 1 / -1; }
+@media (min-width: 600px) { .eod-fields[data-columns="4"] > .eod-field:is([data-width="2"], [data-width="3"]) { grid-column: span 2; } }
+@media (min-width: 960px) { .eod-fields:is([data-columns="2"], [data-columns="3"]) > .eod-field:is([data-width="2"], [data-width="3"]) { grid-column: span 2; } }
+@media (min-width: 1280px) { .eod-fields:is([data-columns="3"], [data-columns="4"]) > .eod-field[data-width="3"] { grid-column: span 3; } }
+fluent-text-input > span[slot="end"], fluent-text-input > span[slot="start"] { font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); color: var(--colorNeutralForeground3); }
+fluent-text[slot="message"] { display: flex; align-items: center; gap: 4px; }
+fluent-text[slot="message"][data-intent="error"] { color: var(--colorStatusDangerForeground1); }
+fluent-text[slot="message"][data-intent="warning"] { color: var(--colorStatusWarningForeground1); }
+fluent-text[slot="message"][data-intent="success"] { color: var(--colorStatusSuccessForeground1); }
+fluent-text[slot="message"]:not([data-intent]) { color: var(--colorNeutralForeground3); }
+.eod-ro { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.eod-ro > span:first-child { font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground3); }
+.eod-ro > span:last-child { font-weight: var(--fontWeightSemibold); overflow-wrap: anywhere; }
+.fluent-label-info > button .ic { width: 16px; height: 16px; color: var(--colorNeutralForeground3); }
+
+/* ── Chipy, listy podpowiedzi, kalendarz ─────────────────────────────── */
+/* Chip (filtry i układ raportu, osoby): tekst + przycisk usuwania */
+.eod-chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 2px 0 8px; border-radius: var(--borderRadiusMedium); background: var(--colorBrandBackground2); color: var(--colorBrandForeground2); font-size: var(--fontSizeBase200); white-space: nowrap; }
+.eod-chip button { display: inline-flex; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 2px; border-radius: var(--borderRadiusSmall); }
+.eod-chip button:hover { background: var(--colorBrandBackground2Hover); }
+/* Lista podpowiedzi oznaczania osób (@) w komentarzach: warstwa górna (Popover API + CSS anchor positioning), jak FluentPopover */
+.eod-popup { position: fixed; inset: auto; top: anchor(bottom); left: anchor(left); margin: 2px 0; min-width: anchor-size(width); max-height: 320px; overflow: auto; position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline; background: var(--colorNeutralBackground1); color: var(--colorNeutralForeground1); border: var(--strokeWidthThin) solid var(--colorTransparentStroke); border-radius: var(--borderRadiusMedium); box-shadow: var(--shadow16); padding: 4px; }
+.eod-ac-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; border-radius: var(--borderRadiusMedium); cursor: pointer; }
+.eod-ac-option:hover, .eod-ac-option:focus-visible { background: var(--colorNeutralBackground1Hover); }
+.eod-ac-empty { padding: 8px; color: var(--colorNeutralForeground3); }
+
+/* FluentCalendar osadzony w treści (galeria kontrolek) */
+.eod-calendar { width: 252px; padding: 8px; }
+.eod-cal-inline { border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusLarge); background: var(--colorNeutralBackground1); }
+
+/* FluentInputFile + załączniki w kategoriach */
+.eod-attach { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 16px; padding: 16px; }
+.eod-attach-cat { border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusLarge); display: flex; flex-direction: column; min-width: 0; }
+.eod-attach-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 10px 12px; background: var(--colorNeutralBackground2); border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusLarge) var(--borderRadiusLarge) 0 0; }
+.eod-attach-head .eod-h3 { flex: 1; min-width: 120px; }
+.eod-files > li { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-files:last-child > li:last-child { border-bottom: 0; }
+.eod-files a { font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); text-decoration: none; overflow-wrap: anywhere; }
+.eod-files a:hover { color: var(--colorBrandForegroundLink); text-decoration: underline; }
+.eod-dropzone { margin: 12px; padding: 14px 12px; border: 1px dashed var(--colorNeutralStroke1); border-radius: var(--borderRadiusLarge); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; color: var(--colorNeutralForeground2); text-align: center; }
+.eod-dropzone[data-over] { border-color: var(--colorCompoundBrandStroke); background: var(--colorBrandBackground2); }
+.eod-dropzone.large { flex-direction: column; padding: 24px 16px; margin: 0; }
+.eod-attach-cat > fluent-message-bar, .eod-attach-warning { margin: 12px 12px 0; width: auto; }
+.fluent-inputfile-container.eod-dropzone { display: grid; margin: 12px; padding: 14px 12px; background: transparent; border: 1px dashed var(--colorNeutralStroke1); border-radius: var(--borderRadiusLarge); color: var(--colorNeutralForeground2); }
+.fluent-inputfile-container.eod-dropzone[drop-files] { border-color: var(--colorCompoundBrandStroke); background: var(--colorBrandBackground2); }
+.eod-dropzone .inputfile-content { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; }
+.eod-dropzone .inputfile-progress { display: none; }
+.fluent-inputfile-container.eod-dropzone.large { margin: 0; padding: 24px 16px; }
+.eod-dropzone.large .inputfile-content { flex-direction: column; }
+.fluent-inputfile-container.eod-dropzone label.eod-file-button { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border: var(--strokeWidthThin) solid var(--colorNeutralStroke1); border-radius: var(--borderRadiusMedium); background: var(--colorNeutralBackground1); color: var(--colorNeutralForeground1); font-size: var(--fontSizeBase200); font-weight: var(--fontWeightSemibold); text-decoration: none; cursor: pointer; }
+.fluent-inputfile-container.eod-dropzone label.eod-file-button:hover { background: var(--colorNeutralBackground1Hover); border-color: var(--colorNeutralStroke1Hover); }
+
+/* Oś czasu (przebieg procesu) */
+.eod-timeline > li { position: relative; padding: 0 0 20px 32px; }
+.eod-timeline > li::before { content: ""; position: absolute; left: 7px; top: 22px; bottom: 0; width: 2px; background: var(--colorNeutralStroke2); }
+.eod-timeline > li:last-child::before { display: none; }
+.eod-timeline > li > .ic { position: absolute; left: -2px; top: 0; }
+.eod-timeline strong { font-weight: var(--fontWeightSemibold); }
+.eod-timeline blockquote { margin: 6px 0 0; padding: 6px 10px; background: var(--colorNeutralBackground3); border-radius: var(--borderRadiusMedium); color: var(--colorNeutralForeground2); }
+.eod-old { text-decoration: line-through; color: var(--colorNeutralForeground3); }
+
+/* Matryca uprawnień */
+.eod-matrix { width: 100%; border-collapse: collapse; min-width: 560px; }
+.eod-matrix th, .eod-matrix td { padding: 10px 12px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); text-align: start; vertical-align: top; }
+.eod-matrix thead th { font-size: var(--fontSizeBase200); color: var(--colorNeutralForeground2); font-weight: var(--fontWeightSemibold); white-space: nowrap; }
+.eod-matrix td.c, .eod-matrix th.c { text-align: center; }
+.eod-people { display: flex; flex-direction: column; gap: 6px; }
+.eod-person { display: flex; align-items: center; gap: 8px; }
+
+/* Okna: FluentDialog / MessageBox */
+fluent-dialog-body { max-width: 100%; }
+.fluent-message-box { align-items: flex-start; }
+.fluent-message-box .icon { width: 32px; height: 32px; margin-top: 2px; }
+.fluent-message-box .message { min-width: 0; }
+.fluent-message-box .message p + p { margin-top: 8px; }
+.fluent-message-box .message ul { list-style: disc; padding-inline-start: 20px; margin: 8px 0; }
+[slot="action"] { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+[slot="footer"] { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ── Strony wzorca (galeria) ──────────────────────────────────────────── */
+.eod-demo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.eod-demo { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.eod-demo.wide { grid-column: 1 / -1; }
+.eod-demo > .eod-code { align-self: flex-start; }
+.eod-demo-stage { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.eod-demo-stage.col { flex-direction: column; align-items: stretch; }
+.eod-rule { display: flex; gap: 8px; align-items: flex-start; color: var(--colorNeutralForeground2); }
+.eod-rule .ic { margin-top: 1px; color: var(--colorBrandForeground1); }
+.eod-rules { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; background: var(--colorNeutralBackground2); border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: 0 0 var(--borderRadiusXLarge) var(--borderRadiusXLarge); }
+.eod-decision { width: 100%; border-collapse: collapse; min-width: 640px; }
+.eod-decision th, .eod-decision td { padding: 10px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); text-align: start; vertical-align: top; }
+.eod-decision thead th { font-size: var(--fontSizeBase200); color: var(--colorNeutralForeground2); }
+.eod-decision tbody tr:last-child td { border-bottom: 0; }
+/* Galeria „Stany ekranów”: ramka przykładu (lista, tabela, stan pusty) i raport bez drugiej ramki karty */
+.eod-demo-frame { border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusLarge); overflow: hidden; min-width: 0; }
+.eod-demo-frame.eod-demo-pad { padding: 16px; }
+.eod-demo-report > .eod-report { border: 0; border-radius: 0 0 var(--borderRadiusXLarge) var(--borderRadiusXLarge); }
+
+/* ── Wąskie ekrany ────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .eod-case-meta { grid-template-columns: minmax(0, 1fr); }
+  .eod-executor { justify-self: start; max-width: 100%; }
+}
+@media (max-width: 900px) {
+  :root { --eod-gutter: 16px; }
+  .eod-username, .eod-header-sep { display: none; }
+  .fluent-layout-item[area="header"] fluent-menu { min-width: 0; }
+  .eod-ctx-label { max-width: calc(100vw - 300px); }
+  .eod-context fluent-menu-button > svg[slot="start"] { display: none; }
+  .eod-appname { padding-inline: 4px; letter-spacing: .03em; }
+  .eod-shell > .fluent-layout-item[area="header"] { padding: 0 8px; padding-top: env(safe-area-inset-top, 0px); }
+  .eod-sticky { position: static; margin-top: 0; }
+  .eod-casebar { border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusXLarge); box-shadow: none; padding-inline: 16px; }
+  .eod-case-meta { padding-inline: 16px; }
+  .eod-form.fluent-wizard[position="left"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; }
+  .eod-form.fluent-wizard[position="left"] > ol { position: static; flex-direction: row; grid-column: 1; grid-row: auto; gap: 16px; overflow-x: auto; padding: 12px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+  .eod-form.fluent-wizard[position="left"] > ol > li { padding-bottom: 0; flex: none; }
+  .eod-form.fluent-wizard[position="left"] .fluent-wizard-step-connector { display: none; }
+  .eod-form.fluent-wizard[position="left"] .fluent-wizard-content, .eod-form.fluent-wizard[position="left"] .fluent-wizard-buttons { grid-column: 1; grid-row: auto; border-inline-start: 0; }
+  .eod-section { padding: 16px; }
+  .eod-attach { padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .fluent-layout-item[area="content"] { scroll-behavior: auto; } }
+
+/* Schemat siatki na stronie wzorca */
+#gridDemo .eod-code { display: block; padding: 8px 10px; text-align: center; border: 1px dashed var(--colorNeutralStroke1); }
+.eod-demo > .eod-row { justify-content: flex-start; }
+.eod-icon-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusMedium); background: var(--colorNeutralBackground1); white-space: nowrap; }
+
+/* ── Paski filtrów (katalog raportów, raport, zastępstwa) ────────────── */
+.eod-filterbar fluent-field { width: auto; }
+/* Pole szukania w pasku filtrów: FluentTextInput jest owinięty w fluent-field – rośnie od 220 do 360 px */
+.eod-filterbar > fluent-field:has(> fluent-text-input) { flex: 1 1 220px; max-width: 360px; }
+.eod-filterbar > fluent-field > fluent-text-input { width: 100%; max-width: none; }
+.eod-filterbar fluent-dropdown { min-width: 200px; }
+fluent-field > label[slot="label"][data-req]::after { content: " *"; color: var(--colorPaletteRedForeground1); }
+.eod-field-msg { display: flex; align-items: center; gap: 4px; color: var(--colorStatusDangerForeground1); margin-top: -6px; }
+.eod-person > div { min-width: 0; }
+.eod-kind { display: inline-flex; align-items: center; gap: 6px; }
+.eod-roles { display: flex; flex-wrap: wrap; gap: 4px; padding-block: 6px; }
+.fluent-data-grid td[multiline="true"] { align-content: center; padding-block: 10px; overflow: visible; }
+
+/* ── Raport tabelaryczny (EodReport) ──────────────────────────────────── */
+.eod-page-fill { height: 100%; padding-bottom: 20px; }
+.eod-report { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.eod-report-wrap { flex: 1 1 auto; min-height: 260px; overflow: auto; }
+.eod-report .fluent-data-grid { min-width: max-content; }
+.eod-report .fluent-data-grid td { height: 36px; }
+.eod-report .fluent-data-grid tr[row-type="sticky-header"] > th { background: var(--colorNeutralBackground1); box-shadow: inset 0 -1px 0 var(--colorNeutralStroke1); padding: 2px 4px; }
+.eod-th { display: flex; align-items: center; gap: 2px; }
+.eod-th [col-sort-button] { flex: 1; min-width: 0; justify-content: flex-start; font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); }
+th[col-justify="end"] .eod-th [col-sort-button] { justify-content: flex-end; }
+.eod-th [data-rep-filter] { color: var(--colorNeutralForeground3); flex: none; }
+.eod-th [data-rep-filter][data-active] { color: var(--colorCompoundBrandForeground1); }
+.fluent-data-grid tr.eod-group-row > td { background: var(--colorNeutralBackground2); height: 40px; padding: 0 8px; overflow: visible; }
+.eod-group { display: flex; align-items: center; gap: 8px; font-weight: var(--fontWeightSemibold); position: sticky; left: 8px; width: max-content; }
+.eod-group .eod-caption { display: inline; font-weight: var(--fontWeightRegular); }
+.eod-filter-body { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+.eod-filter-body fluent-text-input { width: 100%; }
+.eod-filter-pop fluent-field { display: grid; width: 100%; }
+.eod-filter-pop fluent-field[label-position="after"] { display: inline-grid; width: auto; }
+.eod-filter-pop fluent-text-input { width: 100%; }
+.eod-filter-list { display: flex; flex-direction: column; max-height: 232px; overflow: auto; }
+.eod-filter-range { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+@media (max-width: 900px) {
+  .eod-page-fill { height: auto; }
+  .eod-report-wrap { max-height: 70vh; }
+}
+.eod-report .eod-filterbar > fluent-field:has(> fluent-text-input) { flex: 1 1 160px; max-width: 300px; }
+/* Pierwsza kolumna przypięta (Pin="Start"): numer sprawy zostaje widoczny przy przewijaniu w poziomie */
+.eod-report .fluent-data-grid { --fluent-data-grid-pinned-background: var(--colorNeutralBackground1); }
+.eod-report th[col-pinned="start"], .eod-report td[col-pinned="start"] { position: sticky; left: 0; }
+.eod-report td[col-pinned="start"] { z-index: 1; }
+.eod-report tr[row-type="sticky-header"] > th[col-pinned="start"] { z-index: 4; border-inline-end: var(--strokeWidthThin) solid var(--colorNeutralStroke1); }
+/* Raport: ciaśniejsze komórki, żeby na szerokim ekranie mieściły się wszystkie kolumny */
+.eod-report .fluent-data-grid td:not([col-select="true"]) { padding: 0 12px; }
+.eod-report .eod-th [col-sort-button] { padding-inline: 8px; }
+
+/* Raport: pasek układu (grupowanie · sortowanie · filtry) i poziomy grup */
+.eod-statebar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 28px; padding: 6px 16px; min-height: 44px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-seg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.eod-chip > .eod-chip-main { font: inherit; gap: 4px; padding: 2px 2px 2px 0; }
+/* Rejestr (AD-23 poz. 5): układ zablokowany – nagłówek bez przycisku sortowania, żeton bez przycisków */
+.eod-report .eod-th .eod-th-text { flex: 1; min-width: 0; padding-inline: 8px; font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+th[col-justify="end"] .eod-th .eod-th-text { text-align: end; }
+.eod-chip.eod-chip-locked { padding-inline-end: 8px; }
+.eod-sort-ind { display: inline-flex; align-items: center; }
+.fluent-data-grid tr.eod-group-row:not([data-level="0"]) > td { background: var(--colorNeutralBackground1); }
+
+/* Raport: kolumna „Akcje” przypięta z prawej, wiersz bez kliknięcia (tekst można zaznaczać), kolejność kolumn */
+.eod-report th[col-pinned="end"], .eod-report td[col-pinned="end"] { position: sticky; right: 0; width: 88px; }
+.eod-report td[col-pinned="end"] { z-index: 1; border-inline-start: var(--strokeWidthThin) solid var(--colorNeutralStroke1); }
+.eod-report tr[row-type="sticky-header"] > th[col-pinned="end"] { z-index: 4; border-inline-start: var(--strokeWidthThin) solid var(--colorNeutralStroke1); }
+.eod-report th[col-pinned="end"] [col-title] { padding-inline: 12px; }
+.eod-report .fluent-data-grid tr[hover]:hover td { cursor: default; }
+.eod-filter-pop .eod-row > .eod-caption { margin-inline-end: 4px; }
+.fluent-data-grid td fluent-menu-item { text-align: start; }
+
+/* ── Komentarze do sprawy: pole z oznaczaniem osób (@) i lista komentarzy ── */
+.eod-comment-new { display: flex; gap: 12px; padding: 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-mention { position: relative; }
+.eod-mention textarea { display: block; width: 100%; min-height: 76px; resize: vertical; font: inherit; color: inherit; background: var(--colorNeutralBackground1); border: var(--strokeWidthThin) solid var(--colorNeutralStroke1); border-bottom-color: var(--colorNeutralStrokeAccessible); border-radius: var(--borderRadiusMedium); padding: 6px 10px; outline: 0; }
+.eod-mention textarea::placeholder { color: var(--colorNeutralForeground4); }
+.eod-mention textarea:focus { border-bottom: 2px solid var(--colorCompoundBrandStroke); padding-bottom: 5px; }
+.eod-mention-caret { position: absolute; width: 1px; height: 1px; pointer-events: none; }
+.eod-popup.eod-mention-pop { width: 280px; min-width: 0; max-height: 264px; }
+.eod-ac-option[aria-selected="true"] { background: var(--colorNeutralBackground1Selected); }
+.eod-comment-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.eod-comment-bar strong { font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); }
+.eod-comment-list { flex: 1 0 auto; }
+.eod-comment { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-comment:last-child { border-bottom: 0; }
+.eod-comment[data-me] { box-shadow: inset 3px 0 0 var(--colorCompoundBrandStroke); background: var(--colorNeutralBackground2); }
+.eod-comment[data-deleted] { align-items: center; padding-block: 10px; }
+.eod-comment-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.eod-comment-head strong { font-weight: var(--fontWeightSemibold); }
+.eod-comment-head fluent-badge { align-self: center; }
+.eod-comment-body { margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 110ch; }
+.eod-comment-actions { flex: none; display: flex; }
+/* Oznaczenie osoby w treści; oznaczenie zalogowanej osoby jest mocniejsze */
+.eod-mention-tag { color: var(--colorBrandForeground2); background: var(--colorBrandBackground2); font-weight: var(--fontWeightSemibold); border-radius: var(--borderRadiusSmall); padding: 1px 2px; white-space: nowrap; }
+.eod-mention-tag[data-me] { color: var(--colorNeutralForegroundOnBrand); background: var(--colorBrandBackground); }
+@media (max-width: 640px) {
+  .eod-comment-new > fluent-avatar { display: none; }
+  .eod-comment-bar .eod-caption { order: 3; flex: 1 1 100%; }
+  .eod-comment-bar #cmtAdd { margin-inline-start: auto; }
+  .eod-comment { flex-wrap: wrap; }
+  .eod-comment > .eod-grow { flex-basis: calc(100% - 44px); }
+  .eod-comment-actions { margin-inline-start: 44px; }
+}
+
+/* ── Uzupełnienia dla komponentów Blazor (Eod.Platform.UI) ───────────── */
+.eod-block { display: block; }
+.eod-regular { font-weight: var(--fontWeightRegular); }
+.eod-row-end { justify-content: flex-end; }
+.eod-person > div > .eod-caption { display: block; }
+.eod-tile { text-decoration: none; }
+.eod-tile:focus-visible { outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2); }
+.eod-mode [role="tabpanel"] { display: none; }
+/* Przełącznik „Wszystkie sekcje | Krok po kroku” w pasku formularza: w jednej linii z opisem, bez kreski listy kart */
+.eod-formbar > .eod-mode { width: auto; flex: none; }
+.eod-mode > fluent-tablist { border-bottom: 0; padding: 0; }
+/* Karty formularza sprawy: treść karty bez odstępu panelu FluentTab (karty mają własne odstępy) */
+.eod-case-tabs .fluent-tab-panel { padding: 0; }
+.eod-case-tabs > .fluent-tabs > [role="tabpanel"] { min-width: 0; }
+.eod-form.fluent-wizard[position="left"] > ol > li:focus-visible { outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2); outline-offset: 2px; border-radius: var(--borderRadiusMedium); }
+/* Filtr kolumny raportu: ikona neutralna, aktywny filtr w kolorze marki (ikona wypełniona) */
+.eod-th .eod-filter-icon { color: var(--colorNeutralForeground3); flex: none; }
+.eod-th .eod-filter-icon-active { color: var(--colorCompoundBrandForeground1); flex: none; }
+.eod-statebar .fluent-label-info { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); }
+/* Okno MessageBox: ikona 32 px */
+.fluent-message-box .icon, .fluent-message-box > svg:first-child { width: 32px; height: 32px; }
+/* Panel historii (drawer) */
+.eod-history-filter { max-width: 320px; margin-bottom: 12px; }
+
+/* Stan pusty (EodEmptyState) / strony „nie znaleziono”, „brak dostępu”: ikona 32, tytuł, wyjaśnienie, droga dalej */
+.eod-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 48px 16px; min-height: 100%; }
+.eod-empty > .eod-caption { max-width: 480px; }
+/* Wersja zwarta: wiersz pustej tabeli, pusta kategoria załączników, pusta lista komentarzy */
+.eod-empty[data-compact] { gap: 6px; padding: 24px 16px; min-height: 0; }
+.eod-empty[data-compact] > .eod-row { margin-top: 6px; justify-content: center; }
+.eod-card-fill > .eod-empty, .eod-card-fill > .eod-card-body > .eod-empty { flex: 1 0 auto; }
+.eod-comment-empty { border-bottom: 0; }
+/* Pusta tabela: jeden wiersz z komunikatem na całą szerokość (bez limitu szerokości i wysokości komórki) */
+.fluent-data-grid tr[row-state="empty-content"] > td { height: auto; max-width: none; padding: 0; white-space: normal; }
+/* Raport przewijany w poziomie: stan pusty zostaje w widocznej części tabeli */
+.eod-report-wrap { container-type: inline-size; }
+.eod-report tr[row-state="empty-content"] .eod-empty { position: sticky; left: 0; width: 100cqi; padding-block: 40px; }
+
+/* Szkielety wczytywania (EodPlaceholder, EodReport Loading) – FluentSkeleton w kształcie treści */
+.eod-placeholder { display: flex; flex-direction: column; min-width: 0; }
+.eod-placeholder .fluent-skeleton, .eod-skeleton-row .fluent-skeleton { display: block; }
+.eod-placeholder-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-placeholder-item:last-of-type { border-bottom: 0; }
+.eod-placeholder-item > .eod-grow { display: flex; flex-direction: column; gap: 8px; padding-top: 2px; }
+.eod-placeholder-row { display: grid; grid-template-columns: repeat(var(--eod-placeholder-columns, 4), minmax(0, 1fr)); gap: 24px; align-items: center; min-height: 44px; padding: 0 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-placeholder-row[data-head] { min-height: 40px; }
+.eod-placeholder-row:last-of-type { border-bottom: 0; }
+.eod-placeholder-field { display: flex; flex-direction: column; gap: 8px; }
+.eod-placeholder-tile { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; }
+@media (prefers-reduced-motion: reduce) { [class*="fluent-skeleton"]::after { animation: none; display: none; } }
+
+/* Zdanie stanu pod tabelą w sekcji formularza (np. „Suma wag: 100%.”) */
+.eod-table-note { margin-top: 12px; }
+
+/* Formularz tylko do odczytu: wszystkie sekcje w spisie zakończone, bieżąca – pogrubiony tytuł */
+.eod-form[data-readonly] > ol > li[aria-current="step"] .fluent-wizard-title { font-weight: var(--fontWeightSemibold); }
+
+/* Treść opcji listy (awatar, podpis) nie przechwytuje kliknięcia – musi trafić w fluent-option (FluentAutocomplete, FluentSelect) */
+fluent-option * { pointer-events: none; }
+
+/* Nagłówek strony z awatarem 56 px (Ustawienia użytkownika) */
+.eod-head-person { display: flex; align-items: center; gap: 16px; min-width: 0; }
+
+/* Karta o wysokości wiersza siatki (dwie karty obok siebie równej wysokości) */
+.eod-card-stretch { height: 100%; }
+
+/* Tekst tylko dla czytników ekranu (np. nagłówek kolumny „Akcje”) */
+.eod-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* Tekst w polu przed / za wartością (jednostka „PLN”, „%”, prefiks): rozmiar treści, nie ikony (Fluent daje slotom 20 px) */
+:is(fluent-text-input, fluent-textarea) :is([slot="start"], [slot="end"]) > span { font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
+
+/* ── Administracja: lista wyboru i tabela edycyjna (EodListItem Selected, EodEditableTable) – specyfikacja 9.13 ── */
+/* Lista wyboru (master–detail): cała pozycja klikalna (link tytułu rozciągnięty na wiersz); wybrana – tło zaznaczenia i akcent marki */
+.eod-list > li[data-selectable] { position: relative; }
+.eod-list > li[data-selectable]:hover { background: var(--colorNeutralBackground1Hover); }
+.eod-list > li[data-selectable] .eod-grow > a::after { content: ""; position: absolute; inset: 0; }
+.eod-list > li[data-selectable] .eod-grow > a:focus-visible { outline: 0; }
+.eod-list > li[data-selectable]:has(a:focus-visible) { outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2); outline-offset: -2px; }
+.eod-list > li[data-selected] { background: var(--colorNeutralBackground1Selected); box-shadow: inset 3px 0 0 var(--colorCompoundBrandStroke); }
+.eod-list > li[data-selected] > .ic { color: var(--colorCompoundBrandForeground1); }
+
+/* Tabela edycyjna: pasek stanu nad tabelą, komórki z kontrolkami wyrównane do góry (komunikat pod polem nie przesuwa sąsiednich) */
+.eod-edit-table { display: flex; flex-direction: column; min-width: 0; }
+.eod-card-fill > .eod-edit-table { flex: 1 0 auto; }
+.eod-edit-bar { gap: 4px 16px; min-height: 44px; }
+.eod-edit-bar > .eod-grow { flex: 1 1 240px; }
+.eod-edit-state, .eod-edit-errors { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground3); }
+.eod-edit-state[data-dirty] { color: var(--colorNeutralForeground1); font-weight: var(--fontWeightSemibold); }
+.eod-edit-state[data-dirty] .ic { color: var(--colorBrandForeground1); }
+.eod-edit-errors { color: var(--colorStatusDangerForeground1); font-weight: var(--fontWeightSemibold); }
+.eod-edit-table .fluent-data-grid td:not([col-select="true"]) { white-space: normal; overflow: visible; align-content: start; padding: 6px 8px; }
+.eod-edit-table .fluent-data-grid th[cell-type="columnheader"] { padding-inline: 8px; }
+.eod-edit-table .fluent-data-grid tr[row-state="empty-content"] > td { align-content: center; padding-block: 16px; }
+/* Linia pola: tekst, przełącznik i przyciski w komórce na wysokości pola tekstowego (32 px) */
+.eod-cell-line { display: flex; align-items: center; gap: 2px; min-height: 32px; }
+.eod-edit-table td.eod-cell-actions .eod-cell-line { justify-content: flex-end; gap: 8px; }
+.eod-cell-line.eod-cell-center { justify-content: center; }
+.eod-order-no { min-width: 28px; padding-inline-end: 4px; text-align: end; color: var(--colorNeutralForeground2); }
+/* Wiersz nowy / zmieniony: akcent 3 px z lewej (jak oznaczenie w komentarzach) + znaczek „Nowa” / „Zmieniona” */
+.fluent-data-grid tr:is(.eod-row-added, .eod-row-modified) > td:first-child { box-shadow: inset 3px 0 0 var(--colorCompoundBrandStroke); }
+.eod-edit-table fluent-text-input[readonly] { width: 100%; }
+/* Nagłówek kolumny z polem wymaganym (tabela edycyjna): gwiazdka jak przy etykiecie pola */
+.eod-th-required::after { content: " *"; color: var(--colorPaletteRedForeground1); }
+/* Komunikat pod polem w kilku wierszach (wąska komórka tabeli, okno): ikona nie kurczy się i stoi przy pierwszym wierszu */
+fluent-text[slot="message"] > svg { flex: none; align-self: flex-start; margin-top: 2px; }

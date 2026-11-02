@@ -1,0 +1,32 @@
+@namespace RejestrCzasu.Ui
+@*
+    EodBreadcrumb – ścieżka nad tytułem strony lub sprawy: proces › skąd przyszedł użytkownik › bieżąca strona
+    (specyfikacja UI, sekcje 7 i 9.3). Zwykle nie używa się jej bezpośrednio – renderują ją EodPage (parametr Breadcrumb)
+    i EodCaseForm. Elementy z adresem są linkami; ostatni element (bieżąca strona) jest zawsze tekstem z aria-current="page".
+    Przykład: <EodBreadcrumb Items="@([new("Raporty", "/raporty"), new("Rekrutacje")])" />
+*@
+<nav class="eod-breadcrumb" aria-label="Ścieżka">
+    @for (var i = 0; i < Items.Count; i++)
+    {
+        var item = Items[i];
+        if (i > 0)
+        {
+            <EodIcon Value="@(new Icons.Regular.Size16.ChevronRight())" Class="ic-16" />
+        }
+        if (i < Items.Count - 1 && item.Href is not null)
+        {
+            <FluentLink Href="@item.Href">@item.Text</FluentLink>
+        }
+        else
+        {
+            <span aria-current="@(i == Items.Count - 1 ? "page" : null)">@item.Text</span>
+        }
+    }
+</nav>
+
+@code {
+    /// <summary>Elementy ścieżki od procesu do bieżącej strony.</summary>
+    /// <remarks>Ostatni element to bieżąca strona – bez adresu (<see cref="BreadcrumbItem"/>).</remarks>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<BreadcrumbItem> Items { get; set; } = [];
+}

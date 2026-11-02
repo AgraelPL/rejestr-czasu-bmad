@@ -1,0 +1,110 @@
+@namespace RejestrCzasu.Ui
+@*
+    EodCard – karta (powierzchnia) na stronie EodPage (specyfikacja UI, sekcja 7): nagłówek min. 56 px
+    (tytuł H2 · podpis · akcje Subtle), treść z odstępem 16 px albo bez odstępu, opcjonalnie stopka i blok zasad (EodRule).
+    Fill="true" – ostatnia karta strony rozciąga się do dolnej krawędzi (specyfikacja, sekcja 4 pkt 5);
+    NoPadding="true" – tabela, lista albo karty FluentTabs bez odstępu wewnętrznego.
+    Przykład:
+    <EodCard Title="Sprawy do wykonania" Subtitle="5 najpilniejszych z 9" NoPadding="true" Fill="true">
+        <Actions><FluentButton Appearance="ButtonAppearance.Subtle" Size="ButtonSize.Small" Href="/zadania">Wszystkie ›</FluentButton></Actions>
+        <ChildContent>…</ChildContent>
+    </EodCard>
+*@
+
+<div class="@CssClass" style="@Style" @attributes="AdditionalAttributes">
+    @if (HeaderContent is not null)
+    {
+        <div class="eod-card-head">@HeaderContent</div>
+    }
+    else if (Title is not null)
+    {
+        <div class="eod-card-head">
+            <h2 class="eod-h2">@Title</h2>
+            @if (Subtitle is not null)
+            {
+                <span class="eod-caption">@Subtitle</span>
+            }
+            @Actions
+        </div>
+    }
+
+    @if (NoPadding)
+    {
+        @ChildContent
+    }
+    else
+    {
+        <div class="eod-card-body">@ChildContent</div>
+    }
+
+    @if (Footer is not null)
+    {
+        <div class="eod-card-foot eod-caption">@Footer</div>
+    }
+
+    @if (Rules is not null)
+    {
+        <div class="eod-rules">@Rules</div>
+    }
+</div>
+
+@code {
+    /// <summary>Tytuł karty (nagłówek H2).</summary>
+    /// <remarks>Bez tytułu i bez <see cref="HeaderContent"/> karta nie ma nagłówka.</remarks>
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>Podpis (caption) obok tytułu, np. „3 role”, „5 najpilniejszych z 9”.</summary>
+    /// <remarks>Wyświetlany tylko razem z <see cref="Title"/>.</remarks>
+    [Parameter]
+    public string? Subtitle { get; set; }
+
+    /// <summary>Akcje w nagłówku karty (przyciski Subtle, Small), np. „Wszystkie ›”.</summary>
+    /// <remarks>Wyświetlane tylko razem z <see cref="Title"/>.</remarks>
+    [Parameter]
+    public RenderFragment? Actions { get; set; }
+
+    /// <summary>Własny nagłówek karty – zastępuje tytuł, podpis i akcje.</summary>
+    /// <remarks>Ma pierwszeństwo przed <see cref="Title"/>; treść trafia do kontenera nagłówka karty (min. 56 px).</remarks>
+    [Parameter]
+    public RenderFragment? HeaderContent { get; set; }
+
+    /// <summary>Treść bez wewnętrznego odstępu 16 px – dla tabeli, listy albo kart FluentTabs.</summary>
+    /// <value>Domyślnie <see langword="false"/>.</value>
+    [Parameter]
+    public bool NoPadding { get; set; }
+
+    /// <summary>Karta wypełnia wolną wysokość strony; stopka zostaje przy dolnej krawędzi.</summary>
+    /// <remarks>
+    /// Ustawiać na ostatniej karcie strony (specyfikacja UI, sekcja 4 pkt 5 i sekcja 7).
+    /// Domyślnie <see langword="false"/>.
+    /// </remarks>
+    [Parameter]
+    public bool Fill { get; set; }
+
+    /// <summary>Stopka karty (caption), np. stan danych albo dozwolone typy plików.</summary>
+    [Parameter]
+    public RenderFragment? Footer { get; set; }
+
+    /// <summary>Blok zasad pod treścią karty – wiersze <see cref="EodRule"/>.</summary>
+    [Parameter]
+    public RenderFragment? Rules { get; set; }
+
+    /// <summary>Dodatkowe klasy CSS karty (dopisywane po <c>eod-card</c>).</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>Styl inline karty – tylko z tokenami Fluent 2, bez wartości szesnastkowych.</summary>
+    [Parameter]
+    public string? Style { get; set; }
+
+    /// <summary>Treść karty.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Pozostałe atrybuty HTML (np. <c>id</c>, <c>aria-label</c>, <c>data-*</c>) przekazywane do elementu karty.</summary>
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string CssClass => $"eod-card{(Fill ? " eod-card-fill" : string.Empty)} {Class}".TrimEnd();
+}

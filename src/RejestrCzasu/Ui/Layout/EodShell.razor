@@ -1,0 +1,126 @@
+@namespace RejestrCzasu.Ui
+@implements IDisposable
+@inject NavigationManager Navigation
+@inject UiMessages Messages
+@inject IJSRuntime JS
+@*
+    EodShell – szkielet aplikacji (specyfikacja UI, sekcja 6): belka 48 px w kolorze marki · menu boczne 264 px · treść.
+    Poniżej 900 px menu boczne chowa się, a w belce pojawia się przycisk menu (FluentLayoutHamburger).
+    Zawiera FluentProviders (okna, tooltipy, toasty) – aplikacja nie dodaje ich drugi raz.
+    Przy zmianie strony zamyka paski komunikatów (UiMessages.ClearAsync), chowa menu mobilne i przewija treść na górę.
+    Używany raz, w MainLayout:
+        <EodShell>
+            <ContextSwitcher><EodContextSwitcher … /></ContextSwitcher>
+            <HeaderActions>powiadomienia, menu użytkownika</HeaderActions>
+            <NewCase>FluentMenuButton Primary „Nowa sprawa”</NewCase>
+            <Menu>FluentNavItem…</Menu>
+            <MenuFooter>wersja aplikacji</MenuFooter>
+            <ChildContent>@Body</ChildContent>
+        </EodShell>
+*@
+
+@* Height: skala interfejsu to CSS zoom na <body> (eod.css, --eod-zoom); 100dvh pod zoomem dałoby 90% / 110% wysokości okna *@
+<FluentLayout Class="eod-shell" MobileBreakdownWidth="900" Height="calc(100dvh / var(--eod-zoom, 1))">
+
+    <FluentLayoutItem Area="LayoutArea.Header" Height="48px">
+        <FluentLayoutHamburger @ref="_hamburger" Class="eod-hamburger" IconTitle="Pokaż menu" PanelHeader="@AppName" />
+        <a class="eod-appname" href="@HomeHref">@AppName</a>
+        <span class="eod-header-sep" aria-hidden="true"></span>
+        @ContextSwitcher
+        <span class="eod-header-spacer"></span>
+        @HeaderActions
+    </FluentLayoutItem>
+
+    <FluentLayoutItem Area="LayoutArea.Navigation" Width="264px">
+        <div class="eod-nav">
+            @if (NewCase is not null)
+            {
+                <div class="eod-nav-top">@NewCase</div>
+            }
+            <FluentNav Class="eod-nav-menu" aria-label="Menu główne" OnItemClick="@HideMenuAsync">
+                @Menu
+            </FluentNav>
+            @if (MenuFooter is not null)
+            {
+                <div class="eod-nav-foot eod-caption">@MenuFooter</div>
+            }
+        </div>
+    </FluentLayoutItem>
+
+    <FluentLayoutItem Area="LayoutArea.Content" Class="eod-content">
+        @ChildContent
+    </FluentLayoutItem>
+
+</FluentLayout>
+
+<FluentProviders />
+
+@code {
+    private FluentLayoutHamburger? _hamburger;
+
+    /// <summary>Nazwa w belce (link do strony startowej) i nagłówek panelu menu mobilnego.</summary>
+    /// <value>Domyślnie „MOJE EOD”.</value>
+    [Parameter]
+    public string AppName { get; set; } = "MOJE EOD";
+
+    /// <summary>Adres strony startowej (link nazwy aplikacji).</summary>
+    /// <value>Domyślnie <c>/</c>.</value>
+    [Parameter]
+    public string HomeHref { get; set; } = "/";
+
+    /// <summary>Przełącznik kontekstu procesu (<c>EodContextSwitcher</c>) – w belce, za nazwą aplikacji.</summary>
+    [Parameter]
+    public RenderFragment? ContextSwitcher { get; set; }
+
+    /// <summary>Prawa część belki: powiadomienia, menu użytkownika.</summary>
+    /// <remarks>Przyciski w belce: <c>Appearance="ButtonAppearance.Transparent"</c> i klasa <c>eod-onbrand</c>.</remarks>
+    [Parameter]
+    public RenderFragment? HeaderActions { get; set; }
+
+    /// <summary>Góra menu bocznego: jeden przycisk Primary „Nowa sprawa”.</summary>
+    /// <remarks>Jedyne stałe miejsce uruchamiania procesów; menu przycisku zawiera formularze startowe bieżącego kontekstu.</remarks>
+    [Parameter]
+    public RenderFragment? NewCase { get; set; }
+
+    /// <summary>Pozycje menu bocznego (FluentNavItem, FluentNavSectionHeader).</summary>
+    /// <remarks>Ten sam układ w każdym kontekście (specyfikacja UI, sekcja 6). Kliknięcie pozycji chowa menu mobilne.</remarks>
+    [Parameter]
+    public RenderFragment? Menu { get; set; }
+
+    /// <summary>Stopka menu bocznego (caption), np. wersja aplikacji i nazwa klienta.</summary>
+    [Parameter]
+    public RenderFragment? MenuFooter { get; set; }
+
+    /// <summary>Treść strony (@Body).</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnInitialized() => Navigation.LocationChanged += OnLocationChanged;
+
+    // Zmiana strony: zamknij paski komunikatów poprzedniej strony, schowaj menu mobilne, przewiń treść na górę.
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => _ = InvokeAsync(async () =>
+    {
+        await Messages.ClearAsync();
+        await HideMenuAsync();
+        try
+        {
+            await JS.InvokeVoidAsync("EodUI.scrollToTop");
+        }
+        catch (JSDisconnectedException)
+        {
+            // połączenie zamknięte – nie ma czego przewijać
+        }
+    });
+
+    private async Task HideMenuAsync()
+    {
+        if (_hamburger is not null)
+        {
+            await _hamburger.HideAsync();
+        }
+    }
+
+    /// <summary>Odłącza obsługę zmiany adresu od <see cref="NavigationManager"/>.</summary>
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+}

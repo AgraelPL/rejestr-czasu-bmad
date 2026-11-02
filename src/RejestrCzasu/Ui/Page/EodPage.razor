@@ -1,0 +1,96 @@
+@namespace RejestrCzasu.Ui
+@*
+    EodPage – strona MOJE EOD (specyfikacja UI, sekcja 7): nagłówek (ścieżka · tytuł H1 · opis … akcja główna strony),
+    stałe miejsce komunikatów (FluentMessageBarProvider sekcji EodSections.Page – tu trafiają paski z UiMessages)
+    i treść z kart EodCard i siatek FluentGrid. Każdy ekran poza formularzem sprawy jest stroną; strona ustawia też
+    tytuł karty przeglądarki. Fill="true" – strona ma wysokość obszaru treści i przewija się tylko jej zawartość (raport).
+    Przykład:
+    <EodPage Title="Moje zastępstwa" Description="Kto zastępuje Ciebie i kogo Ty zastępujesz.">
+        <Actions><FluentButton Appearance="ButtonAppearance.Primary">Dodaj zastępstwo</FluentButton></Actions>
+        <ChildContent><EodCard Title="Zastępstwa" NoPadding="true" Fill="true">…</EodCard></ChildContent>
+    </EodPage>
+*@
+
+<PageTitle>@(BrowserTitle ?? (Title is null ? "MOJE EOD" : $"{Title} · MOJE EOD"))</PageTitle>
+
+<section class="@CssClass" aria-label="@Title">
+    @if (HeaderContent is not null)
+    {
+        <div class="eod-page-head">@HeaderContent</div>
+    }
+    else if (Title is not null)
+    {
+        <div class="eod-page-head">
+            <div>
+                @if (Breadcrumb is { Count: > 0 })
+                {
+                    <EodBreadcrumb Items="@Breadcrumb" />
+                }
+                <h1 class="eod-h1">@Title</h1>
+                @if (Description is not null || DescriptionContent is not null)
+                {
+                    <p class="eod-caption">@(Description)@(DescriptionContent)</p>
+                }
+            </div>
+            @Actions
+        </div>
+    }
+
+    <div class="eod-messages" aria-live="polite">
+        <FluentMessageBarProvider Section="@EodSections.Page" />
+    </div>
+
+    @ChildContent
+</section>
+
+@code {
+    /// <summary>Tytuł strony (H1).</summary>
+    /// <remarks>
+    /// Służy też jako <c>aria-label</c> strony i podstawa tytułu karty przeglądarki.
+    /// Bez tytułu i bez <see cref="HeaderContent"/> strona nie ma nagłówka.
+    /// </remarks>
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>Tytuł karty przeglądarki; domyślnie „{Title} · MOJE EOD” (bez tytułu strony – „MOJE EOD”).</summary>
+    [Parameter]
+    public string? BrowserTitle { get; set; }
+
+    /// <summary>Jedno zdanie pod tytułem: co jest na stronie (w raportach także stan danych).</summary>
+    [Parameter]
+    public string? Description { get; set; }
+
+    /// <summary>Opis z formatowaniem (zamiast lub obok <see cref="Description"/>) – wyświetlany po nim w tym samym akapicie.</summary>
+    [Parameter]
+    public RenderFragment? DescriptionContent { get; set; }
+
+    /// <summary>Ścieżka nad tytułem (tylko gdy strona jest „w głębi”, np. raport z katalogu).</summary>
+    /// <remarks>Ostatni element to bieżąca strona – bez adresu (<see cref="BreadcrumbItem"/>).</remarks>
+    [Parameter]
+    public IReadOnlyList<BreadcrumbItem>? Breadcrumb { get; set; }
+
+    /// <summary>Akcja główna strony (Primary) albo „Odśwież” – po prawej stronie nagłówka.</summary>
+    /// <remarks>Jedna akcja Primary na widok (specyfikacja UI, sekcja 4 pkt 1).</remarks>
+    [Parameter]
+    public RenderFragment? Actions { get; set; }
+
+    /// <summary>Własny nagłówek (np. z awatarem) zamiast ścieżki, tytułu, opisu i akcji.</summary>
+    /// <remarks>Ma pierwszeństwo przed <see cref="Title"/>, który nadal ustawia tytuł karty przeglądarki i <c>aria-label</c>.</remarks>
+    [Parameter]
+    public RenderFragment? HeaderContent { get; set; }
+
+    /// <summary>Strona na pełną wysokość obszaru treści (raport) – przewija się tylko zawartość.</summary>
+    /// <value>Domyślnie <see langword="false"/>.</value>
+    [Parameter]
+    public bool Fill { get; set; }
+
+    /// <summary>Dodatkowe klasy CSS strony (dopisywane po <c>eod-page</c>).</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>Treść strony: karty <see cref="EodCard"/> i siatki FluentGrid.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private string CssClass => $"eod-page{(Fill ? " eod-page-fill" : string.Empty)} {Class}".TrimEnd();
+}

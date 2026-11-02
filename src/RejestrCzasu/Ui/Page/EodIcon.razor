@@ -1,0 +1,26 @@
+@namespace RejestrCzasu.Ui
+@*
+    EodIcon – ikona Fluent (Fluent System Icons, zwykle Regular 20) w kolorze tekstu – currentColor (specyfikacja UI, sekcja 13).
+    Kolor nadaje klasa rodzica albo klasa c-brand / c-muted / c-success / c-warning / c-danger w Class.
+    Title tylko wtedy, gdy ikona niesie znaczenie bez tekstu obok (np. ✓ w macierzy uprawnień).
+    Przykład: <EodIcon Value="@(new Icons.Regular.Size20.Checkmark())" Class="c-success" Title="tak" />
+*@
+<FluentIcon Value="@Value" Color="Color.Custom" CustomColor="currentColor" Class="@($"ic {Class}")" Title="@Title" />
+
+@code {
+    /// <summary>Ikona do wyświetlenia, np. <c>new Icons.Regular.Size20.Checkmark()</c>.</summary>
+    /// <remarks>
+    /// Rozmiar wynika z wariantu ikony: 20 – domyślnie (także w przyciskach Small), 16 w żetonach, znaczkach i ścieżce,
+    /// 24 w spisach sekcji i kamieniach milowych (specyfikacja UI, sekcja 13).
+    /// </remarks>
+    [Parameter, EditorRequired]
+    public Icon Value { get; set; } = default!;
+
+    /// <summary>Dodatkowe klasy CSS dopisywane po <c>ic</c>, np. kolor <c>c-success</c> albo rozmiar <c>ic-16</c>.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>Opis dla czytników ekranu (tylko gdy ikona niesie znaczenie bez tekstu obok).</summary>
+    [Parameter]
+    public string? Title { get; set; }
+}
