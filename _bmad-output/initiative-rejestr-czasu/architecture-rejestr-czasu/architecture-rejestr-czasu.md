@@ -7,7 +7,7 @@ paradigm: 'Transaction Script w komponentach Blazor + czysty rdzeń raportowy, d
 scope: 'Cała aplikacja Rejestr czasu pracy: Konta i role, Słowniki, Wpisy, Widok miesiąca, Lista wpisów, Zestawienie, pomoc, serwer, CI/CD'
 status: final
 created: '2026-10-30'
-updated: '2026-11-01'
+updated: '2026-11-02'
 binds: [R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12, R13, R15, R16, R17, R18, R19, R20, R21, R22, R23, R24, R25, R26, R27, R28, R29, R30, R31]
 sources:
   - _bmad-output/initiative-rejestr-czasu/initiative-rejestr-czasu.md
@@ -20,7 +20,7 @@ sources:
 
 ## Design Paradigm
 
-**Transaction Script w komponentach Blazor z czystym rdzeniem raportowym, dane oddzielone per User.** Każdy ekran (komponent Blazor Interactive Server) sam czyta i zapisuje dane przez EF Core; nie ma warstw Application/Infrastructure ani repozytoriów. Każdy kontekst bazy ekranu jest związany z zalogowanym Userem (AD-16), więc ekran nigdy nie filtruje po Userze sam. Wyjątki są nazwane: liczenie sum i Wierszy zestawienia (`Reporting/`), formatowanie Czasu i kalendarza (`Domain/`), Konta (`Accounts/`) i kilka wspólnych elementów (`Shared/`), których ekrany nie piszą same. Kod z historii 1.1 przechodzi do tego układu: `Components/App.razor`, `Routes.razor`, `Pages/Error` i `Pages/NotFound` zostają w `Components/`, `Components/Layout/MainLayout` przechodzi do `Shared/`, `Options/` i `SecurityHeaders.cs` zostają, `BackupOptions` i `ExportOptions` są usuwane.
+**Transaction Script w komponentach Blazor z czystym rdzeniem raportowym, dane oddzielone per User.** Każdy ekran (komponent Blazor Interactive Server) sam czyta i zapisuje dane przez EF Core; nie ma warstw Application/Infrastructure ani repozytoriów. Każdy kontekst bazy ekranu jest związany z zalogowanym Userem (AD-16), więc ekran nigdy nie filtruje po Userze sam. Wyjątki są nazwane: liczenie sum i Wierszy zestawienia (`Reporting/`), formatowanie Czasu i kalendarza (`Domain/`), Konta (`Accounts/`) i kilka wspólnych elementów (`Shared/`), których ekrany nie piszą same. Kod z historii 1.1 przechodzi do tego układu: `Components/App.razor`, `Routes.razor`, `Pages/Error` i `Pages/NotFound` zostają w `Components/`, `Components/Layout/MainLayout` przechodzi do `Shared/` (od 02.11.2026 renderuje `EodShell` wzorca eod-ui, AD-11), `Options/` i `SecurityHeaders.cs` zostają, `BackupOptions` i `ExportOptions` są usuwane.
 
 | Obszar | Katalog | Zawiera |
 | --- | --- | --- |
@@ -31,12 +31,15 @@ sources:
 | Dane | `Data/` | `AppDbContext`, `IUserOwned`, `UserDbContextFactory`, encje, migracje, `DbErrors`, `DictionaryOptions` |
 | Start | `Startup/` | sprawdzenie bazy, migracje, pierwszy Administrator |
 | Pomoc | `Features/Pomoc/` | `HelpTopics`, trasa `/pomoc/{temat}`, treści tematów |
-| Wspólne UI | `Shared/` | `ReportGrid<T>`, `EntryForm`, `MainLayout`, `PageHeader`, `DownloadLink`, `Notify`, `Confirm`, `EntryDateMemory` |
+| Wspólne UI | `Shared/` | `EntryForm`, `MainLayout` (na `EodShell`), `PageHelp`, `DownloadLink`, `EntryDateMemory` |
+| Wzorzec UI | `ui/` (podmoduł eod-ui) | `Eod.Platform.UI`: `EodShell`, `EodPage`, `EodCard`, `EodReport`, `UiMessages`, `AppearanceSettings`, `EodHead`, `eod.js` |
 | Eksport | `Features/Zestawienie/` | endpoint `GET /zestawienie/{rok}/{miesiac}`, ClosedXML |
 
 ```mermaid
 graph TD
-  Features["Features/* (ekrany)"] --> Shared["Shared/ ReportGrid, EntryForm, PageHeader, Notify, Confirm"]
+  Features["Features/* (ekrany)"] --> Shared["Shared/ EntryForm, MainLayout, PageHelp"]
+  Features --> EodUI["ui/ Eod.Platform.UI (EodPage, EodReport, UiMessages)"]
+  Shared --> EodUI
   Features --> Reporting["Reporting/ MonthReport, MonthEntriesQuery"]
   Features --> UserData["Data/ UserDbContextFactory (kontekst Usera)"]
   Shared --> UserData
@@ -50,7 +53,7 @@ graph TD
   Startup["Startup/"] --> Data
 ```
 
-Strzałka = „może zależeć od”. `MonthReport` i `Domain/` nie zależą od EF Core ani UI. Tylko `Accounts/`, `Startup/`, Identity, Data Protection i `/health` używają `AppDbContext` w trybie systemowym (AD-16).
+Strzałka = „może zależeć od”. `MonthReport` i `Domain/` nie zależą od EF Core ani UI. `Eod.Platform.UI` nie zależy od niczego w aplikacji. Tylko `Accounts/`, `Startup/`, Identity, Data Protection i `/health` używają `AppDbContext` w trybie systemowym (AD-16).
 
 ## Invariants & Rules
 
@@ -58,7 +61,7 @@ Strzałka = „może zależeć od”. `MonthReport` i `Domain/` nie zależą od 
 
 - **Binds:** all
 - **Prevents:** mieszaniu stosów i bibliotek UI między epikami.
-- **Rule:** .NET 10, Blazor Web App z Interactive Server dla stron aplikacji (scaffold z historii 1.1), Microsoft Fluent UI Blazor 5.x jako jedyna biblioteka komponentów, FluentValidation 12 przez Blazilla, EF Core 10 z Npgsql i `UseSnakeCaseNamingConvention()`, ASP.NET Core Identity na EF Core, PostgreSQL 18. Bez innych bibliotek UI i bez własnego JavaScriptu. Wersja SDK przypięta w `global.json` na najnowszą poprawkę 10.0.4xx z runtime co najmniej 10.0.14.
+- **Rule:** .NET 10, Blazor Web App z Interactive Server dla stron aplikacji (scaffold z historii 1.1), Microsoft Fluent UI Blazor 5.0.1 i biblioteka wzorca UI `Eod.Platform.UI` z repozytorium eod-ui (github.com/AgraelPL/eod-ui) jako jedyne biblioteki komponentów, FluentValidation 12 przez Blazilla, EF Core 10 z Npgsql i `UseSnakeCaseNamingConvention()`, ASP.NET Core Identity na EF Core, PostgreSQL 18. eod-ui to podmoduł git `ui/` przypięty do commitu, dołączony przez `ProjectReference` do `ui/src/Eod.Platform.UI`; bez `Eod.Platform.UI.Syncfusion` i bez części specyficznych dla EOD (procesy, sprawy, przełącznik kontekstu, powiadomienia). Zmiana we wzorcu idzie osobnym PR w eod-ui (zakres w AD-23), potem aplikacja podbija podmoduł; PR aplikacji nie zmienia plików w `ui/` poza wskaźnikiem podmodułu. Podmoduł wskazuje wyłącznie commit osiągalny z `origin/main` eod-ui i przesuwa się tylko do przodu; sprawdza to workflow PR. Wersję Fluent UI ustala eod-ui (`ui/Directory.Packages.props`); aplikacja ma w `PackageReference` dokładnie tę samą wersję i podbija ją razem z podmodułem. Oba repozytoria są prywatne (plan GitHub płatny, 02.11.2026): `actions/checkout` pobiera podmoduł z `submodules: recursive` i tokenem tylko do odczytu eod-ui z GitHub Secrets; `Dockerfile` kopiuje `ui/Directory.Build.props`, `ui/Directory.Packages.props` i `ui/src/Eod.Platform.UI` przed `restore`, a `.dockerignore` wyklucza `ui/docs`, `ui/tools`, `ui/src/Eod.Demo` i `ui/src/Eod.Platform.UI.Syncfusion`; obraz buduje się z kontekstu katalogu po checkoucie (`context: .`). JavaScript wyłącznie w bibliotece wzorca (`eod.js`, `window.EodUI.*`); aplikacja nie ma własnego JS — obejścia błędów Fluent UI (np. tekst comboboxa z wartością ustawioną przy pierwszym renderze) trafiają do wzorca. Bez innych bibliotek UI (zmiana 02.11.2026, Autor). Wersja SDK przypięta w `global.json` na najnowszą poprawkę 10.0.4xx z runtime co najmniej 10.0.14.
 
 ### AD-2 — PostgreSQL w Dockerze, lokalnie i na serwerze [ADOPTED]
 
@@ -82,13 +85,13 @@ Strzałka = „może zależeć od”. `MonthReport` i `Domain/` nie zależą od 
 
 - **Binds:** R9, R10, R11, R12
 - **Prevents:** dwóm implementacjom Sum i złączania, które łamią R10.
-- **Rule:** Wpisy Miesiąca zalogowanego Usera ładuje wyłącznie `Reporting/MonthEntriesQuery.LoadAsync(YearMonth)`. Sumę dnia, Sumę tygodnia (tylko dni danego Miesiąca), sumę Miesiąca, Wiersze zestawienia (złączanie, opisy w kolejności rosnącego `Id`) i kolejność dni oraz wierszy liczy wyłącznie czysty `MonthReport.Build(YearMonth, IReadOnlyList<MonthEntry>)`. Jego typy wejścia i wyjścia (`MonthEntry`, dni z Wpisami, Wiersze zestawienia, tygodnie, suma Miesiąca) powstają w całości w jednej historii, zanim użyje ich Widok miesiąca lub eksport. Żaden ekran ani zapytanie nie sumuje Czasu na własną rękę; jedyny wyjątek to suma pod Listą wpisów (R8), liczona z tej samej materializowanej listy co wiersze.
+- **Rule:** Wpisy Miesiąca zalogowanego Usera ładuje wyłącznie `Reporting/MonthEntriesQuery.LoadAsync(YearMonth)`. Sumę dnia, Sumę tygodnia (tylko dni danego Miesiąca), sumę Miesiąca, Wiersze zestawienia (złączanie, opisy w kolejności rosnącego `Id`) i kolejność dni oraz wierszy liczy wyłącznie czysty `MonthReport.Build(YearMonth, IReadOnlyList<MonthEntry>)`. Jego typy wejścia i wyjścia (`MonthEntry`, dni z Wpisami, Wiersze zestawienia, tygodnie, suma Miesiąca) powstają w całości w jednej historii, zanim użyje ich Widok miesiąca lub eksport. Żaden ekran ani zapytanie nie sumuje Czasu na własną rękę; jedyny wyjątek to suma pod Listą wpisów (R8), liczona z tej samej materializowanej listy co wiersze. `EodReport` nigdy nie liczy sum Czasu: sumy grup i całości podaje mu ekran (Widok miesiąca z `MonthReport`, Lista wpisów ze swojej listy).
 
 ### AD-6 — Czas, daty, kultura, strefa
 
 - **Binds:** R4, R5, R7, R9, R11, R12, R16, R21, NFR-4, NFR-5, NFR-7
 - **Prevents:** mieszaniu minut, godzin dziesiętnych i tekstu; tygodniom od niedzieli; angielskim tekstom; dacie „dzisiaj” według zegara serwera w UTC.
-- **Rule:** Czas przechowywany i liczony jako `int` minut. Jedyne miejsca konwersji: `Domain/Czas` (Czas wpisywany i pokazywany jak w Jirze: parsowanie `1h 30m`, `1h30m`, `2h`, `45m`, `90m`, `1,5h`, `1.5h` i dawnego `h:mm`, formatowanie `1h 30m`, `2h`, `45m`, także sum powyżej 24 h, np. `30h 30m`; godziny dziesiętne dla eksportu; zmiana 01.11.2026, Autor) i `Domain/PolishCalendar` (nazwy dni i miesięcy w mianowniku, początek tygodnia w poniedziałek). Miesiąc to `Domain/YearMonth`. Data Wpisu to `DateOnly`. „Dzisiaj” daje wyłącznie `PolishCalendar.Today`: czas z `TimeProvider` przeliczony na strefę `Europe/Warsaw`; zakaz `DateTime.Today`, `DateTime.Now` i `DateOnly.FromDateTime(DateTime.Now)`. Znaczniki czasu (rejestracja, ostatnie logowanie) zapisywane w UTC (`timestamptz`), wyświetlane w czasie polskim przez `PolishCalendar`. Kultura `pl-PL`. Wszystkie teksty dla Usera po polsku: teksty Fluent UI przez własny `IFluentLocalizer`, błędy Identity przez polski `IdentityErrorDescriber`, odpowiedź limitera prób po polsku. Obraz kontenera z ICU i tzdata (AD-20).
+- **Rule:** Czas przechowywany i liczony jako `int` minut. Jedyne miejsca konwersji: `Domain/Czas` (Czas wpisywany i pokazywany jak w Jirze: parsowanie `1h 30m`, `1h30m`, `2h`, `45m`, `90m`, `1,5h`, `1.5h` i dawnego `h:mm`, formatowanie `1h 30m`, `2h`, `45m`, także sum powyżej 24 h, np. `30h 30m`; godziny dziesiętne dla eksportu; zmiana 01.11.2026, Autor) i `Domain/PolishCalendar` (nazwy dni i miesięcy w mianowniku, początek tygodnia w poniedziałek). Miesiąc to `Domain/YearMonth`. Data Wpisu to `DateOnly`. „Dzisiaj” daje wyłącznie `PolishCalendar.Today`: czas z `TimeProvider` przeliczony na strefę `Europe/Warsaw`; zakaz `DateTime.Today`, `DateTime.Now` i `DateOnly.FromDateTime(DateTime.Now)`. Znaczniki czasu (rejestracja, ostatnie logowanie) zapisywane w UTC (`timestamptz`), wyświetlane w czasie polskim przez `PolishCalendar`. Kultura `pl-PL` z krótką datą `dd.MM.yyyy` przez `UseEodPolishCulture()` wzorca; usługi Fluent UI rejestruje wyłącznie `AddEodPlatformUI()` (bez osobnego `AddFluentUIComponents`). Wszystkie teksty dla Usera po polsku: teksty Fluent UI przez `PolishLocalizer` wzorca (brakujące teksty dopisuje się we wzorcu), błędy Identity przez polski `IdentityErrorDescriber`, odpowiedź limitera prób po polsku. Obraz kontenera z ICU i tzdata (AD-20).
 
 ### AD-7 — Schemat i integralność danych
 
@@ -106,31 +109,31 @@ Strzałka = „może zależeć od”. `MonthReport` i `Domain/` nie zależą od 
 
 - **Binds:** R2, R8, R9, R17, R21
 - **Prevents:** osobnej siatce w każdym epiku i sumom liczonym z przefiltrowanych wierszy.
-- **Rule:** każdy raport, lista Słownika i lista Kont na ekranie Użytkownicy używa `Shared/ReportGrid<T>` (nakładka na `FluentDataGrid`). Siatka przyjmuje `IReadOnlyList<T>` (nigdy `IQueryable`), zachowuje kolejność wejścia i sama nie liczy sum. Zakres v1: filtr wartości w każdej kolumnie, licznik pozycji, ikony akcji w wierszu jako lista akcji zadana przez ekran (ikona, etykieta, warunek widoczności, wywołanie; po akcji siatka renderuje ekran, do którego należy wywołanie, a kliknięcie w trakcie trwającej akcji ignoruje), stałe grupowanie zadane przez ekran z sumą podaną przez ekran. Filtr tylko ukrywa wiersze; sumy w nagłówkach grup Widoku miesiąca (Tydzień → Dzień) pochodzą z `MonthReport` dla całego Miesiąca. Bez eksportu CSV.
+- **Rule:** każdy raport (Widok miesiąca, Lista wpisów), lista Słownika i lista Kont na ekranie Użytkownicy używa `EodReport` wzorca (UI_SPEC 9.7) z definicją raportu (`ReportDefinition`) zadaną przez ekran; `Shared/ReportGrid<T>` wycofany (zmiana 02.11.2026, Autor). Ekran podaje wiersze zmaterializowane (nigdy `IQueryable`), zbudowane jedną statyczną metodą `ToRow` na typ wiersza (np. `EntryRow`); klucze kolumn to nazwy właściwości typu wiersza, a identyfikator encji leży w wierszu pod kluczem `Id` poza definicją kolumn i tylko z niego korzystają `RowActions`. Definicja raportu to `static readonly` pole ekranu (nigdy tworzona w cyklu życia komponentu); `LayoutKey` = klucz tematu ekranu (AD-22), dla Widoku miesiąca z Miesiącem (`miesiac@RRRR-MM`). Wiersze pokazują się w kolejności ekranu (`PreserveRowOrder`, AD-23), dopóki User sam nie posortuje. Każda kolumna, którą User filtruje po wartościach, ma typ `List` (filtr wartości z licznikami, R17); licznik pozycji w stopce. Akcje wiersza (Edytuj, Kopiuj, Usuń, Dezaktywuj, Przywróć) przez `RowActions` jako ikony Subtle; edycja w oknie jak UI_SPEC 9.13. Eksport CSV wyłączony parametrem wzorca na każdym raporcie. Kolumna Czasu niesie `int` minut i wyświetla `Czas.Format` (`ReportColumn.Format`, AD-23), więc sortuje się liczbowo. `EodReport` nie liczy sum Czasu i w Rejestrze nie używa `Definition.Total`: sumy grup (po surowej wartości klucza grupy) i stopki podaje ekran (AD-5). Suma pod Listą wpisów dotyczy filtrów ekranu (zakres dat, Projekt, Typ pracy nad raportem), nie filtrów kolumn, jak w historii 2.2. Widok miesiąca ma układ zablokowany (grupowanie Tydzień → Dzień, sortowanie i kolejność kolumn bez zmian przez Usera) z sumami z `MonthReport` dla całego Miesiąca; filtr tylko ukrywa wiersze. Lista wpisów i listy Słowników dopuszczają układ użytkownika wzorca (sortowanie, grupowanie, kolejność kolumn), żyjący do odświeżenia strony. Brakujące we wzorcu parametry (wyłączenie eksportu, sumy od ekranu, blokada układu) dodaje się w eod-ui (AD-1).
 
 ### AD-10 — Formularz Wpisu w dwóch hostach [ADOPTED]
 
 - **Binds:** R4, R5, R6, R7, R16
 - **Prevents:** dwóm formularzom Wpisu i dwóm ścieżkom kopii i usuwania.
-- **Rule:** jeden komponent `Shared/EntryForm` hostowany (a) na stronie `/wpisy/nowy` (przycisk Nowy wpis, Sesja wpisywania: przy każdym otwarciu strony data to `PolishCalendar.Today`, po zapisie formularz zostaje z tą samą datą, R5) i (b) w oknie dialogowym otwieranym z ikon edycji i kopii w wierszu raportu (po zapisie okno się zamyka, raport wczytuje dane ponownie). Datę ostatnio ustawioną na `/wpisy/nowy` pamięta `Shared/EntryDateMemory` (w pamięci serwera według `UserId`, do wylogowania lub restartu aplikacji); kopia bierze ją, a bez niej `PolishCalendar.Today` (R7). Usunięcie Wpisu tylko przez jedną operację `DeleteEntry` po potwierdzeniu przez `Shared/Confirm`. Klawiatura: kolejność fokusu data → Projekt → Typ pracy → opis → Czas, zapis klawiszem Enter, bez okna potwierdzenia przy zapisie. Opcje list Projektu i Typu pracy daje wyłącznie `Data/DictionaryOptions` (aktywne pozycje zalogowanego Usera plus bieżąca wartość edytowanego Wpisu; przy kopii bez bieżącej wartości, R7; sortowanie `pl-PL`); Widok, Lista i eksport nigdy nie filtrują po aktywności.
+- **Rule:** jeden komponent `Shared/EntryForm` hostowany (a) na stronie `/wpisy/nowy` (przycisk Nowy wpis, Sesja wpisywania: przy każdym otwarciu strony data to `PolishCalendar.Today`, po zapisie formularz zostaje z tą samą datą, R5) i (b) w oknie dialogowym otwieranym z ikon edycji i kopii w wierszu raportu (po zapisie okno się zamyka, raport wczytuje dane ponownie). Datę ostatnio ustawioną na `/wpisy/nowy` pamięta `Shared/EntryDateMemory` (w pamięci serwera według `UserId`, do wylogowania lub restartu aplikacji); kopia bierze ją, a bez niej `PolishCalendar.Today` (R7). Usunięcie Wpisu tylko przez jedną operację `DeleteEntry` po potwierdzeniu przez `UiMessages.ConfirmAsync` (AD-11). Akcje wiersza Wpisu (edycja, kopia, usunięcie) z każdego raportu idą wyłącznie przez `Features/Wpisy/EntryDialogs` po `Id` Wpisu; ekran po wyniku `true` tylko wczytuje dane ponownie, a pasek sukcesu na stronie pokazuje `EntryDialogs` po zamknięciu okna. Błędy zapisu w oknie (np. brakujący Słownik) okno pokazuje we własnej treści, bo pasek strony leży pod modalem. Klawiatura: kolejność fokusu data → Projekt → Typ pracy → opis → Czas, zapis klawiszem Enter, bez okna potwierdzenia przy zapisie. Opcje list Projektu i Typu pracy daje wyłącznie `Data/DictionaryOptions` (aktywne pozycje zalogowanego Usera plus bieżąca wartość edytowanego Wpisu; przy kopii bez bieżącej wartości, R7; sortowanie `pl-PL`); Widok, Lista i eksport nigdy nie filtrują po aktywności.
 
 ### AD-11 — Komunikaty i układ
 
 - **Binds:** all ekrany, R19, R26, R31, NFR-6
 - **Prevents:** różnym wzorcom potwierdzeń, błędów, nagłówków i nawigacji między epikami.
-- **Rule:** walidacja i mniej istotne operacje → `FluentMessageBar` przez `Shared/Notify`, w pływającym panelu w prawym górnym rogu pod belką (nad treścią ekranu); każdy komunikat znika sam po 5 s i przy zmianie strony; każde potwierdzenie (usunięcie Wpisu, pozycji Słownika, akcje Konta) → `Shared/Confirm` na `IDialogService.ShowDialogAsync` z własnym oknem `Shared/ConfirmDialog` (przyciski w treści, stopka biblioteki ukryta), bez skrótu klawiszowego przycisku głównego (Enter i „Y” nie zatwierdzają), fokus na Anuluj, Escape = Anuluj; bez toastów. `ShowMessageBoxAsync` odpada, bo w Fluent UI 5.0.1 jego przycisk główny ma domyślnie skrót Enter (zmiana 01.11.2026, historia 1.3). `Shared/MainLayout`: belka górna z ikoną Pomoc `?` (AD-22), linkiem Ustawienia konta i przyciskiem Wyloguj (formularz POST z antyforgery do `/konto/wyloguj`, AD-15); menu boczne: przycisk Nowy wpis; Rejestr (Widok miesiąca, Lista wpisów, Eksport); Słowniki (Projekty, Typy pracy); Administracja (Użytkownicy) renderowana tylko dla roli Administrator. Każdy ekran ustawia nagłówek wyłącznie przez `Shared/PageHeader` (tytuł, podtytuł, okruszki, wywołanie Odśwież, klucz tematu pomocy), a `MainLayout` bierze z niego temat dla `?`. Pozycje i linki do ekranów jeszcze niezbudowanych prowadzą do polskiej strony „nie znaleziono”. Zerwane połączenie: własny znacznik `components-reconnect-modal` z polskim tekstem i CSS, z linkiem „Odśwież stronę”, bez JS i bez przycisku ponowienia (R31). Skala 90/100/110/125% według szerokości okna; motyw jasny/ciemny. Statyczne strony `/konto/...` używają `Accounts/AccountLayout`: bez menu, z linkiem Pomoc do tematu strony.
+- **Rule:** wygląd i zachowanie UI według specyfikacji wzorca eod-ui (`ui/docs/UI_SPEC.md`: zasady 4, anatomia strony 7, komunikaty 11, tabele 12, lista kontrolna 19) (zmiana 02.11.2026, Autor). Przy sprzeczności ta architektura wygrywa z UI_SPEC; odstępstwa Rejestru od wzorca: listy Słowników i Kont na `EodReport` zamiast `FluentDataGrid` (AD-9, R17); bez `EodEditableTable` i zapisu zbiorczego (R1–R3: każda zmiana pozycji Słownika zapisuje się od razu); bez menu użytkownika z awatarem (w belce link Ustawienia konta i Wyloguj); potwierdzenia bez skrótu Enter; usunięcie Konta z wpisaniem loginu (AD-18) we własnym oknie w `Features/Uzytkownicy/`, nie przez `ConfirmAsync`; zmiana hasła tylko na `/konto/zmiana-hasla` (AD-15). Komunikaty wyłącznie przez `UiMessages` wzorca: pasek w sekcji strony pod nagłówkiem `EodPage` dla walidacji i drobnych operacji (sukces i informacja znikają po 7 s, ostrzeżenie i błąd zostają do zamknięcia, zmiana strony czyści paski); okno dla każdego potwierdzenia (usunięcie Wpisu, pozycji Słownika, akcje Konta) przez `UiMessages.ConfirmAsync` wywoływane zawsze bez skrótu przycisku głównego (opcja wzorca, AD-23) — Enter nie zatwierdza, fokus na Anuluj, Escape = Anuluj; wartości Usera w treści okna kodowane `HtmlEncode`; bez toastów. Wyjątki stanu Konta (AD-17) rzucone w treści strony i w oknie łapie ta sama granica błędów w `Shared/MainLayout`, obejmująca też `FluentProviders`. `Shared/MainLayout` renderuje `EodShell`: belka z nazwą aplikacji, w `HeaderActions` ikona Pomoc `?` (AD-22), link Ustawienia konta i przycisk Wyloguj (formularz POST z antyforgery do `/konto/wyloguj`, AD-15); w miejscu „Nowa sprawa” przycisk Primary Nowy wpis; menu: Rejestr (Widok miesiąca, Lista wpisów, Eksport); Słowniki (Projekty, Typy pracy); Administracja (Użytkownicy) renderowana tylko dla roli Administrator; bez przełącznika kontekstu i powiadomień. Każdy ekran to `EodPage` (tytuł, opis, okruszki, akcje, `Fill` dla raportów) z treścią w `EodCard`. Pozycje i linki do ekranów jeszcze niezbudowanych prowadzą do polskiej strony „nie znaleziono” (`EodPage`). Zerwane połączenie: własny znacznik `components-reconnect-modal` z polskim tekstem i klasami wzorca, z linkiem „Odśwież stronę”, bez JS i bez przycisku ponowienia (R31). Skala i motyw przez `AppearanceSettings` wzorca. `EodHead` jest raz, w `<head>` `Components/App.razor`, dla stron interaktywnych i statycznych. Statyczne strony `/konto/...` (SSR, bez obwodu) używają `Accounts/AccountLayout` z klasami `eod-*`, bez `EodShell`, menu i `UiMessages` (błędy formularza w treści strony), z linkiem Pomoc do tematu strony. Nazwa aplikacji „Rejestr czasu” w belce i tytule karty przeglądarki przez parametr wzorca (AD-23).
 
 ### AD-12 — Zero połączeń wychodzących aplikacji [ADOPTED]
 
 - **Binds:** NFR-1
 - **Prevents:** CDN-om, zewnętrznym czcionkom i skryptom dodanym „przy okazji”.
-- **Rule:** zasoby tylko z aplikacji (Fluent UI z `_content`), czcionka systemowa Segoe UI, nagłówek `Content-Security-Policy` z `script-src 'self'` na każdej odpowiedzi, także stron `/konto/...`. Zakaz komponentów Fluent UI, które ładują skrypty z unpkg: `FluentNumberInput`, pól z `MaskPattern`, `FluentSortableList`. Passkeys z szablonu Identity usunięte (bez ich ekranów i JS). Ruch z przeglądarki wyłącznie przez HTTPS od Caddy (AD-19). Telemetria CLI wyłączona zmienną `DOTNET_CLI_TELEMETRY_OPTOUT=1` (README, potok).
+- **Rule:** zasoby tylko z aplikacji (Fluent UI i `Eod.Platform.UI` z `_content`, w tym IMask i SortableJS ładowane lokalnie przez `EodHead`), czcionka systemowa Segoe UI, nagłówek `Content-Security-Policy` z `script-src 'self'` na każdej odpowiedzi, także stron `/konto/...`, bez wyjątków i hashy: skrypt skali `EodHead` wzorzec ładuje z pliku, nie inline (zmiana w eod-ui, 02.11.2026). Komponenty Fluent UI ładujące skrypty (`FluentNumberInput`, pola z `MaskPattern`, `FluentSortableList`) wolno użyć tylko na stronach z `EodHead`. Passkeys z szablonu Identity usunięte (bez ich ekranów i JS). Ruch z przeglądarki wyłącznie przez HTTPS od Caddy (AD-19). Telemetria CLI wyłączona zmienną `DOTNET_CLI_TELEMETRY_OPTOUT=1` (README, potok).
 
 ### AD-13 — Konfiguracja, sekrety i prywatność repozytorium
 
 - **Binds:** R13, R15, R20, R25, NFR-2
 - **Prevents:** danym osobistym i hasłom w gicie, obrazie i logach potoku oraz rozjazdowi nazw zmiennych między compose, aplikacją i potokiem.
-- **Rule:** `appsettings.json` w repozytorium ma tylko bezpieczne wartości domyślne. Lokalnie: `appsettings.Local.json` i `.env` ładowane jawnie i wykluczone w `.gitignore`. Na serwerze: `/opt/rejestr-czasu/.env` z `chmod 600`, przekazany przez `env_file` w `deploy/compose.yml`. Kontrakt nazw w `.env` serwera: `SITE_DOMAIN`, `APP_IMAGE_TAG`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `Database__Host`, `Database__Name`, `Database__User`, `Database__Password`, `FirstAdmin__UserName`, `FirstAdmin__Password`; aplikacja w kontenerze nasłuchuje na `ASPNETCORE_HTTP_PORTS=8080`, a Caddy przekazuje do `app:8080`. Sekrety potoku (klucz SSH, host, użytkownik) tylko w GitHub Secrets; workflow nie wypisuje ich i nie kopiuje `.env`. Obraz nie zawiera `appsettings.Local.json`, `.env` ani danych. Prefiks Zestawienia jest danymi Usera w `account_settings`, nie konfiguracją. Sekcje konfiguracji czytane przez `IOptions<T>`. Dane testowe zanonimizowane; prawdziwe dane wrześniowe nigdy w repozytorium ani na serwerze.
+- **Rule:** `appsettings.json` w repozytorium ma tylko bezpieczne wartości domyślne. Lokalnie: `appsettings.Local.json` i `.env` ładowane jawnie i wykluczone w `.gitignore`. Na serwerze: `/opt/rejestr-czasu/.env` z `chmod 600`, przekazany przez `env_file` w `deploy/compose.yml`. Kontrakt nazw w `.env` serwera: `SITE_DOMAIN`, `APP_IMAGE_TAG`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `Database__Host`, `Database__Name`, `Database__User`, `Database__Password`, `FirstAdmin__UserName`, `FirstAdmin__Password`; aplikacja w kontenerze nasłuchuje na `ASPNETCORE_HTTP_PORTS=8080`, a Caddy przekazuje do `app:8080`. Repozytoria aplikacji i eod-ui są prywatne (zmiana 02.11.2026). Sekrety potoku (klucz SSH, host, użytkownik, token tylko do odczytu eod-ui) tylko w GitHub Secrets; token odczytu prywatnego GHCR dla serwera (`read:packages`) tylko na Droplecie, zapisany według `docs/admin/`; workflow nie wypisuje ich i nie kopiuje `.env`. Obraz nie zawiera `appsettings.Local.json`, `.env` ani danych. Prefiks Zestawienia jest danymi Usera w `account_settings`, nie konfiguracją. Sekcje konfiguracji czytane przez `IOptions<T>`. Dane testowe zanonimizowane; prawdziwe dane wrześniowe nigdy w repozytorium ani na serwerze.
 
 ### AD-14 — Zestawienie przez endpoint i ClosedXML
 
@@ -154,7 +157,7 @@ Strzałka = „może zależeć od”. `MonthReport` i `Domain/` nie zależą od 
 
 - **Binds:** R19, R21, R22
 - **Prevents:** zablokowanemu Userowi pracującemu dalej, dwóm mechanizmom reakcji na stan Konta i epikowi Administracji przerabiającemu logowanie.
-- **Rule:** na każdym żądaniu HTTP `CookieAuthenticationEvents.OnValidatePrincipal` czyta `status`, `must_change_password` i security stamp; przy Koncie nieaktywnym lub niezgodnym stampie odrzuca tożsamość i kasuje ciasteczko. To jedyne miejsce, które kasuje ciasteczko poza `/konto/wyloguj`. W obwodzie `CurrentUser` przy każdym utworzeniu kontekstu przez `UserDbContextFactory` czyta `status` i `must_change_password` z bazy i przy niepowodzeniu rzuca `AccountInactiveException` lub `PasswordChangeRequiredException`; `Shared/MainLayout` łapie je i robi `NavigateTo` z `forceLoad` na `/konto/logowanie?powod=<stan>` lub `/konto/zmiana-hasla`, a walidator ciasteczka kończy sesję na tym żądaniu. `RevalidatingServerAuthenticationStateProvider` sprawdza co 1 minutę security stamp i `status`, żeby zamknąć bezczynne obwody. epic-administracja-kont-i-pomoc tylko zmienia `status`, hasło i security stamp przez `Accounts/AccountAdmin`; nie dotyka logowania ani `CurrentUser`.
+- **Rule:** na każdym żądaniu HTTP `CookieAuthenticationEvents.OnValidatePrincipal` czyta `status`, `must_change_password` i security stamp; przy Koncie nieaktywnym lub niezgodnym stampie odrzuca tożsamość i kasuje ciasteczko. To jedyne miejsce, które kasuje ciasteczko poza `/konto/wyloguj`. W obwodzie `CurrentUser` przy każdym utworzeniu kontekstu przez `UserDbContextFactory` czyta `status` i `must_change_password` z bazy i przy niepowodzeniu rzuca `AccountInactiveException` lub `PasswordChangeRequiredException`; `Shared/MainLayout` (na `EodShell`) łapie je i robi `NavigateTo` z `forceLoad` na `/konto/logowanie?powod=<stan>` lub `/konto/zmiana-hasla`, a walidator ciasteczka kończy sesję na tym żądaniu. `RevalidatingServerAuthenticationStateProvider` sprawdza co 1 minutę security stamp i `status`, żeby zamknąć bezczynne obwody. epic-administracja-kont-i-pomoc tylko zmienia `status`, hasło i security stamp przez `Accounts/AccountAdmin`; nie dotyka logowania ani `CurrentUser`.
 
 ### AD-18 — Usuwanie i odrzucanie Konta
 
@@ -172,7 +175,7 @@ Strzałka = „może zależeć od”. `MonthReport` i `Domain/` nie zależą od 
 
 - **Binds:** R24, R28, R29, R30, NFR-2, NFR-9
 - **Prevents:** wdrożeniom poza potokiem, niesprawdzonym zmianom na `main`, rozjazdowi plików serwera i rollbackowi na niezgodnym schemacie.
-- **Rule:** GitHub Actions. Workflow PR: `dotnet build`, `dotnet test` (z Testcontainers na `ubuntu-latest`), `dotnet ef migrations has-pending-model-changes` i kontrola migracji (AD-21); ochrona `main` wymaga ich przejścia i aktualności gałęzi względem `main`. Workflow po merge do `main`: obraz z `mcr.microsoft.com/dotnet/aspnet:10.0` (wariant z ICU i tzdata, nie chiseled) do publicznego GHCR z tagiem pełnego skrótu commita (logowanie `GITHUB_TOKEN`, `packages: write`); potem kopiuje na Droplet `deploy/compose.yml` i `deploy/Caddyfile` z tego commita, ustawia `APP_IMAGE_TAG` w `.env`, uruchamia `docker compose pull && docker compose up -d` i czeka do 60 s na `GET /health` (sprawdza też bazę); błąd kończy workflow bez automatycznego powrotu. Rollback: ten sam krok wdrożenia uruchamiany ręcznie (`workflow_dispatch`) z tagiem wcześniejszego obrazu, z plikami `deploy/` z commita tego tagu. Jedyne ręczne kroki na serwerze i w GitHubie (przygotowanie Dropletu, `.env`, rola `rejestr_ro`, jednorazowe przełączenie pakietu GHCR na publiczny) opisuje `docs/admin/`.
+- **Rule:** GitHub Actions. Workflow PR: `dotnet build`, `dotnet test` (z Testcontainers na `ubuntu-latest`), `dotnet ef migrations has-pending-model-changes` i kontrola migracji (AD-21); ochrona `main` wymaga ich przejścia i aktualności gałęzi względem `main`. Workflow po merge do `main`: obraz z `mcr.microsoft.com/dotnet/aspnet:10.0` (wariant z ICU i tzdata, nie chiseled) do prywatnego GHCR z tagiem pełnego skrótu commita (logowanie `GITHUB_TOKEN`, `packages: write`); Droplet pobiera go po `docker login ghcr.io` tokenem `read:packages` (AD-13); potem kopiuje na Droplet `deploy/compose.yml` i `deploy/Caddyfile` z tego commita, ustawia `APP_IMAGE_TAG` w `.env`, uruchamia `docker compose pull && docker compose up -d` i czeka do 60 s na `GET /health` (sprawdza też bazę); błąd kończy workflow bez automatycznego powrotu. Rollback: ten sam krok wdrożenia uruchamiany ręcznie (`workflow_dispatch`) z tagiem wcześniejszego obrazu, z plikami `deploy/` z commita tego tagu. Jedyne ręczne kroki na serwerze i w GitHubie (przygotowanie Dropletu, `.env`, rola `rejestr_ro`, logowanie Dropletu do prywatnego GHCR, sekret z tokenem odczytu eod-ui) opisuje `docs/admin/`.
 
 ### AD-21 — Start i migracje
 
@@ -184,7 +187,13 @@ Strzałka = „może zależeć od”. `MonthReport` i `Domain/` nie zależą od 
 
 - **Binds:** R26
 - **Prevents:** różnym sposobom pisania, łączenia i chronienia pomocy w każdym epiku.
-- **Rule:** jedna trasa `/pomoc/{temat}` w `Features/Pomoc/`, oznaczona `[AllowAnonymous]`; o dostępie decyduje sam komponent według `HelpTopics` (klucz, tytuł, komponent treści, dostęp: Anonim, Zalogowany lub Administrator), a brak dostępu daje ten sam widok co `/konto/brak-dostepu`. `HelpTopics` to jedyna lista tematów; spis `/pomoc` generuje się z niej; zakaz osobnych `@page "/pomoc/..."`. Klucz tematu to segment trasy ekranu w kebab-case (`projekty`, `typy-pracy`, `wpisy-nowy`, `wpisy`, `miesiac`, `eksport`, `ustawienia-konta`, `uzytkownicy`, `logowanie`, `rejestracja`, `zmiana-hasla`, `administracja`). Treść tematu to komponent Razor bez Markdowna i bibliotek. Ekran deklaruje temat w `Shared/PageHeader` (AD-11), strona `/konto/...` w `AccountLayout`. Tematy anonimowe renderują się w `AccountLayout`, pozostałe w `MainLayout`. Historia zmieniająca ekran aktualizuje jego temat w tej samej zmianie.
+- **Rule:** jedna trasa `/pomoc/{temat}` w `Features/Pomoc/`, oznaczona `[AllowAnonymous]`; o dostępie decyduje sam komponent według `HelpTopics` (klucz, tytuł, komponent treści, dostęp: Anonim, Zalogowany lub Administrator), a brak dostępu daje ten sam widok co `/konto/brak-dostepu`. `HelpTopics` to jedyna lista tematów; spis `/pomoc` generuje się z niej; zakaz osobnych `@page "/pomoc/..."`. Klucz tematu to segment trasy ekranu w kebab-case (`projekty`, `typy-pracy`, `wpisy-nowy`, `wpisy`, `miesiac`, `eksport`, `ustawienia-konta`, `uzytkownicy`, `logowanie`, `rejestracja`, `zmiana-hasla`, `administracja`). Treść tematu to komponent Razor bez Markdowna i bibliotek. Ekran deklaruje temat komponentem `Shared/PageHelp` (klucz) w treści `EodPage`; `PageHelp` przekazuje temat przez `SectionContent` do `SectionOutlet` przycisku `?` w belce `EodShell` (bez usługi stanu; AD-11); strona `/konto/...` deklaruje temat w `AccountLayout`. Tematy anonimowe renderują się w `AccountLayout`, pozostałe w `MainLayout`. Historia zmieniająca ekran aktualizuje jego temat w tej samej zmianie.
+
+### AD-23 — Kontrakt zmian we wzorcu eod-ui
+
+- **Binds:** R8, R9, R10, R16, R17, R26, NFR-1
+- **Prevents:** dwóm epikom wymyślającym różne API tego samego rozszerzenia wzorca i ekranom obchodzącym brak parametru w aplikacji.
+- **Rule:** zanim ekran Rejestru z nich skorzysta, eod-ui dostaje na `main` (osobne PR we wzorcu, epik 7) dokładnie te zmiany, każda z domyślnym zachowaniem wzorca bez zmian: (1) `EodReport.ShowExport` (domyślnie `true`; Rejestr zawsze `false`); (2) `ReportColumn.Format` — funkcja wartość → tekst do wyświetlania, filtra i grupy, przy sortowaniu po surowej wartości; (3) `EodReport.PreserveRowOrder` — bez sortowania User zachowana kolejność wejścia, także wewnątrz grup; (4) `EodReport.GroupSummary` (funkcja: poziom i surowa wartość klucza grupy → tekst podsumowania) i `EodReport.FooterSummary` (tekst stopki) podawane przez ekran zamiast `Definition.Total`; (5) `EodReport.LockedLayout` — bez zmiany grupowania, sortowania i kolejności kolumn przez Usera, filtr wartości działa; (6) `UiMessages.ConfirmAsync` z opcją bez skrótu przycisku głównego i z fokusem na drugim przycisku; (7) nazwa aplikacji w `EodShell` i tytule karty przez parametr lub opcję `AddEodPlatformUI` zamiast stałego „MOJE EOD”; (8) skrypt skali `EodHead` z pliku zamiast inline (AD-12); (9) obejście błędu Fluent UI 5.0.1: combobox z wartością ustawioną przy pierwszym renderze pokazuje jej tekst; (10) Fluent UI 5.0.1 w `Directory.Packages.props`. Nazwy parametrów ustala PR we wzorcu i aktualizuje UI_SPEC w tym samym commicie; ekran Rejestru używa ich dopiero po podbiciu podmodułu do commitu z `main` eod-ui. Nowa potrzeba ekranu względem wzorca to nowy punkt tej listy (aktualizacja AD-23), nie obejście w aplikacji.
 
 ## Consistency Conventions
 
@@ -194,9 +203,9 @@ Strzałka = „może zależeć od”. `MonthReport` i `Domain/` nie zależą od 
 | Tabele i kolumny | `snake_case` przez `EFCore.NamingConventions`, tabele Identity nazwane jawnie (AD-7); klucze `id` typu `int`; znaczniki czasu `timestamptz` w UTC |
 | Trasy | `/miesiac/{rok}/{miesiac}`, `/wpisy`, `/wpisy/nowy`, `/eksport`, `/projekty`, `/typy-pracy`, `/ustawienia-konta`, `/uzytkownicy`, `/pomoc/{temat}`, `/konto/logowanie`, `/konto/rejestracja`, `/konto/wyloguj`, `/konto/zmiana-hasla`, `/konto/brak-dostepu`, `/zestawienie/{rok}/{miesiac}`, `/health` |
 | Autoryzacja | jeden mechanizm: `[Authorize]` w głównym `_Imports.razor` stron i `RequireAuthorization()` na każdym endpoincie poza `/health`; bez `FallbackPolicy`. `[AllowAnonymous]` tylko `/konto/logowanie`, `/konto/rejestracja`, `/konto/brak-dostepu`, `/pomoc/{temat}` (dostęp per temat, AD-22), strona „nie znaleziono” (`/not-found`) i `/Error` oraz `/health`. `/uzytkownicy` z rolą Administrator. `<NotAuthorized>` w `Routes`: anonim → przekierowanie z `forceLoad` na logowanie z `ReturnUrl`; zalogowany bez roli → widok brak dostępu |
-| Błędy | nieobsłużony wyjątek w ekranie → `Notify` z ogólnym komunikatem i wpis w logu; wyjątki stanu Konta obsługuje `MainLayout` (AD-17) |
+| Błędy | nieobsłużony wyjątek w ekranie → pasek błędu `UiMessages` z ogólnym komunikatem i wpis w logu; wyjątki stanu Konta obsługuje `MainLayout` (AD-17) |
 | Logi | domyślny `ILogger` .NET do konsoli (na serwerze `docker compose logs`, rotacja AD-19); bez haseł i treści Wpisów |
-| Testy | `MonthReport` i `Czas` w xUnit bez bazy; ekrany w bUnit; zapis do bazy przez Testcontainers (`postgres:18`, schemat przez `Migrate()`, nie `EnsureCreated()`); testy oddzielenia danych i usuwania Konta dla dwóch Userów (AD-16, AD-18) |
+| Testy | `MonthReport` i `Czas` w xUnit bez bazy; ekrany w bUnit (z usługami `AddEodPlatformUI`); zapis do bazy przez Testcontainers (`postgres:18`, schemat przez `Migrate()`, nie `EnsureCreated()`); testy oddzielenia danych i usuwania Konta dla dwóch Userów (AD-16, AD-18) |
 
 ## Stack
 
@@ -207,7 +216,8 @@ Strzałka = „może zależeć od”. `MonthReport` i `Domain/` nie zależą od 
 | Microsoft.AspNetCore.Identity.EntityFrameworkCore | 10.0.14 |
 | Microsoft.AspNetCore.DataProtection.EntityFrameworkCore | 10.0.14 |
 | Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore | 10.0.14 |
-| Microsoft.FluentUI.AspNetCore.Components | 5.0.1 |
+| Microsoft.FluentUI.AspNetCore.Components (+ .Icons) | 5.0.1 (także w eod-ui) |
+| eod-ui (`Eod.Platform.UI`, podmoduł `ui/`) | commit przypięty w podmodule; stan 02.11.2026: `8e66aea` (Fluent 5.0.0, do podbicia na 5.0.1 we wzorcu) |
 | FluentValidation | 12.2.0 |
 | Blazilla | 2.4.2 |
 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 |
@@ -219,7 +229,7 @@ Strzałka = „może zależeć od”. `MonthReport` i `Domain/` nie zależą od 
 | PostgreSQL (obraz Docker) | 18 (18.6) |
 | Caddy (obraz Docker) | 2.11 (2.11.7) |
 | Obraz aplikacji | mcr.microsoft.com/dotnet/aspnet:10.0 (Ubuntu 24.04, ICU i tzdata) |
-| GitHub Actions | actions/checkout v7, actions/setup-dotnet v6, docker/login-action v4, docker/setup-buildx-action v4, docker/build-push-action v7, appleboy/ssh-action v1.2.5 |
+| GitHub Actions | actions/checkout v7 (z `submodules: recursive`), actions/setup-dotnet v6, docker/login-action v4, docker/setup-buildx-action v4, docker/build-push-action v7, appleboy/ssh-action v1.2.5 |
 | Docker Desktop (Windows, lokalnie) | zainstalowany |
 
 ## Structural Seed
@@ -263,6 +273,7 @@ deploy/compose.yml           # serwer: caddy, app, db
 deploy/Caddyfile
 .github/workflows/           # pr.yml, deploy.yml (merge i rollback)
 docs/admin/                  # instrukcja administratora (Markdown)
+ui/                          # podmoduł eod-ui: docs/UI_SPEC.md, src/Eod.Platform.UI
 src/RejestrCzasu/
   Components/                # App.razor, Routes.razor, Pages/Error, Pages/NotFound
   Accounts/                  # strony /konto, AccountLayout, CurrentUser, AccountAdmin, AccountStats, DeleteAccount
@@ -270,7 +281,7 @@ src/RejestrCzasu/
   Data/                      # AppDbContext, IUserOwned, UserDbContextFactory, encje, migracje, DbErrors, DictionaryOptions
   Reporting/                 # MonthReport, MonthEntriesQuery
   Features/                  # Wpisy, Miesiac, ListaWpisow, Zestawienie, Projekty, TypyPracy, UstawieniaKonta, Uzytkownicy, Pomoc
-  Shared/                    # ReportGrid<T>, EntryForm, MainLayout, PageHeader, DownloadLink, Notify, Confirm, EntryDateMemory
+  Shared/                    # EntryForm, MainLayout (EodShell), PageHelp, DownloadLink, EntryDateMemory
   Options/                   # DatabaseOptions, FirstAdminOptions
   Startup/                   # sprawdzenie bazy, migracje, pierwszy Administrator
   SecurityHeaders.cs         # CSP
@@ -287,12 +298,12 @@ tests/RejestrCzasu.Tests/
 | R9–R10 Widok miesiąca | `Features/Miesiac`, `Reporting/` | AD-5, AD-6, AD-9, AD-16 |
 | R11–R13 Zestawienie | `Features/Zestawienie`, `Reporting/` | AD-5, AD-6, AD-13, AD-14 |
 | R15 Konfiguracja | `appsettings*.json`, `.env`, `deploy/` | AD-2, AD-13, AD-19 |
-| R17 Filtry w siatce | `Shared/ReportGrid` | AD-9 |
+| R17 Filtry w siatce | `EodReport` (eod-ui) | AD-9 |
 | R18–R20 Rejestracja, logowanie, pierwszy Administrator | `Accounts/`, `Startup/` | AD-7, AD-15, AD-17, AD-21 |
 | R21–R23 Użytkownicy, hasło, usuwanie | `Features/Uzytkownicy`, `Accounts/` | AD-4, AD-15, AD-17, AD-18 |
 | R24 Oddzielenie danych | `Data/`, `Accounts/CurrentUser` | AD-7, AD-16, AD-20 |
 | R25 Ustawienia konta | `Features/UstawieniaKonta`, `/konto/zmiana-hasla` | AD-8, AD-13, AD-15 |
-| R26 Pomoc | `Features/Pomoc`, `Shared/PageHeader` | AD-11, AD-22 |
+| R26 Pomoc | `Features/Pomoc`, `Shared/PageHelp` | AD-11, AD-22 |
 | R27 Instrukcja administratora | `docs/admin/` | AD-19, AD-20 |
 | R28–R30 CI, wdrożenie, rollback | `.github/workflows/`, `deploy/`, `Dockerfile` | AD-20, AD-21 |
 | R31 Zerwane połączenie | `Shared/MainLayout` | AD-11 |
@@ -300,8 +311,9 @@ tests/RejestrCzasu.Tests/
 
 ## Deferred
 
-- **Grupowanie sterowane przez użytkownika, sortowanie wielokolumnowe, wybór kolumn, edycja inline w `ReportGrid`** — odłożone przez Autora; v1 to filtr wartości, stałe grupowanie i ikony akcji.
-- **Wygląd poszczególnych ekranów** (kolumny, rozmieszczenie pól, treść stron pomocy) — decyduje historia; spinają je AD-9, AD-10, AD-11, AD-22.
+- **Trwały zapis układu użytkownika `EodReport`** (kolumny, sortowanie, grupowanie między sesjami) — poza wzorcem i v1; układ żyje do odświeżenia strony. Edycja inline w tabeli — poza v1.
+- **Ekrany wzorca EOD i Syncfusion** (procesy, sprawy, terminarz, biblioteka dokumentów, schemat organizacyjny) — poza Rejestrem.
+- **Wygląd poszczególnych ekranów** (kolumny, rozmieszczenie pól, treść stron pomocy) — decyduje historia; spinają je AD-9, AD-10, AD-11, AD-22 i `ui/docs/UI_SPEC.md`.
 - **Szczegóły Testcontainers** (współdzielony kontener, czyszczenie danych) — ustalone w historii 1.1; nowe testy idą tym wzorcem.
 - **Rozmiar Dropletu i częstotliwość kopii (tygodniowe czy dzienne)** — decyzja Autora przy zakładaniu serwera, zapisana w `docs/admin/`; architektura wymaga tylko włączonych kopii i bazy na dysku Dropletu.
 - **Ćwiczenie odtworzenia z Kopii serwera** — na tymczasowym Droplecie w epic-administracja-kont-i-pomoc, procedura w `docs/admin/`.
