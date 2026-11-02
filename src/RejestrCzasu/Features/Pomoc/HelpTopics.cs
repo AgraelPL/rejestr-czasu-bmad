@@ -41,12 +41,16 @@ public static class HelpTopics
     public const string Start = "start";
     public const string Projekty = "projekty";
     public const string TypyPracy = "typy-pracy";
+    public const string WpisyNowy = "wpisy-nowy";
+    public const string Wpisy = "wpisy";
 
     public static IReadOnlyList<HelpTopic> All { get; } =
     [
         new(Start, "Strona startowa i menu", typeof(StartHelp), HelpAccess.LoggedIn),
         new(Projekty, "Projekty", typeof(ProjektyHelp), HelpAccess.LoggedIn),
         new(TypyPracy, "Typy pracy", typeof(TypyPracyHelp), HelpAccess.LoggedIn),
+        new(WpisyNowy, "Nowy wpis", typeof(WpisyNowyHelp), HelpAccess.LoggedIn),
+        new(Wpisy, "Lista wpisów", typeof(WpisyHelp), HelpAccess.LoggedIn),
     ];
 
     /// <summary>The topic with the key (case-insensitive), or <c>null</c>.</summary>

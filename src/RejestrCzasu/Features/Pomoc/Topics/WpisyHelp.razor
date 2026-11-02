@@ -1,0 +1,55 @@
+@* Help topic "wpisy" (AD-22, R26): the Lista wpisów screen (menu Lista wpisów). *@
+<p>
+    Ekran <strong>Lista wpisów</strong> pokazuje Twoje Wpisy z wybranego zakresu dat, Projektu i Typu pracy oraz ich
+    liczbę i sumę Czasu. Wpisy widzisz tylko Ty.
+</p>
+
+<h2>Filtry</h2>
+<ul>
+    <li><strong>Od</strong> i <strong>Do</strong> — zakres dat, oba dni włącznie. Po otwarciu ekranu to pierwszy
+        i ostatni dzień bieżącego Miesiąca (według czasu polskiego). Puste pole oznacza brak tej granicy, np. puste
+        <strong>Od</strong> pokazuje wszystkie Wpisy do daty <strong>Do</strong>. Gdy data <strong>Od</strong> jest
+        późniejsza niż <strong>Do</strong>, lista jest pusta, a przy filtrach pojawia się komunikat
+        „Data „Od” jest późniejsza niż „Do”.”.</li>
+    <li><strong>Projekt</strong> i <strong>Typ pracy</strong> — <strong>Wszystkie</strong> albo jedna pozycja Twojego
+        Słownika. Na liście są także nieaktywne Projekty i Typy pracy, z dopiskiem „(nieaktywny)”, więc odnajdziesz
+        ich Wpisy.</li>
+</ul>
+<p>Każda zmiana filtra od razu wczytuje listę ponownie.</p>
+
+<h2>Lista</h2>
+<p>
+    Kolumny: <strong>Data</strong>, <strong>Dzień</strong> (dzień tygodnia), <strong>Projekt</strong> (kod),
+    <strong>Typ pracy</strong>, <strong>Opis</strong> i <strong>Czas</strong> (jak w Jirze, np. 1h 30m). Wpisy są
+    uporządkowane od najnowszej daty, a w obrębie jednego dnia ostatnio zapisany Wpis jest wyżej.
+</p>
+
+<h2>Edycja, kopia i usuwanie Wpisu</h2>
+<p>Na końcu każdego wiersza są trzy ikony:</p>
+<ul>
+    <li><strong>Edytuj</strong> — otwiera okno „Edycja Wpisu” z datą, Projektem, Typem pracy, opisem i Czasem Wpisu.
+        Możesz zmienić każde pole, także we Wpisach z poprzednich Miesięcy. Nieaktywny Projekt lub Typ pracy tego Wpisu
+        zostaje na liście wyboru.</li>
+    <li><strong>Kopiuj</strong> — otwiera okno „Kopia Wpisu” z Projektem, Typem pracy, opisem i Czasem kopiowanego Wpisu.
+        Data to ta, którą ostatnio ustawiłeś na ekranie <strong>Nowy wpis</strong>; jeśli nie otwierałeś go od
+        zalogowania — dzisiejsza (według czasu polskiego). Gdy Projekt lub Typ pracy oryginału jest nieaktywny, to pole
+        jest puste i trzeba je wybrać. Kopia zapisuje się jako nowy Wpis dopiero po <strong>Zapisz</strong>.</li>
+    <li><strong>Usuń</strong> — usuwa Wpis po potwierdzeniu w oknie z jego datą, Projektem, Czasem i opisem.</li>
+</ul>
+<p>
+    W oknie Edycji i Kopii <strong>Zapisz</strong> lub Enter (w polach Data, Opis i Czas) zapisuje Wpis i zamyka okno;
+    <strong>Anuluj</strong> lub Escape zamyka okno bez zapisu. Po każdej zmianie lista jest wczytywana ponownie. Gdy Wpis
+    został w międzyczasie usunięty (np. w innym oknie), zobaczysz komunikat, a lista wczyta się ponownie.
+</p>
+
+<h2>Liczba i suma Czasu</h2>
+<p>
+    Pod listą widać „Wpisy: …, suma Czasu: …” dla filtrów Od, Do, Projekt i Typ pracy. Suma może przekroczyć 24 godziny
+    (np. 48h); bez Wpisów to „Wpisy: 0, suma Czasu: 0h”.
+</p>
+
+<h2>Filtr wartości w kolumnach</h2>
+<p>
+    W nagłówku każdej kolumny możesz odznaczyć wartości, których nie chcesz widzieć; licznik pozycji pod siatką pokazuje,
+    ile wierszy widać. Ten filtr tylko ukrywa wiersze — liczba Wpisów i suma Czasu pod listą zostają dla filtrów ekranu.
+</p>

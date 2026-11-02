@@ -93,7 +93,11 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// <see cref="CurrentUser"/> runs in circuit mode, so the User is per instance (<c>HttpContextAccessor</c> is a
     /// static AsyncLocal shared by all instances).
     /// </summary>
-    public UserDbContextFactory CreateLoggedInUserDbContextFactory(int userId)
+    public UserDbContextFactory CreateLoggedInUserDbContextFactory(int userId) =>
+        new(ContextFactory, CreateLoggedInCurrentUser(userId));
+
+    /// <summary><see cref="CurrentUser"/> of a logged-in User in circuit mode, as a screen gets it in the application.</summary>
+    public CurrentUser CreateLoggedInCurrentUser(int userId)
     {
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
             [new Claim(ClaimTypes.NameIdentifier, userId.ToString(CultureInfo.InvariantCulture))], "test"));
@@ -101,7 +105,7 @@ public sealed class PostgresFixture : IAsyncLifetime
         provider.SetAuthenticationState(Task.FromResult(new AuthenticationState(principal)));
         var currentUser = new CurrentUser(new HttpContextAccessor(), provider, ContextFactory);
         _ = new CurrentUserCircuitHandler(currentUser);
-        return new UserDbContextFactory(ContextFactory, currentUser);
+        return currentUser;
     }
 
     /// <summary>Creates an active Account with a fictional login and returns its id.</summary>

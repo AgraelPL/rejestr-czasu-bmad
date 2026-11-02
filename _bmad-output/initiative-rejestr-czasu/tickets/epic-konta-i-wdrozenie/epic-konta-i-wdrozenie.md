@@ -8,6 +8,7 @@ companions: []
 after: []
 refined: true
 risk: high
+status: done
 ---
 
 # Konta i wdrożenie
@@ -82,3 +83,4 @@ Autor rejestruje się i loguje w aplikacji uruchomionej lokalnie i z obrazu, a p
 - Decision (31.10.2026): rejestracja i pierwszy Administrator nie tworzą wiersza `account_settings` — powstaje leniwie w epic-miesiac-i-zestawienie (decyzja Autora w przeglądzie historii 4.2; sprzeczność AD-7/AD-21 z AD-16).
 - Decision (31.10.2026): repozytorium staje się publiczne zgodnie z prd NFR-2, bo GitHub Free nie egzekwuje ochrony `main` w repozytorium prywatnym, a R28 wymaga blokady scalenia (Autor, po przeglądzie historii 1). Zasada ręczna z `docs/admin/README.md` była tylko przejściowa i znika razem z ramką „nieegzekwowana”; historia 1 zamyka się po sprawdzeniu blokady na publicznym repozytorium.
 - Decision (01.11.2026): Autor odkłada wdrożenie na Droplet na koniec, po dostarczeniu funkcji z epików 1–3 i 5: migracja `Initial` zostaje otwarta do pierwszego wdrożenia (NFR-9), bez kosztów i obsługi serwera, zanim aplikacja jest użyteczna. Wdrożenie, rollback i sprawdzenia na serwerze przeszły do nowego epic-wdrozenie-na-serwer (epik 6), przed Miesiącem „na serio”. Historie 8 i 6 przeniesione jako 6.1 i 6.2 (`tickets.py move`), Refactor sweep (7) nie czeka już na nie; R29 i R30 przeszły do epiku 6.
+- Decision (01.11.2026): epik zamknięty — historie 4.1–4.5 i 4.7 zrobione (4.7 bez zmian kodu: brak otwartych uwag), 4.6 i 4.8 przeniesione do epic-wdrozenie-na-serwer; Done when sprawdzony lokalnie i testami (368 zielonych).

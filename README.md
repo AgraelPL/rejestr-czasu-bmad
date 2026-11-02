@@ -121,6 +121,15 @@ docker exec rejestr-czasu-db psql -U rejestr -d rejestr -c "WITH w AS (SELECT id
 Projektu). Usunięcie tego Typu pracy na ekranie Typy pracy pokaże wtedy liczbę Wpisów i propozycję dezaktywacji, a Typ
 pracy zostanie na liście.
 
+### Słowniki testowe
+
+Do ręcznych testów skrypt `docs/dev/seed-slowniki.sql` dodaje Konto 7 Projektów i 5 Typów pracy, w tym po jednym
+nieaktywnym (`OLD`, `Archiwalny`). Pomija kody i nazwy, które Konto już ma, więc można go powtarzać; zamień `<login>`:
+
+```powershell
+Get-Content docs/dev/seed-slowniki.sql | docker exec -i rejestr-czasu-db psql -U rejestr -d rejestr -v login=<login>
+```
+
 ## Obraz aplikacji (Docker)
 
 Na serwerze aplikacja działa jako obraz kontenera za Caddy (wdrożenie: historia 4.8). `Dockerfile` w katalogu głównym

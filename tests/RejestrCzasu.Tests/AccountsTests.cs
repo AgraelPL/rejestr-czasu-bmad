@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using RejestrCzasu.Accounts;
 using RejestrCzasu.Data;
+using RejestrCzasu.Shared;
 
 namespace RejestrCzasu.Tests;
 
@@ -252,6 +254,27 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal("/konto/logowanie", response.Headers.Location?.OriginalString);
         using var home = await app.Http.GetAsync("/", Ct);
         Assert.Equal(HttpStatusCode.Redirect, home.StatusCode);
+    }
+
+    [Fact]
+    public async Task Logout_ForgetsTheUsersDateOfNowyWpis_OnlyTheirs()
+    {
+        await using var app = new AppClient(postgres);
+        var userId = await app.CreateAccountAsync("zalogowany", Password, AccountStatus.Active);
+        using (var login = await app.LoginAsync("zalogowany", Password))
+        {
+            Assert.Equal(HttpStatusCode.Redirect, login.StatusCode);
+        }
+        var memory = app.Services.GetRequiredService<EntryDateMemory>();
+        memory.Remember(userId, new DateOnly(2026, 9, 3));
+        memory.Remember(userId + 1000, new DateOnly(2026, 9, 4));
+        var (_, fields) = await app.GetPageAsync(AccountEndpoints.ChangePasswordPath);
+
+        using var response = await app.Http.PostAsync(AccountEndpoints.LogoutPath, new FormUrlEncodedContent(fields), Ct);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Null(memory.Find(userId));
+        Assert.Equal(new DateOnly(2026, 9, 4), memory.Find(userId + 1000));
     }
 
     [Fact]

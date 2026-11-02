@@ -36,3 +36,4 @@
   - `ReportGrid` sam renderuje ekran, do którego należy akcja wiersza, i ignoruje kliknięcie w trakcie trwającej akcji; obejście `ThenRender` usunięte z Projektów i Typów pracy.
   - AD-11 zaktualizowane: `Confirm` na `ShowDialogAsync` z `ConfirmDialog`; komunikaty `Notify` znikają po 5 s, w pływającym panelu w prawym górnym rogu.
   - Pakiet ikon: `Microsoft.FluentUI.AspNetCore.Components.Icons` ma własną numerację i deklaruje zależność minimalną od rdzenia 4.14.x (także najnowsza 5.0.1), więc z Components 5.0.1 jest zgodny; podniesiony do 5.0.1, ikony renderują się w testach i w przeglądarce.
+

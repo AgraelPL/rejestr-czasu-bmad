@@ -1,0 +1,48 @@
+@* Help topic "wpisy-nowy" (AD-22, R26): the Nowy wpis screen (przycisk Nowy wpis w menu). *@
+<p>
+    Ekran <strong>Nowy wpis</strong> służy do Sesji wpisywania: przenosisz notatki z kilku dni do kolejnych Wpisów,
+    każdy samą klawiaturą. Po zapisaniu Wpisu formularz zostaje otwarty, więc od razu wpisujesz następny.
+</p>
+
+<h2>Pola</h2>
+<ul>
+    <li><strong>Data</strong> — przy każdym otwarciu ekranu dzisiejsza (według czasu polskiego). Datę wpiszesz
+        z klawiatury: dzień, miesiąc i rok, strzałki w górę i w dół zmieniają zaznaczoną część. Obok pola widać
+        dzień tygodnia.</li>
+    <li><strong>Projekt</strong> — lista Twoich aktywnych Projektów w postaci „KOD — nazwa”. Wpisz początek kodu,
+        a lista wskaże pierwszy pasujący Projekt.</li>
+    <li><strong>Typ pracy</strong> — lista Twoich aktywnych Typów pracy. Wpisz początek nazwy.</li>
+    <li><strong>Opis</strong> — wymagany; spacje na początku i końcu są pomijane.</li>
+    <li><strong>Czas</strong> — tak jak w Jirze: godziny z literą <strong>h</strong> i minuty z literą
+        <strong>m</strong>, np. <strong>1h 30m</strong>, <strong>1h30m</strong>, <strong>2h</strong>,
+        <strong>45m</strong> albo <strong>90m</strong>. Możesz też wpisać godziny z ułamkiem (<strong>1,5h</strong>
+        lub <strong>1.5h</strong>) albo zapis z dwukropkiem (<strong>1:30</strong>). W zapisie z literami h i m wielkość
+        liter i spacje nie mają znaczenia. Czas musi mieć od 15m do 24h, w krokach co 15 minut. Czas niezgodny z tą regułą, np. 10m, 1h 75m
+        albo 1,5 bez litery h, nie zostanie zapisany, a przy polu pojawi się komunikat.</li>
+</ul>
+<p>
+    Nieaktywnych Projektów i Typów pracy nie ma na listach. Suma Czasu jednego dnia może przekroczyć 24 godziny —
+    aplikacja tego nie blokuje.
+</p>
+
+<h2>Klawiatura</h2>
+<ul>
+    <li><strong>Tab</strong> przechodzi do następnego pola w kolejności: Data, Projekt, Typ pracy, Opis, Czas;
+        <strong>Shift+Tab</strong> wraca do poprzedniego.</li>
+    <li>Na liście Projektu lub Typu pracy <strong>Tab</strong> albo <strong>Enter</strong> wybiera wskazaną pozycję.
+        Enter na otwartej liście tylko wybiera pozycję, nie zapisuje Wpisu.</li>
+    <li><strong>Enter</strong> w polu Data, Opis lub Czas zapisuje Wpis, bez dodatkowego pytania. Przycisk
+        <strong>Zapisz</strong> robi to samo.</li>
+</ul>
+
+<h2>Po zapisaniu</h2>
+<p>
+    U góry pojawia się krótki komunikat z datą, kodem Projektu i Czasem zapisanego Wpisu (np. „Zapisano Wpis: 03.09.2026, RDZ, 1h 30m.”). Data zostaje bez zmian,
+    pola Projekt, Typ pracy, Opis i Czas są puste, a kursor stoi w polu Projekt — możesz od razu wpisywać kolejny
+    Wpis z tego samego dnia. Wpis z innego dnia zaczynasz od zmiany daty (Shift+Tab z pola Projekt).
+</p>
+<p>
+    Jeśli wybrany Projekt lub Typ pracy został w międzyczasie usunięty (np. w innym oknie), zobaczysz komunikat
+    „Wybrany Projekt lub Typ pracy już nie istnieje.”. Wpis nie zostanie zapisany, wpisane wartości zostają,
+    a listy wyboru wczytają się ponownie.
+</p>

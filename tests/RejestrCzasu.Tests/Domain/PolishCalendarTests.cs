@@ -1,4 +1,5 @@
 using RejestrCzasu.Domain;
+using RejestrCzasu.Tests.Shared;
 
 namespace RejestrCzasu.Tests.Domain;
 
@@ -56,10 +57,5 @@ public sealed class PolishCalendarTests
     public void ToPolishTime_RejectsLocalTime()
     {
         Assert.Throws<ArgumentException>(() => PolishCalendar.ToPolishTime(new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Local)));
-    }
-
-    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }
