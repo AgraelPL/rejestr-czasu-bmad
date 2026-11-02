@@ -30,7 +30,7 @@ Autor i znajomy pracują na serwerze pod subdomeną z HTTPS, merge Autora trafia
 ## Constraints
 
 - prd NFR-1: ruch tylko przez HTTPS; połączenia infrastruktury (certyfikaty, rejestr obrazów) dozwolone.
-- prd NFR-2: repozytorium publiczne; baza, sekrety i konfiguracja z hasłami nie trafiają do gita, obrazu aplikacji ani logów potoku; prawdziwe dane wrześniowe ani w repozytorium, ani na serwerze.
+- prd NFR-2: repozytoria aplikacji i wzorca UI eod-ui prywatne (zmiana Autora 02.11.2026, plan GitHub płatny); baza, sekrety i konfiguracja z hasłami nie trafiają do gita, obrazu aplikacji ani logów potoku; prawdziwe dane wrześniowe ani w repozytorium, ani na serwerze.
 - prd NFR-8: baza niedostępna z internetu; dostęp administracyjny tylko szyfrowanym kanałem z kluczem, do bazy na co dzień tylko do odczytu; wartości według AD-15.
 - prd NFR-9: od pierwszego wdrożenia tylko migracje dodające, stosowane przy starcie.
 - prd SM-4, SM-C1: zmiany na serwerze tylko przez potok, poza jednorazowym przygotowaniem serwera i ćwiczeniami z instrukcji administratora.
@@ -64,3 +64,4 @@ Autor i znajomy pracują na serwerze pod subdomeną z HTTPS, merge Autora trafia
 - Decision (01.11.2026): tracer bullet to „Wdrożenie na Droplet”; potem rollback, na końcu zbiorcza weryfikacja z próbą SM-5 i odtworzeniem z Kopii serwera.
 - Waits on epic-konta-i-wdrozenie because: obraz aplikacji gotowy do pracy za proxy, workflow PR, pierwszy Administrator z sekretu.
 - Waits on epic-szkielet-i-slowniki, epic-wpisy-i-lista, epic-miesiac-i-zestawienie, epic-administracja-kont-i-pomoc because: zbiorcza weryfikacja na serwerze i próba SM-5 potrzebują ich funkcji.
+- Decision (02.11.2026): oba repozytoria prywatne (Autor), obraz w prywatnym GHCR, Droplet loguje się do GHCR tokenem `read:packages`, CI pobiera prywatny podmoduł eod-ui tokenem odczytu (AD-1, AD-13, AD-20). Plan historii 6.1 (ready-for-dev) jest przez to nieaktualny: krok „przełączenie pakietu GHCR na publiczny”, checkout bez podmodułów i `Dockerfile` bez `ui/` — przed budową 6.1 plan do przeplanowania.

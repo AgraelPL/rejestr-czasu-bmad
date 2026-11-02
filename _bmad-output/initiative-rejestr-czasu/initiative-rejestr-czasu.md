@@ -60,15 +60,15 @@ Autor wysyła Odbiorcy miesięczne Zestawienie prosto z eksportu na serwerze, pr
 ## Constraints
 
 - prd NFR-1: aplikacja nie nawiązuje połączeń wychodzących (telemetria, CDN, zewnętrzne czcionki); zasoby serwuje sama, a CSP blokuje inne źródła; ruch tylko przez HTTPS; połączenia infrastruktury (certyfikaty, rejestr obrazów) dozwolone.
-- prd NFR-2, SM-1: repozytorium publiczne; baza, źródłowy xlsx, sekrety i konfiguracja z hasłami nie trafiają do gita, obrazu aplikacji ani logów potoku; testy, przykłady i dane startowe zanonimizowane; prawdziwe dane wrześniowe ani w repozytorium, ani na serwerze. Kody Projektów i sumy z września mogą być w dokumentach planistycznych.
+- prd NFR-2, SM-1: repozytoria aplikacji i wzorca UI eod-ui są prywatne (plan GitHub płatny, zmiana Autora 02.11.2026); baza, źródłowy xlsx, sekrety i konfiguracja z hasłami nie trafiają do gita, obrazu aplikacji ani logów potoku; testy, przykłady i dane startowe zanonimizowane; prawdziwe dane wrześniowe ani w repozytorium, ani na serwerze. Kody Projektów i sumy z września mogą być w dokumentach planistycznych.
 - prd NFR-4: aktualna przeglądarka na komputerze, bez układu pod telefon; interfejs tylko po polsku; dostęp pod subdomeną Autora; środowiskiem testowym jest lokalne uruchomienie, bez środowiska przedprodukcyjnego.
 - prd NFR-5: Czas liczony w minutach całkowitych; konwersja na godziny dziesiętne dopiero w Zestawieniu.
 - prd NFR-6: belka górna z Pomocą `?`, Ustawieniami konta i Wyloguj; menu: Nowy wpis; Rejestr (Widok miesiąca, Lista wpisów, Eksport); Słowniki (Projekty, Typy pracy); Administracja (Użytkownicy) tylko dla Administratora.
 - prd NFR-7: „dzisiaj” i wszystkie daty w strefie Europe/Warsaw, niezależnie od zegara serwera.
 - prd NFR-8: limity prób rejestracji i logowania; baza niedostępna z internetu; dostęp administracyjny do serwera i bazy tylko szyfrowanym kanałem z kluczem, do bazy na co dzień tylko do odczytu; progi, reguły haseł i czas sesji to bezpieczne wartości domyślne z architektury.
 - prd NFR-9, addendum: migracja `Initial` zostaje przepisana z `UserId` przed pierwszym wdrożeniem na serwer; od tego wdrożenia zmiany schematu tylko dodają i są stosowane przy starcie.
-- architecture AD-1, prd addendum: .NET 10, Blazor Web App Interactive Server, Fluent UI Blazor 5, EF Core 10, PostgreSQL 18 w Dockerze; lokalnie `docker compose up -d`, potem `dotnet run`; serwer, CI/CD i kopie według addendum PRD.
-- architecture: kręgosłup `architecture-rejestr-czasu.md` (AD-1…AD-22, wersja 31.10.2026; AD-3 wycofane) wiąże każdy epik.
+- architecture AD-1, prd addendum: .NET 10, Blazor Web App Interactive Server, Fluent UI Blazor 5 z wzorcem UI eod-ui (podmoduł `ui/`, `Eod.Platform.UI`), EF Core 10, PostgreSQL 18 w Dockerze; lokalnie `docker compose up -d`, potem `dotnet run`; serwer, CI/CD i kopie według addendum PRD.
+- architecture: kręgosłup `architecture-rejestr-czasu.md` (AD-1…AD-23, aktualizacja 02.11.2026: wzorzec eod-ui; AD-3 wycofane) wiąże każdy epik.
 - prd SM-4, SM-C1: cały kod piszą agenci BMad, a zmiany na serwerze idą tylko przez potok wdrożenia (wyjątek: jednorazowe przygotowanie serwera i ćwiczenia z instrukcji administratora); przy zderzeniu z terminem wygrywa metoda.
 - prd SM-C2: nic poza zakresem ustalonym 31.10.2026 nie wchodzi przed Testem wrześniowym.
 - prd §3: terminy z `glossary.md` obowiązują dosłownie.
