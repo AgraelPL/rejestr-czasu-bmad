@@ -60,14 +60,14 @@ Autor wysyła Odbiorcy miesięczne Zestawienie prosto z eksportu na serwerze, pr
 ## Constraints
 
 - prd NFR-1: aplikacja nie nawiązuje połączeń wychodzących (telemetria, CDN, zewnętrzne czcionki); zasoby serwuje sama, a CSP blokuje inne źródła; ruch tylko przez HTTPS; połączenia infrastruktury (certyfikaty, rejestr obrazów) dozwolone.
-- prd NFR-2, SM-1: repozytoria aplikacji i wzorca UI eod-ui są prywatne (plan GitHub płatny, zmiana Autora 02.11.2026); baza, źródłowy xlsx, sekrety i konfiguracja z hasłami nie trafiają do gita, obrazu aplikacji ani logów potoku; testy, przykłady i dane startowe zanonimizowane; prawdziwe dane wrześniowe ani w repozytorium, ani na serwerze. Kody Projektów i sumy z września mogą być w dokumentach planistycznych.
+- prd NFR-2, SM-1: repozytorium aplikacji jest prywatne (plan GitHub płatny, zmiana Autora 02.11.2026); baza, źródłowy xlsx, sekrety i konfiguracja z hasłami nie trafiają do gita, obrazu aplikacji ani logów potoku; testy, przykłady i dane startowe zanonimizowane; prawdziwe dane wrześniowe ani w repozytorium, ani na serwerze. Kody Projektów i sumy z września mogą być w dokumentach planistycznych.
 - prd NFR-4: aktualna przeglądarka na komputerze, bez układu pod telefon; interfejs tylko po polsku; dostęp pod subdomeną Autora; środowiskiem testowym jest lokalne uruchomienie, bez środowiska przedprodukcyjnego.
 - prd NFR-5: Czas liczony w minutach całkowitych; konwersja na godziny dziesiętne dopiero w Zestawieniu.
 - prd NFR-6: belka górna z Pomocą `?`, Ustawieniami konta i Wyloguj; menu: Nowy wpis; Rejestr (Widok miesiąca, Lista wpisów, Eksport); Słowniki (Projekty, Typy pracy); Administracja (Użytkownicy) tylko dla Administratora.
 - prd NFR-7: „dzisiaj” i wszystkie daty w strefie Europe/Warsaw, niezależnie od zegara serwera.
 - prd NFR-8: limity prób rejestracji i logowania; baza niedostępna z internetu; dostęp administracyjny do serwera i bazy tylko szyfrowanym kanałem z kluczem, do bazy na co dzień tylko do odczytu; progi, reguły haseł i czas sesji to bezpieczne wartości domyślne z architektury.
 - prd NFR-9, addendum: migracja `Initial` zostaje przepisana z `UserId` przed pierwszym wdrożeniem na serwer; od tego wdrożenia zmiany schematu tylko dodają i są stosowane przy starcie.
-- architecture AD-1, prd addendum: .NET 10, Blazor Web App Interactive Server, Fluent UI Blazor 5 z wzorcem UI eod-ui (podmoduł `ui/`, `Eod.Platform.UI`), EF Core 10, PostgreSQL 18 w Dockerze; lokalnie `docker compose up -d`, potem `dotnet run`; serwer, CI/CD i kopie według addendum PRD.
+- architecture AD-1, prd addendum: .NET 10, Blazor Web App Interactive Server, Fluent UI Blazor 5 z komponentami skopiowanymi ze wzorca UI eod-ui do `Ui/` (eod-ui tylko referencją), EF Core 10, PostgreSQL 18 w Dockerze; lokalnie `docker compose up -d`, potem `dotnet run`; serwer, CI/CD i kopie według addendum PRD.
 - architecture: kręgosłup `architecture-rejestr-czasu.md` (AD-1…AD-23, aktualizacja 02.11.2026: wzorzec eod-ui; AD-3 wycofane) wiąże każdy epik.
 - prd SM-4, SM-C1: cały kod piszą agenci BMad, a zmiany na serwerze idą tylko przez potok wdrożenia (wyjątek: jednorazowe przygotowanie serwera i ćwiczenia z instrukcji administratora); przy zderzeniu z terminem wygrywa metoda.
 - prd SM-C2: nic poza zakresem ustalonym 31.10.2026 nie wchodzi przed Testem wrześniowym.
@@ -94,7 +94,7 @@ Autor wysyła Odbiorcy miesięczne Zestawienie prosto z eksportu na serwerze, pr
 - Touch point: Odbiorca — konsumuje Zestawienie w układzie z `export-layout.md`, wysyłane e-mailem przez Usera; owner: epic-miesiac-i-zestawienie
 - Touch point: źródłowy xlsx wrześniowy — tylko lokalnie, poza gitem, do Testu wrześniowego; owner: epic-miesiac-i-zestawienie
 - Touch point: notatki Autora — źródło ręczne, bez importu
-- Touch point: repozytorium wzorca UI eod-ui (github.com/AgraelPL/eod-ui, Autora) — podmoduł z `Eod.Platform.UI`; potrzebne w nim: wyłączenie eksportu CSV w `EodReport`, potwierdzenie bez skrótu Enter, sumy `EodReport` podawane przez ekran, Fluent UI 5.0.1; owner: epic-wzorzec-ui
+- Touch point: repozytorium wzorca UI eod-ui (github.com/AgraelPL/eod-ui, Autora) — wyłącznie referencja do czytania (klon `C:\Users\kamil\Documents\eod-ui`), nigdy zmieniane; komponenty kopiowane do Rejestru; owner: epic-wzorzec-ui
 - Ścieżka przez epiki: Konta i wdrożenie (CI, Initial z UserId, logowanie, obraz) → Szkielet i Słowniki → Wpis w Sesji wpisywania → Przejęcie wzorca UI eod-ui → Widok miesiąca i Zestawienie sprawdzone Testem wrześniowym; Administracja Kont i pomoc po epikach Konta i wdrożenie oraz Przejęcie wzorca UI, równolegle z Widokiem miesiąca; na końcu Wdrożenie na serwer ze zbiorczą weryfikacją, przed Miesiącem „na serio”.
 
 ## References
@@ -126,3 +126,4 @@ Autor wysyła Odbiorcy miesięczne Zestawienie prosto z eksportu na serwerze, pr
 - Decision (02.11.2026): wyjątek od SM-C2 — epik 7 wchodzi przed Testem wrześniowym; termin 28.12.2026 bez zmian, ryzyko opóźnienia przyjęte przez Autora.
 - Decision (02.11.2026): R17 zostaje (brak eksportu CSV) — eksport w `EodReport` wyłączany parametrem dodanym we wzorcu; Enter nie potwierdza usunięcia — potwierdzenie w `UiMessages` bez skrótu Enter, zmiana we wzorcu; sumy Widoku miesiąca z `MonthReport` przekazywane do `EodReport` (R9, R10) — zmiana we wzorcu.
 - Architecture invalidated (02.11.2026): przejęcie eod-ui zmienia AD-1 (podmoduł, wersja Fluent UI), AD-9 (`EodReport` zamiast `ReportGrid`), AD-11 (`EodShell`, `EodPage`, `UiMessages` zamiast `MainLayout`, `PageHeader`, `Notify`, `Confirm`), AD-12 (skrypty `EodHead` i `eod.js` z aplikacji), AD-22 (ikona `?` w belce `EodShell`) i styk AD-5 z sumami `EodReport` — do aktualizacji przez bmad-architecture przed refinementem epiku 7.
+- Decision (02.11.2026): Autor doprecyzował — eod-ui jest wyłącznie wzorem do refaktoru wizualnego, nie zależnością: Rejestr nie zmienia eod-ui (bez podmodułu, gałęzi i PR we wzorcu); potrzebne komponenty kopiuje się do Rejestru (`Ui/`) i dopasowuje tam (AD-1, AD-23). Zastępuje „podmoduł + `ProjectReference`” i „zmiany we wzorcu” z decyzji wyżej. Repozytorium Rejestru zostaje prywatne (płatny plan GitHub); eod-ui bez zmian.

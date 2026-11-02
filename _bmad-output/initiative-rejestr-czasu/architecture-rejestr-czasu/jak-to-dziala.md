@@ -45,7 +45,7 @@ Ekran sam pyta EF Core o dane i sam zapisuje (*Transaction Script*). Żeby to si
 | `Domain/` | `Czas`, `PolishCalendar`, `YearMonth` | jedno miejsce formatu `h:mm`, polskich nazw i „dzisiaj” (AD-6) |
 | `Data/` | `AppDbContext`, encje, migracje, fabryka kontekstu Usera | jeden właściciel schematu i oddzielenie danych (AD-7, AD-16) |
 | `Shared/` | `EntryForm`, `MainLayout` (na `EodShell`), `PageHelp` | wspólne elementy, których ekrany nie piszą same (AD-10, AD-11, AD-22) |
-| `ui/` | podmoduł eod-ui: `EodShell`, `EodPage`, `EodReport`, `UiMessages` | wzorzec UI, z którego składa się każdy ekran; zmiany tylko PR-em we wzorcu (AD-1, AD-9, AD-11, AD-23) |
+| `Ui/` | kopia komponentów wzorca eod-ui: `EodShell`, `EodPage`, `EodReport`, `UiMessages` | z nich składa się każdy ekran; dopasowania tylko w kopii, eod-ui to wyłącznie wzór (AD-1, AD-9, AD-11, AD-23) |
 | `Startup/` | sprawdzenie bazy, migracje, pierwszy Administrator | kolejność startu (AD-21) |
 
 ## 3. Decyzje, które warto zrozumieć
