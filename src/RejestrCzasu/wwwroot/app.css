@@ -181,6 +181,25 @@ body {
     gap: 0.5rem;
 }
 
+/* Lista wpisów: screen filters above the grid, summary under it. */
+.entries-filters {
+    align-items: flex-end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.entries-filter-error {
+    color: var(--colorPaletteRedForeground1, #b10e1c);
+    margin: 0 0 0.5rem;
+}
+
+.entries-summary {
+    font-weight: 600;
+    margin: 0.5rem 0 0;
+}
+
 /* Lost connection (R31): hidden until blazor.web.js sets one of its classes on the element; no JS of our own. */
 #components-reconnect-modal {
     display: none;

@@ -4,7 +4,7 @@ using RejestrCzasu.Features.Wpisy;
 
 namespace RejestrCzasu.Tests.Features;
 
-/// <summary>Adding Entries (R4, AD-4, AD-7, AD-16) on PostgreSQL.</summary>
+/// <summary>Adding and listing Entries (R4, R8, AD-4, AD-7, AD-16) on PostgreSQL.</summary>
 public sealed class EntryStoreTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -107,6 +107,94 @@ public sealed class EntryStoreTests(PostgresFixture postgres) : IAsyncLifetime
         await Assert.ThrowsAsync<ArgumentException>(() =>
             StoreFor(_user).AddAsync(new DateOnly(2026, 9, 3), projectId, workTypeId, "Opis", czas, Ct));
     }
+
+    [Fact]
+    public async Task List_DateRange_InclusiveBounds_NewestDateFirst_ThenHigherIdFirst()
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+        var store = StoreFor(_user);
+        await AddAsync(store, new DateOnly(2026, 8, 31), projectId, workTypeId, "Sierpień");
+        await AddAsync(store, new DateOnly(2026, 9, 1), projectId, workTypeId, "Pierwszy");
+        await AddAsync(store, new DateOnly(2026, 9, 30), projectId, workTypeId, "Ostatni A");
+        await AddAsync(store, new DateOnly(2026, 9, 30), projectId, workTypeId, "Ostatni B");
+        await AddAsync(store, new DateOnly(2026, 9, 15), projectId, workTypeId, "Środek");
+        await AddAsync(store, new DateOnly(2026, 10, 1), projectId, workTypeId, "Październik");
+
+        var rows = await store.ListAsync(new EntryFilter(new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 30), null, null), Ct);
+
+        Assert.Equal(["Ostatni B", "Ostatni A", "Środek", "Pierwszy"], rows.Select(r => r.Description));
+        var first = rows[0];
+        Assert.Equal(("RDZ", "Development", projectId, workTypeId, 60), (first.ProjectCode, first.WorkTypeName, first.ProjectId, first.WorkTypeId, first.Minutes));
+        Assert.Equal(("30.09.2026", "Środa", "1h"), (first.DateText, first.DayName, first.CzasText));
+    }
+
+    [Fact]
+    public async Task List_EmptyBounds_AreNoBound()
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+        var store = StoreFor(_user);
+        await AddAsync(store, new DateOnly(2025, 1, 1), projectId, workTypeId, "Dawno");
+        await AddAsync(store, new DateOnly(2026, 9, 3), projectId, workTypeId, "Teraz");
+        await AddAsync(store, new DateOnly(2027, 1, 1), projectId, workTypeId, "Później");
+
+        var untilTo = await store.ListAsync(new EntryFilter(null, new DateOnly(2026, 9, 3), null, null), Ct);
+        var fromOnly = await store.ListAsync(new EntryFilter(new DateOnly(2026, 9, 3), null, null, null), Ct);
+        var all = await store.ListAsync(new EntryFilter(null, null, null, null), Ct);
+
+        Assert.Equal(["Teraz", "Dawno"], untilTo.Select(r => r.Description));
+        Assert.Equal(["Później", "Teraz"], fromOnly.Select(r => r.Description));
+        Assert.Equal(3, all.Count);
+    }
+
+    [Fact]
+    public async Task List_ProjectAndWorkTypeFilters_IncludingInactiveProject()
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+        int oldId, meetingId;
+        await using (var db = await postgres.CreateUserContextAsync(_user))
+        {
+            var inactive = new Project { Code = "OLD", Name = "Stary", IsActive = false };
+            var meeting = new WorkType { Name = "Spotkanie" };
+            db.Projects.Add(inactive);
+            db.WorkTypes.Add(meeting);
+            await db.SaveChangesAsync(Ct);
+            (oldId, meetingId) = (inactive.Id, meeting.Id);
+        }
+        var store = StoreFor(_user);
+        await AddAsync(store, new DateOnly(2026, 9, 1), projectId, workTypeId, "RDZ dev");
+        await AddAsync(store, new DateOnly(2026, 9, 2), projectId, meetingId, "RDZ spotkanie");
+        await AddAsync(store, new DateOnly(2026, 9, 3), oldId, workTypeId, "OLD dev");
+
+        var rdz = await store.ListAsync(new EntryFilter(null, null, projectId, null), Ct);
+        var old = await store.ListAsync(new EntryFilter(null, null, oldId, null), Ct);
+        var meetings = await store.ListAsync(new EntryFilter(null, null, null, meetingId), Ct);
+        var both = await store.ListAsync(new EntryFilter(null, null, projectId, workTypeId), Ct);
+
+        Assert.Equal(["RDZ spotkanie", "RDZ dev"], rdz.Select(r => r.Description));
+        Assert.Equal(("OLD dev", "OLD"), (Assert.Single(old).Description, old[0].ProjectCode));
+        Assert.Equal("RDZ spotkanie", Assert.Single(meetings).Description);
+        Assert.Equal("RDZ dev", Assert.Single(both).Description);
+    }
+
+    [Fact]
+    public async Task List_NeverShowsAnotherUsersEntries()
+    {
+        var (projectId, workTypeId) = await SeedDictionariesAsync(_user);
+        var (otherProjectId, otherWorkTypeId) = await SeedDictionariesAsync(_otherUser);
+        await AddAsync(StoreFor(_user), new DateOnly(2026, 9, 3), projectId, workTypeId, "Mój");
+        await AddAsync(StoreFor(_otherUser), new DateOnly(2026, 9, 3), otherProjectId, otherWorkTypeId, "Cudzy");
+
+        var all = await StoreFor(_user).ListAsync(new EntryFilter(null, null, null, null), Ct);
+        var byOtherProject = await StoreFor(_user).ListAsync(new EntryFilter(null, null, otherProjectId, null), Ct);
+        var byOtherWorkType = await StoreFor(_user).ListAsync(new EntryFilter(null, null, null, otherWorkTypeId), Ct);
+
+        Assert.Equal("Mój", Assert.Single(all).Description);
+        Assert.Empty(byOtherProject);
+        Assert.Empty(byOtherWorkType);
+    }
+
+    private static async Task AddAsync(EntryStore store, DateOnly date, int projectId, int workTypeId, string description) =>
+        Assert.IsType<EntryChange.Done>(await store.AddAsync(date, projectId, workTypeId, description, "1h", Ct));
 
     private EntryStore StoreFor(int userId) => new(postgres.CreateLoggedInUserDbContextFactory(userId));
 

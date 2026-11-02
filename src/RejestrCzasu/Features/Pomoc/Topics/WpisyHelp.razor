@@ -1,0 +1,37 @@
+@* Help topic "wpisy" (AD-22, R26): the Lista wpisów screen (menu Lista wpisów). *@
+<p>
+    Ekran <strong>Lista wpisów</strong> pokazuje Twoje Wpisy z wybranego zakresu dat, Projektu i Typu pracy oraz ich
+    liczbę i sumę Czasu. Wpisy widzisz tylko Ty.
+</p>
+
+<h2>Filtry</h2>
+<ul>
+    <li><strong>Od</strong> i <strong>Do</strong> — zakres dat, oba dni włącznie. Po otwarciu ekranu to pierwszy
+        i ostatni dzień bieżącego Miesiąca (według czasu polskiego). Puste pole oznacza brak tej granicy, np. puste
+        <strong>Od</strong> pokazuje wszystkie Wpisy do daty <strong>Do</strong>. Gdy data <strong>Od</strong> jest
+        późniejsza niż <strong>Do</strong>, lista jest pusta, a przy filtrach pojawia się komunikat
+        „Data „Od” jest późniejsza niż „Do”.”.</li>
+    <li><strong>Projekt</strong> i <strong>Typ pracy</strong> — <strong>Wszystkie</strong> albo jedna pozycja Twojego
+        Słownika. Na liście są także nieaktywne Projekty i Typy pracy, z dopiskiem „(nieaktywny)”, więc odnajdziesz
+        ich Wpisy.</li>
+</ul>
+<p>Każda zmiana filtra od razu wczytuje listę ponownie.</p>
+
+<h2>Lista</h2>
+<p>
+    Kolumny: <strong>Data</strong>, <strong>Dzień</strong> (dzień tygodnia), <strong>Projekt</strong> (kod),
+    <strong>Typ pracy</strong>, <strong>Opis</strong> i <strong>Czas</strong> (jak w Jirze, np. 1h 30m). Wpisy są
+    uporządkowane od najnowszej daty, a w obrębie jednego dnia ostatnio zapisany Wpis jest wyżej.
+</p>
+
+<h2>Liczba i suma Czasu</h2>
+<p>
+    Pod listą widać „Wpisy: …, suma Czasu: …” dla filtrów Od, Do, Projekt i Typ pracy. Suma może przekroczyć 24 godziny
+    (np. 48h); bez Wpisów to „Wpisy: 0, suma Czasu: 0h”.
+</p>
+
+<h2>Filtr wartości w kolumnach</h2>
+<p>
+    W nagłówku każdej kolumny możesz odznaczyć wartości, których nie chcesz widzieć; licznik pozycji pod siatką pokazuje,
+    ile wierszy widać. Ten filtr tylko ukrywa wiersze — liczba Wpisów i suma Czasu pod listą zostają dla filtrów ekranu.
+</p>
