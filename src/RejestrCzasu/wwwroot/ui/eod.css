@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════════════
-   MOJE EOD – wzorzec UI (Eod.Platform.UI/eod.css)
+   Rejestr czasu – kopia wzorca UI eod-ui (Eod.Platform.UI/eod.css), dopasowania: docs/ui/DOPASOWANIA.md
    Układ: FluentLayout (belka · menu boczne · treść). Strony = karty + siatki.
    Kolory, typografia i odstępy wyłącznie z tokenów Fluent 2 – tokeny jasne/ciemne ustawia biblioteka (IThemeService).
    Klasy fluent-*  = znaczniki/klasy biblioteki Fluent UI Blazor v5 (CSS biblioteki jest globalny).
@@ -10,7 +10,6 @@
   --eod-nav-width: 264px;
   --eod-header-height: 48px;
   --eod-gutter: 24px;
-  --eod-casebar-h: 0px;
   --eod-zoom: 1;
 }
 /* ── Rozmiar interfejsu ──────────────────────────────────────────────────
@@ -75,14 +74,12 @@ div:has(> .fluent-layout.eod-shell) { height: 100%; }
 
 /* Belka górna */
 .eod-appname { font-size: var(--fontSizeBase400); font-weight: var(--fontWeightSemibold); letter-spacing: .06em; white-space: nowrap; color: inherit; text-decoration: none; padding: 4px 8px; border-radius: var(--borderRadiusMedium); }
-.eod-header-sep { width: 1px; height: 24px; background: currentColor; opacity: .35; margin-inline: 4px; flex: none; }
 .eod-header-spacer { flex: 1; min-width: 4px; }
 .eod-onbrand, .eod-onbrand:hover, .eod-onbrand:active, .eod-onbrand[aria-expanded="true"] { color: var(--colorNeutralForegroundOnBrand); }
 .eod-onbrand:hover, .eod-onbrand[aria-expanded="true"] { background: var(--colorBrandBackgroundHover); }
 .eod-onbrand:active { background: var(--colorBrandBackgroundPressed); }
 .eod-userbtn > [slot="start"] { display: inline-flex; }
 .eod-userbtn fluent-avatar { margin-inline: -4px 2px; }
-.eod-ctx-label { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Menu boczne */
 .eod-nav-top { padding: 12px 12px 8px; }
@@ -129,13 +126,6 @@ fluent-message-bar .title { font-weight: var(--fontWeightSemibold); margin-inlin
 .eod-card-fill > .eod-table-wrap, .eod-card-fill > .eod-list { flex: 1 0 auto; }
 .eod-card-foot { padding: 8px 16px; border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
-/* Kafle z liczbami (strona główna procesu) */
-.eod-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
-.eod-tile { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; text-align: start; font: inherit; color: inherit; cursor: pointer; }
-.eod-tile:hover { background: var(--colorNeutralBackground1Hover); }
-.eod-tile-value { font-size: var(--fontSizeHero800); line-height: var(--lineHeightHero800); font-weight: var(--fontWeightSemibold); font-variant-numeric: tabular-nums; }
-.eod-tile-label { color: var(--colorNeutralForeground2); }
-
 /* ── FluentDataGrid: uzupełnienia ─────────────────────────────────────── */
 .eod-table-wrap { overflow-x: auto; }
 .fluent-data-grid { width: 100%; border-spacing: 0; }
@@ -168,152 +158,28 @@ a.eod-cell-main:active { color: var(--colorBrandForegroundLinkPressed); }
 .eod-news h3 a:hover { color: var(--colorBrandForegroundLink); text-decoration: underline; }
 .eod-news p { color: var(--colorNeutralForeground2); }
 
-/* ── Formularz sprawy ─────────────────────────────────────────────────── */
+/* ── Ścieżka i pasek nad tabelą raportu ──────────────────────────────── */
 .eod-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); }
-
-/* Sekcja główna: tytuł, status, sektor przycisków – przyklejona u góry treści */
-.eod-sticky { position: sticky; top: 0; z-index: 20; display: flex; flex-direction: column; gap: 8px; margin-top: -20px; }
-/* Tło pod paskami komunikatów: treść przewijana pod spodem nie prześwituje w odstępach */
-.eod-sticky:has(fluent-message-bar) { background: var(--colorNeutralBackground3); padding-bottom: 8px; margin-bottom: -8px; }
-.eod-casebar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px 12px 20px; box-shadow: var(--shadow4); border-top-left-radius: 0; border-top-right-radius: 0; border-top: 0; }
-.eod-sticky fluent-message-bar { box-shadow: var(--shadow4); }
-.eod-casebar-title { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.eod-casebar-title .eod-h1 { font-size: var(--fontSizeBase500); line-height: var(--lineHeightBase500); }
-.eod-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.eod-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.eod-actions-sep { width: 1px; height: 24px; background: var(--colorNeutralStroke2); }
-
-.eod-case-meta { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 32px; align-items: center; padding: 16px 20px; }
-.eod-facts { display: flex; flex-wrap: wrap; gap: 12px 40px; }
-.eod-facts dt { font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground3); }
-.eod-facts dd { font-weight: var(--fontWeightSemibold); overflow-wrap: anywhere; }
-.eod-executor { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusLarge); background: var(--colorNeutralBackground2); min-width: 0; }
-.eod-executor-who { min-width: 0; margin-inline-end: 8px; }
-.eod-executor-who strong { display: block; font-weight: var(--fontWeightSemibold); }
-
-/* Kamienie milowe = FluentWizard StepperPosition="Top", tylko do odczytu */
-.eod-milestones { border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); padding: 6px 8px 10px; overflow-x: auto; }
-.eod-milestones .fluent-wizard { min-width: 720px; }
-.fluent-wizard { height: auto; }
-.fluent-wizard > ol > li { position: relative; display: flex; }
-.fluent-wizard[position="top"] > ol > li { flex: 1; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
-.fluent-wizard[position="left"] > ol > li { gap: 10px; padding-bottom: 20px; cursor: pointer; }
-.fluent-wizard[position="left"] > ol > li:last-child { padding-bottom: 0; }
-.fluent-wizard-icon > .ic { width: var(--fluent-wizard-circle-size); height: var(--fluent-wizard-circle-size); color: var(--colorCompoundBrandBackground); display: block; }
-.fluent-wizard-icon-number { font-size: var(--fontSizeBase200); font-weight: var(--fontWeightSemibold); line-height: var(--fluent-wizard-circle-size); }
-.fluent-wizard-step-labels { min-width: 0; }
-.fluent-wizard-title, .fluent-wizard-summary { display: block; }
-.fluent-wizard-summary { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); }
-li[status="current"] .fluent-wizard-title { font-weight: var(--fontWeightSemibold); }
-li[status="previous"] > .fluent-wizard-step-connector { background-color: var(--colorCompoundBrandBackground); }
-li[data-state="error"] .fluent-wizard-icon > .ic, li[data-state="error"] .fluent-wizard-summary { color: var(--colorStatusDangerForeground1); }
-li[data-state="warning"] .fluent-wizard-summary { color: var(--colorStatusWarningForeground1); }
-
-/* Karty (FluentTabs) */
-.fluent-tabs > fluent-tablist { padding: 4px 8px 0; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); display: flex; max-width: 100%; overflow-x: auto; }
-.eod-tab-label { display: inline-flex; align-items: center; gap: 6px; }
-fluent-tab { white-space: nowrap; flex: none; }
-[role="tabpanel"] { min-width: 0; }
-
-/* Formularz = FluentWizard StepperPosition="Left" + sekcje jako FluentGrid */
 .eod-formbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
-.eod-formbar-progress { flex: 1 1 220px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.eod-form.fluent-wizard[position="left"] { grid-template-columns: 232px minmax(0, 1fr); }
-.eod-form.fluent-wizard > ol { padding: 20px 12px 20px 16px; position: sticky; top: calc(var(--eod-casebar-h) + 8px); align-self: start; }
-.eod-form.fluent-wizard[position="left"] .fluent-wizard-content { margin: 0; border-inline-start: var(--strokeWidthThin) solid var(--colorNeutralStroke2); min-width: 0; }
-.eod-form.fluent-wizard .fluent-wizard-buttons { gap: 8px; padding: 12px 16px; border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-inline-start: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
-.eod-form[data-mode="all"] .fluent-wizard-buttons { display: none; }
-.eod-form[data-mode="step"] .eod-section:not([data-active]) { display: none; }
-
-.eod-section { padding: 20px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); scroll-margin-top: calc(var(--eod-casebar-h) + 8px); }
-.eod-section:last-child { border-bottom: 0; }
-.eod-section-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-bottom: 16px; }
-.eod-section-head .eod-h2 { flex: 1; min-width: 160px; }
-.eod-section-head .eod-caption { flex-basis: 100%; }
-.eod-section[data-readonly] { background: var(--colorNeutralBackground2); }
 
 /* Pola: kontrolki wypełniają komórkę siatki */
-.fluent-grid fluent-field, .eod-fill fluent-field, .eod-fields fluent-field { display: grid; width: 100%; }
+.fluent-grid fluent-field { display: grid; width: 100%; }
 .fluent-grid fluent-field[label-position="after"],
-fluent-radio-group fluent-field, :is(.fluent-grid, .eod-fill, .eod-fields) fluent-radio-group fluent-field { display: inline-grid; width: auto; }
-.fluent-grid fluent-text-input, .fluent-grid fluent-dropdown, .fluent-grid fluent-textarea,
-.eod-fill fluent-text-input, .eod-fill fluent-dropdown, .eod-fill fluent-textarea,
-.eod-fields fluent-text-input, .eod-fields fluent-dropdown, .eod-fields fluent-textarea { width: 100%; max-width: none; }
-.eod-fields { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
-@media (min-width: 600px) { .eod-fields[data-columns="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 960px) { .eod-fields:is([data-columns="2"], [data-columns="3"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 1280px) {
-  .eod-fields[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .eod-fields[data-columns="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-.eod-field[data-width="full"] { grid-column: 1 / -1; }
-@media (min-width: 600px) { .eod-fields[data-columns="4"] > .eod-field:is([data-width="2"], [data-width="3"]) { grid-column: span 2; } }
-@media (min-width: 960px) { .eod-fields:is([data-columns="2"], [data-columns="3"]) > .eod-field:is([data-width="2"], [data-width="3"]) { grid-column: span 2; } }
-@media (min-width: 1280px) { .eod-fields:is([data-columns="3"], [data-columns="4"]) > .eod-field[data-width="3"] { grid-column: span 3; } }
+fluent-radio-group fluent-field, .fluent-grid fluent-radio-group fluent-field { display: inline-grid; width: auto; }
+.fluent-grid fluent-text-input, .fluent-grid fluent-dropdown, .fluent-grid fluent-textarea { width: 100%; max-width: none; }
 fluent-text-input > span[slot="end"], fluent-text-input > span[slot="start"] { font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); color: var(--colorNeutralForeground3); }
 fluent-text[slot="message"] { display: flex; align-items: center; gap: 4px; }
 fluent-text[slot="message"][data-intent="error"] { color: var(--colorStatusDangerForeground1); }
 fluent-text[slot="message"][data-intent="warning"] { color: var(--colorStatusWarningForeground1); }
 fluent-text[slot="message"][data-intent="success"] { color: var(--colorStatusSuccessForeground1); }
 fluent-text[slot="message"]:not([data-intent]) { color: var(--colorNeutralForeground3); }
-.eod-ro { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.eod-ro > span:first-child { font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground3); }
-.eod-ro > span:last-child { font-weight: var(--fontWeightSemibold); overflow-wrap: anywhere; }
 .fluent-label-info > button .ic { width: 16px; height: 16px; color: var(--colorNeutralForeground3); }
 
-/* ── Chipy, listy podpowiedzi, kalendarz ─────────────────────────────── */
+/* ── Chipy ───────────────────────────────────────────────────────────── */
 /* Chip (filtry i układ raportu, osoby): tekst + przycisk usuwania */
 .eod-chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 2px 0 8px; border-radius: var(--borderRadiusMedium); background: var(--colorBrandBackground2); color: var(--colorBrandForeground2); font-size: var(--fontSizeBase200); white-space: nowrap; }
 .eod-chip button { display: inline-flex; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 2px; border-radius: var(--borderRadiusSmall); }
 .eod-chip button:hover { background: var(--colorBrandBackground2Hover); }
-/* Lista podpowiedzi oznaczania osób (@) w komentarzach: warstwa górna (Popover API + CSS anchor positioning), jak FluentPopover */
-.eod-popup { position: fixed; inset: auto; top: anchor(bottom); left: anchor(left); margin: 2px 0; min-width: anchor-size(width); max-height: 320px; overflow: auto; position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline; background: var(--colorNeutralBackground1); color: var(--colorNeutralForeground1); border: var(--strokeWidthThin) solid var(--colorTransparentStroke); border-radius: var(--borderRadiusMedium); box-shadow: var(--shadow16); padding: 4px; }
-.eod-ac-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; border-radius: var(--borderRadiusMedium); cursor: pointer; }
-.eod-ac-option:hover, .eod-ac-option:focus-visible { background: var(--colorNeutralBackground1Hover); }
-.eod-ac-empty { padding: 8px; color: var(--colorNeutralForeground3); }
-
-/* FluentCalendar osadzony w treści (galeria kontrolek) */
-.eod-calendar { width: 252px; padding: 8px; }
-.eod-cal-inline { border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusLarge); background: var(--colorNeutralBackground1); }
-
-/* FluentInputFile + załączniki w kategoriach */
-.eod-attach { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 16px; padding: 16px; }
-.eod-attach-cat { border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusLarge); display: flex; flex-direction: column; min-width: 0; }
-.eod-attach-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 10px 12px; background: var(--colorNeutralBackground2); border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusLarge) var(--borderRadiusLarge) 0 0; }
-.eod-attach-head .eod-h3 { flex: 1; min-width: 120px; }
-.eod-files > li { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
-.eod-files:last-child > li:last-child { border-bottom: 0; }
-.eod-files a { font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); text-decoration: none; overflow-wrap: anywhere; }
-.eod-files a:hover { color: var(--colorBrandForegroundLink); text-decoration: underline; }
-.eod-dropzone { margin: 12px; padding: 14px 12px; border: 1px dashed var(--colorNeutralStroke1); border-radius: var(--borderRadiusLarge); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; color: var(--colorNeutralForeground2); text-align: center; }
-.eod-dropzone[data-over] { border-color: var(--colorCompoundBrandStroke); background: var(--colorBrandBackground2); }
-.eod-dropzone.large { flex-direction: column; padding: 24px 16px; margin: 0; }
-.eod-attach-cat > fluent-message-bar, .eod-attach-warning { margin: 12px 12px 0; width: auto; }
-.fluent-inputfile-container.eod-dropzone { display: grid; margin: 12px; padding: 14px 12px; background: transparent; border: 1px dashed var(--colorNeutralStroke1); border-radius: var(--borderRadiusLarge); color: var(--colorNeutralForeground2); }
-.fluent-inputfile-container.eod-dropzone[drop-files] { border-color: var(--colorCompoundBrandStroke); background: var(--colorBrandBackground2); }
-.eod-dropzone .inputfile-content { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; }
-.eod-dropzone .inputfile-progress { display: none; }
-.fluent-inputfile-container.eod-dropzone.large { margin: 0; padding: 24px 16px; }
-.eod-dropzone.large .inputfile-content { flex-direction: column; }
-.fluent-inputfile-container.eod-dropzone label.eod-file-button { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border: var(--strokeWidthThin) solid var(--colorNeutralStroke1); border-radius: var(--borderRadiusMedium); background: var(--colorNeutralBackground1); color: var(--colorNeutralForeground1); font-size: var(--fontSizeBase200); font-weight: var(--fontWeightSemibold); text-decoration: none; cursor: pointer; }
-.fluent-inputfile-container.eod-dropzone label.eod-file-button:hover { background: var(--colorNeutralBackground1Hover); border-color: var(--colorNeutralStroke1Hover); }
-
-/* Oś czasu (przebieg procesu) */
-.eod-timeline > li { position: relative; padding: 0 0 20px 32px; }
-.eod-timeline > li::before { content: ""; position: absolute; left: 7px; top: 22px; bottom: 0; width: 2px; background: var(--colorNeutralStroke2); }
-.eod-timeline > li:last-child::before { display: none; }
-.eod-timeline > li > .ic { position: absolute; left: -2px; top: 0; }
-.eod-timeline strong { font-weight: var(--fontWeightSemibold); }
-.eod-timeline blockquote { margin: 6px 0 0; padding: 6px 10px; background: var(--colorNeutralBackground3); border-radius: var(--borderRadiusMedium); color: var(--colorNeutralForeground2); }
-.eod-old { text-decoration: line-through; color: var(--colorNeutralForeground3); }
-
-/* Matryca uprawnień */
-.eod-matrix { width: 100%; border-collapse: collapse; min-width: 560px; }
-.eod-matrix th, .eod-matrix td { padding: 10px 12px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); text-align: start; vertical-align: top; }
-.eod-matrix thead th { font-size: var(--fontSizeBase200); color: var(--colorNeutralForeground2); font-weight: var(--fontWeightSemibold); white-space: nowrap; }
-.eod-matrix td.c, .eod-matrix th.c { text-align: center; }
-.eod-people { display: flex; flex-direction: column; gap: 6px; }
-.eod-person { display: flex; align-items: center; gap: 8px; }
 
 /* Okna: FluentDialog / MessageBox */
 fluent-dialog-body { max-width: 100%; }
@@ -325,55 +191,20 @@ fluent-dialog-body { max-width: 100%; }
 [slot="action"] { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 [slot="footer"] { display: flex; flex-wrap: wrap; gap: 8px; }
 
-/* ── Strony wzorca (galeria) ──────────────────────────────────────────── */
-.eod-demo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
-.eod-demo { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.eod-demo.wide { grid-column: 1 / -1; }
-.eod-demo > .eod-code { align-self: flex-start; }
-.eod-demo-stage { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.eod-demo-stage.col { flex-direction: column; align-items: stretch; }
+/* Blok zasad pod treścią karty (EodRule w parametrze Rules komponentu EodCard) */
 .eod-rule { display: flex; gap: 8px; align-items: flex-start; color: var(--colorNeutralForeground2); }
 .eod-rule .ic { margin-top: 1px; color: var(--colorBrandForeground1); }
 .eod-rules { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; background: var(--colorNeutralBackground2); border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: 0 0 var(--borderRadiusXLarge) var(--borderRadiusXLarge); }
-.eod-decision { width: 100%; border-collapse: collapse; min-width: 640px; }
-.eod-decision th, .eod-decision td { padding: 10px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); text-align: start; vertical-align: top; }
-.eod-decision thead th { font-size: var(--fontSizeBase200); color: var(--colorNeutralForeground2); }
-.eod-decision tbody tr:last-child td { border-bottom: 0; }
-/* Galeria „Stany ekranów”: ramka przykładu (lista, tabela, stan pusty) i raport bez drugiej ramki karty */
-.eod-demo-frame { border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusLarge); overflow: hidden; min-width: 0; }
-.eod-demo-frame.eod-demo-pad { padding: 16px; }
-.eod-demo-report > .eod-report { border: 0; border-radius: 0 0 var(--borderRadiusXLarge) var(--borderRadiusXLarge); }
 
 /* ── Wąskie ekrany ────────────────────────────────────────────────────── */
-@media (max-width: 1100px) {
-  .eod-case-meta { grid-template-columns: minmax(0, 1fr); }
-  .eod-executor { justify-self: start; max-width: 100%; }
-}
 @media (max-width: 900px) {
   :root { --eod-gutter: 16px; }
-  .eod-username, .eod-header-sep { display: none; }
+  .eod-username { display: none; }
   .fluent-layout-item[area="header"] fluent-menu { min-width: 0; }
-  .eod-ctx-label { max-width: calc(100vw - 300px); }
-  .eod-context fluent-menu-button > svg[slot="start"] { display: none; }
   .eod-appname { padding-inline: 4px; letter-spacing: .03em; }
   .eod-shell > .fluent-layout-item[area="header"] { padding: 0 8px; padding-top: env(safe-area-inset-top, 0px); }
-  .eod-sticky { position: static; margin-top: 0; }
-  .eod-casebar { border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusXLarge); box-shadow: none; padding-inline: 16px; }
-  .eod-case-meta { padding-inline: 16px; }
-  .eod-form.fluent-wizard[position="left"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; }
-  .eod-form.fluent-wizard[position="left"] > ol { position: static; flex-direction: row; grid-column: 1; grid-row: auto; gap: 16px; overflow-x: auto; padding: 12px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
-  .eod-form.fluent-wizard[position="left"] > ol > li { padding-bottom: 0; flex: none; }
-  .eod-form.fluent-wizard[position="left"] .fluent-wizard-step-connector { display: none; }
-  .eod-form.fluent-wizard[position="left"] .fluent-wizard-content, .eod-form.fluent-wizard[position="left"] .fluent-wizard-buttons { grid-column: 1; grid-row: auto; border-inline-start: 0; }
-  .eod-section { padding: 16px; }
-  .eod-attach { padding: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .fluent-layout-item[area="content"] { scroll-behavior: auto; } }
-
-/* Schemat siatki na stronie wzorca */
-#gridDemo .eod-code { display: block; padding: 8px 10px; text-align: center; border: 1px dashed var(--colorNeutralStroke1); }
-.eod-demo > .eod-row { justify-content: flex-start; }
-.eod-icon-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusMedium); background: var(--colorNeutralBackground1); white-space: nowrap; }
 
 /* ── Paski filtrów (katalog raportów, raport, zastępstwa) ────────────── */
 .eod-filterbar fluent-field { width: auto; }
@@ -383,7 +214,6 @@ fluent-dialog-body { max-width: 100%; }
 .eod-filterbar fluent-dropdown { min-width: 200px; }
 fluent-field > label[slot="label"][data-req]::after { content: " *"; color: var(--colorPaletteRedForeground1); }
 .eod-field-msg { display: flex; align-items: center; gap: 4px; color: var(--colorStatusDangerForeground1); margin-top: -6px; }
-.eod-person > div { min-width: 0; }
 .eod-kind { display: inline-flex; align-items: center; gap: 6px; }
 .eod-roles { display: flex; flex-wrap: wrap; gap: 4px; padding-block: 6px; }
 .fluent-data-grid td[multiline="true"] { align-content: center; padding-block: 10px; overflow: visible; }
@@ -444,62 +274,16 @@ th[col-justify="end"] .eod-th .eod-th-text { text-align: end; }
 .eod-filter-pop .eod-row > .eod-caption { margin-inline-end: 4px; }
 .fluent-data-grid td fluent-menu-item { text-align: start; }
 
-/* ── Komentarze do sprawy: pole z oznaczaniem osób (@) i lista komentarzy ── */
-.eod-comment-new { display: flex; gap: 12px; padding: 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
-.eod-mention { position: relative; }
-.eod-mention textarea { display: block; width: 100%; min-height: 76px; resize: vertical; font: inherit; color: inherit; background: var(--colorNeutralBackground1); border: var(--strokeWidthThin) solid var(--colorNeutralStroke1); border-bottom-color: var(--colorNeutralStrokeAccessible); border-radius: var(--borderRadiusMedium); padding: 6px 10px; outline: 0; }
-.eod-mention textarea::placeholder { color: var(--colorNeutralForeground4); }
-.eod-mention textarea:focus { border-bottom: 2px solid var(--colorCompoundBrandStroke); padding-bottom: 5px; }
-.eod-mention-caret { position: absolute; width: 1px; height: 1px; pointer-events: none; }
-.eod-popup.eod-mention-pop { width: 280px; min-width: 0; max-height: 264px; }
-.eod-ac-option[aria-selected="true"] { background: var(--colorNeutralBackground1Selected); }
-.eod-comment-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
-.eod-comment-bar strong { font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); }
-.eod-comment-list { flex: 1 0 auto; }
-.eod-comment { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
-.eod-comment:last-child { border-bottom: 0; }
-.eod-comment[data-me] { box-shadow: inset 3px 0 0 var(--colorCompoundBrandStroke); background: var(--colorNeutralBackground2); }
-.eod-comment[data-deleted] { align-items: center; padding-block: 10px; }
-.eod-comment-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
-.eod-comment-head strong { font-weight: var(--fontWeightSemibold); }
-.eod-comment-head fluent-badge { align-self: center; }
-.eod-comment-body { margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 110ch; }
-.eod-comment-actions { flex: none; display: flex; }
-/* Oznaczenie osoby w treści; oznaczenie zalogowanej osoby jest mocniejsze */
-.eod-mention-tag { color: var(--colorBrandForeground2); background: var(--colorBrandBackground2); font-weight: var(--fontWeightSemibold); border-radius: var(--borderRadiusSmall); padding: 1px 2px; white-space: nowrap; }
-.eod-mention-tag[data-me] { color: var(--colorNeutralForegroundOnBrand); background: var(--colorBrandBackground); }
-@media (max-width: 640px) {
-  .eod-comment-new > fluent-avatar { display: none; }
-  .eod-comment-bar .eod-caption { order: 3; flex: 1 1 100%; }
-  .eod-comment-bar #cmtAdd { margin-inline-start: auto; }
-  .eod-comment { flex-wrap: wrap; }
-  .eod-comment > .eod-grow { flex-basis: calc(100% - 44px); }
-  .eod-comment-actions { margin-inline-start: 44px; }
-}
-
 /* ── Uzupełnienia dla komponentów Blazor (Eod.Platform.UI) ───────────── */
 .eod-block { display: block; }
 .eod-regular { font-weight: var(--fontWeightRegular); }
 .eod-row-end { justify-content: flex-end; }
-.eod-person > div > .eod-caption { display: block; }
-.eod-tile { text-decoration: none; }
-.eod-tile:focus-visible { outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2); }
-.eod-mode [role="tabpanel"] { display: none; }
-/* Przełącznik „Wszystkie sekcje | Krok po kroku” w pasku formularza: w jednej linii z opisem, bez kreski listy kart */
-.eod-formbar > .eod-mode { width: auto; flex: none; }
-.eod-mode > fluent-tablist { border-bottom: 0; padding: 0; }
-/* Karty formularza sprawy: treść karty bez odstępu panelu FluentTab (karty mają własne odstępy) */
-.eod-case-tabs .fluent-tab-panel { padding: 0; }
-.eod-case-tabs > .fluent-tabs > [role="tabpanel"] { min-width: 0; }
-.eod-form.fluent-wizard[position="left"] > ol > li:focus-visible { outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2); outline-offset: 2px; border-radius: var(--borderRadiusMedium); }
 /* Filtr kolumny raportu: ikona neutralna, aktywny filtr w kolorze marki (ikona wypełniona) */
 .eod-th .eod-filter-icon { color: var(--colorNeutralForeground3); flex: none; }
 .eod-th .eod-filter-icon-active { color: var(--colorCompoundBrandForeground1); flex: none; }
 .eod-statebar .fluent-label-info { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); }
 /* Okno MessageBox: ikona 32 px */
 .fluent-message-box .icon, .fluent-message-box > svg:first-child { width: 32px; height: 32px; }
-/* Panel historii (drawer) */
-.eod-history-filter { max-width: 320px; margin-bottom: 12px; }
 
 /* Stan pusty (EodEmptyState) / strony „nie znaleziono”, „brak dostępu”: ikona 32, tytuł, wyjaśnienie, droga dalej */
 .eod-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 48px 16px; min-height: 100%; }
@@ -508,7 +292,6 @@ th[col-justify="end"] .eod-th .eod-th-text { text-align: end; }
 .eod-empty[data-compact] { gap: 6px; padding: 24px 16px; min-height: 0; }
 .eod-empty[data-compact] > .eod-row { margin-top: 6px; justify-content: center; }
 .eod-card-fill > .eod-empty, .eod-card-fill > .eod-card-body > .eod-empty { flex: 1 0 auto; }
-.eod-comment-empty { border-bottom: 0; }
 /* Pusta tabela: jeden wiersz z komunikatem na całą szerokość (bez limitu szerokości i wysokości komórki) */
 .fluent-data-grid tr[row-state="empty-content"] > td { height: auto; max-width: none; padding: 0; white-space: normal; }
 /* Raport przewijany w poziomie: stan pusty zostaje w widocznej części tabeli */
@@ -528,17 +311,8 @@ th[col-justify="end"] .eod-th .eod-th-text { text-align: end; }
 .eod-placeholder-tile { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; }
 @media (prefers-reduced-motion: reduce) { [class*="fluent-skeleton"]::after { animation: none; display: none; } }
 
-/* Zdanie stanu pod tabelą w sekcji formularza (np. „Suma wag: 100%.”) */
-.eod-table-note { margin-top: 12px; }
-
-/* Formularz tylko do odczytu: wszystkie sekcje w spisie zakończone, bieżąca – pogrubiony tytuł */
-.eod-form[data-readonly] > ol > li[aria-current="step"] .fluent-wizard-title { font-weight: var(--fontWeightSemibold); }
-
 /* Treść opcji listy (awatar, podpis) nie przechwytuje kliknięcia – musi trafić w fluent-option (FluentAutocomplete, FluentSelect) */
 fluent-option * { pointer-events: none; }
-
-/* Nagłówek strony z awatarem 56 px (Ustawienia użytkownika) */
-.eod-head-person { display: flex; align-items: center; gap: 16px; min-width: 0; }
 
 /* Karta o wysokości wiersza siatki (dwie karty obok siebie równej wysokości) */
 .eod-card-stretch { height: 100%; }

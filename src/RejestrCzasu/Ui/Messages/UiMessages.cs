@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.FluentUI.AspNetCore.Components;
 using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons;
 
@@ -167,7 +168,7 @@ public sealed class UiMessages(INotificationService notifications, IDialogServic
     /// <summary>
     /// Okno potwierdzenia przed operacją istotną lub nieodwracalną. Tytuł jest pytaniem, treść podaje skutek, numer sprawy i odbiorców.
     /// </summary>
-    /// <param name="title">Pytanie, np. „Przekazać sprawę do akceptacji?”.</param>
+    /// <param name="title">Pytanie, np. „Przekazać sprawę do akceptacji?”. Zwykły tekst – metoda sama go koduje (<c>HtmlEncode</c>), ekran nie koduje go drugi raz.</param>
     /// <param name="messageHtml">Treść (HTML: p, strong, ul, li).</param>
     /// <param name="primaryButton">Czynność, np. „Przekaż”, „Usuń”. Nigdy „Tak”.</param>
     /// <param name="secondaryButton">Zwykle „Anuluj” (przy „Anuluj sprawę” – „Wróć”).</param>
@@ -176,32 +177,58 @@ public sealed class UiMessages(INotificationService notifications, IDialogServic
     /// nieodwracalnej) albo <see cref="MessageBoxKind.Error"/> (np. anulowanie sprawy).
     /// </param>
     /// <returns><c>true</c>, gdy użytkownik wybrał przycisk główny.</returns>
-    /// <remarks>Okno jest modalne; Enter wybiera przycisk główny, Escape – drugi. Każde potwierdzenie w aplikacji używa tej metody.</remarks>
+    /// <remarks>
+    /// Okno jest modalne (<see cref="EodConfirmDialog"/>, Rejestr – AD-23 poz. 6): Enter nie zatwierdza (przyciski bez skrótów),
+    /// fokus ma drugi przycisk, Escape działa jak drugi przycisk. Każde potwierdzenie w aplikacji używa tej metody.
+    /// </remarks>
     public async Task<bool> ConfirmAsync(string title, string messageHtml, string primaryButton, string secondaryButton = "Anuluj", MessageBoxKind kind = MessageBoxKind.Confirmation)
     {
-        var result = await dialogs.ShowMessageBoxAsync(CreateOptions(kind, title, messageHtml, primaryButton, secondaryButton));
+        var result = await dialogs.ShowDialogAsync<EodConfirmDialog>(options =>
+        {
+            options.Modal = true;
+            // Biblioteka renderuje tytuł jako HTML; tytuł jest zwykłym tekstem.
+            options.Header.Title = WebUtility.HtmlEncode(title);
+            // Stopka biblioteki ukryta i bez skrótów (domyślny skrót przycisku głównego to Enter); przyciski są w EodConfirmDialog.
+            // Escape zamyka natywne okno, co biblioteka zgłasza jako Cancel.
+            HideLibraryAction(options.Footer.PrimaryAction);
+            HideLibraryAction(options.Footer.SecondaryAction);
+            options.Parameters.Add(nameof(EodConfirmDialog.Message), messageHtml);
+            options.Parameters.Add(nameof(EodConfirmDialog.PrimaryButton), primaryButton);
+            options.Parameters.Add(nameof(EodConfirmDialog.SecondaryButton), secondaryButton);
+            options.Parameters.Add(nameof(EodConfirmDialog.Kind), kind);
+        });
         return !result.Cancelled;
     }
 
     /// <summary>Okno wyniku operacji istotnej (sukces, błąd) albo informacji, o której użytkownik musi wiedzieć.</summary>
     /// <param name="kind">Rodzaj okna – zwykle <see cref="MessageBoxKind.Success"/>, <see cref="MessageBoxKind.Error"/> albo <see cref="MessageBoxKind.Information"/>.</param>
-    /// <param name="title">Wynik, np. „Ogłoszenie opublikowane”.</param>
+    /// <param name="title">Wynik, np. „Ogłoszenie opublikowane”. Jak we wzorcu biblioteka renderuje go jako HTML – wartości użytkownika koduje ekran.</param>
     /// <param name="messageHtml">Treść (HTML: p, strong, ul, li) – skutek, numer sprawy, odbiorcy.</param>
     /// <param name="button">Jedyny przycisk okna; domyślnie „Zamknij”.</param>
     /// <returns>Zadanie zakończone po zamknięciu okna.</returns>
     public async Task ShowMessageBoxAsync(MessageBoxKind kind, string title, string messageHtml, string button = "Zamknij")
         => await dialogs.ShowMessageBoxAsync(CreateOptions(kind, title, messageHtml, button, null));
 
+    /// <summary>Ikona 32 px i jej kolor dla rodzaju okna – wspólne dla okien wyniku i <see cref="EodConfirmDialog"/>.</summary>
+    internal static (Icon Icon, Color Color) KindIcon(MessageBoxKind kind) => kind switch
+    {
+        MessageBoxKind.Success => (new Icons.Filled.Size32.CheckmarkCircle(), Color.Success),
+        MessageBoxKind.Warning => (new Icons.Filled.Size32.Warning(), Color.Warning),
+        MessageBoxKind.Error => (new Icons.Filled.Size32.DismissCircle(), Color.Error),
+        MessageBoxKind.Information => (new Icons.Filled.Size32.Info(), Color.Primary),
+        _ => (new Icons.Filled.Size32.QuestionCircle(), Color.Primary),
+    };
+
+    private static void HideLibraryAction(DialogOptionsFooterAction action)
+    {
+        action.Label = null;
+        action.Visible = false;
+        action.ShortCut = null;
+    }
+
     private static MessageBoxOptions CreateOptions(MessageBoxKind kind, string title, string messageHtml, string primaryButton, string? secondaryButton)
     {
-        var (icon, color) = kind switch
-        {
-            MessageBoxKind.Success => ((Icon)new Icons.Filled.Size32.CheckmarkCircle(), Color.Success),
-            MessageBoxKind.Warning => (new Icons.Filled.Size32.Warning(), Color.Warning),
-            MessageBoxKind.Error => (new Icons.Filled.Size32.DismissCircle(), Color.Error),
-            MessageBoxKind.Information => (new Icons.Filled.Size32.Info(), Color.Primary),
-            _ => (new Icons.Filled.Size32.QuestionCircle(), Color.Primary),
-        };
+        var (icon, color) = KindIcon(kind);
 
         return new MessageBoxOptions
         {

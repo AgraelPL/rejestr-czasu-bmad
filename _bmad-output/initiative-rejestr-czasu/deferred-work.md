@@ -37,3 +37,10 @@
   - AD-11 zaktualizowane: `Confirm` na `ShowDialogAsync` z `ConfirmDialog`; komunikaty `Notify` znikają po 5 s, w pływającym panelu w prawym górnym rogu.
   - Pakiet ikon: `Microsoft.FluentUI.AspNetCore.Components.Icons` ma własną numerację i deklaruje zależność minimalną od rdzenia 4.14.x (także najnowsza 5.0.1), więc z Components 5.0.1 jest zgodny; podniesiony do 5.0.1, ikony renderują się w testach i w przeglądarce.
 
+
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-dopasowanie-komunikatow-szkieletu-i-eodhead-w-kopii-wzorca-plan.md`
+  summary: W kopii wzorca `wwwroot/ui/eod.css` zostały reguły pominiętych komponentów (`.eod-placeholder*`, `.eod-edit-*`, `.eod-row-added/modified`, `.eod-due`, `.eod-list`, `.eod-roles`, `.eod-kind`) bez użytkowników w `Ui/`.
+  evidence: Przegląd 7.2 sprawdził każdą klasę `.eod-*` z eod.css wobec `src/RejestrCzasu/Ui`; kandydat do Refactor sweep 7.7.
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-dopasowanie-komunikatow-szkieletu-i-eodhead-w-kopii-wzorca-plan.md`
+  summary: `EodUI.showSelectedText` (i `eod-scale.js`) mają tylko testy tekstu źródła, bez testu zachowania w przeglądarce.
+  evidence: Repo nie ma środowiska testów JS; zachowanie (tekst po pojawieniu się pola, koniec po 30 klatkach) sprawdzono ręcznie w node w 7.2.

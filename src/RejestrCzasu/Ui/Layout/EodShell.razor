@@ -10,7 +10,6 @@
     Przy zmianie strony zamyka paski komunikatów (UiMessages.ClearAsync), chowa menu mobilne i przewija treść na górę.
     Używany raz, w MainLayout:
         <EodShell>
-            <ContextSwitcher><EodContextSwitcher … /></ContextSwitcher>
             <HeaderActions>powiadomienia, menu użytkownika</HeaderActions>
             <NewCase>FluentMenuButton Primary „Nowa sprawa”</NewCase>
             <Menu>FluentNavItem…</Menu>
@@ -25,8 +24,6 @@
     <FluentLayoutItem Area="LayoutArea.Header" Height="48px">
         <FluentLayoutHamburger @ref="_hamburger" Class="eod-hamburger" IconTitle="Pokaż menu" PanelHeader="@AppName" />
         <a class="eod-appname" href="@HomeHref">@AppName</a>
-        <span class="eod-header-sep" aria-hidden="true"></span>
-        @ContextSwitcher
         <span class="eod-header-spacer"></span>
         @HeaderActions
     </FluentLayoutItem>
@@ -59,18 +56,14 @@
     private FluentLayoutHamburger? _hamburger;
 
     /// <summary>Nazwa w belce (link do strony startowej) i nagłówek panelu menu mobilnego.</summary>
-    /// <value>Domyślnie „MOJE EOD”.</value>
+    /// <value>Domyślnie „Rejestr czasu” (AD-23 poz. 7).</value>
     [Parameter]
-    public string AppName { get; set; } = "MOJE EOD";
+    public string AppName { get; set; } = "Rejestr czasu";
 
     /// <summary>Adres strony startowej (link nazwy aplikacji).</summary>
     /// <value>Domyślnie <c>/</c>.</value>
     [Parameter]
     public string HomeHref { get; set; } = "/";
-
-    /// <summary>Przełącznik kontekstu procesu (<c>EodContextSwitcher</c>) – w belce, za nazwą aplikacji.</summary>
-    [Parameter]
-    public RenderFragment? ContextSwitcher { get; set; }
 
     /// <summary>Prawa część belki: powiadomienia, menu użytkownika.</summary>
     /// <remarks>Przyciski w belce: <c>Appearance="ButtonAppearance.Transparent"</c> i klasa <c>eod-onbrand</c>.</remarks>

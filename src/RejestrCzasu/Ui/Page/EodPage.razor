@@ -1,6 +1,6 @@
 @namespace RejestrCzasu.Ui
 @*
-    EodPage – strona MOJE EOD (specyfikacja UI, sekcja 7): nagłówek (ścieżka · tytuł H1 · opis … akcja główna strony),
+    EodPage – strona Rejestru czasu (specyfikacja UI, sekcja 7): nagłówek (ścieżka · tytuł H1 · opis … akcja główna strony),
     stałe miejsce komunikatów (FluentMessageBarProvider sekcji EodSections.Page – tu trafiają paski z UiMessages)
     i treść z kart EodCard i siatek FluentGrid. Każdy ekran poza formularzem sprawy jest stroną; strona ustawia też
     tytuł karty przeglądarki. Fill="true" – strona ma wysokość obszaru treści i przewija się tylko jej zawartość (raport).
@@ -11,7 +11,7 @@
     </EodPage>
 *@
 
-<PageTitle>@(BrowserTitle ?? (Title is null ? "MOJE EOD" : $"{Title} · MOJE EOD"))</PageTitle>
+<PageTitle>@(BrowserTitle ?? (Title is null ? "Rejestr czasu" : $"{Title} · Rejestr czasu"))</PageTitle>
 
 <section class="@CssClass" aria-label="@Title">
     @if (HeaderContent is not null)
@@ -52,7 +52,7 @@
     [Parameter]
     public string? Title { get; set; }
 
-    /// <summary>Tytuł karty przeglądarki; domyślnie „{Title} · MOJE EOD” (bez tytułu strony – „MOJE EOD”).</summary>
+    /// <summary>Tytuł karty przeglądarki; domyślnie „{Title} · Rejestr czasu” (bez tytułu strony – „Rejestr czasu”, AD-23 poz. 7).</summary>
     [Parameter]
     public string? BrowserTitle { get; set; }
 

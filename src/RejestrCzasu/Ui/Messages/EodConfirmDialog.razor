@@ -1,0 +1,51 @@
+@namespace RejestrCzasu.Ui
+@*
+    EodConfirmDialog – treść okna potwierdzenia UiMessages.ConfirmAsync (Rejestr, AD-23 poz. 6).
+    Wygląd jak okno MessageBox biblioteki (ikona 32 px w kolorze rodzaju, treść HTML, przycisk główny pierwszy),
+    ale z własnymi przyciskami zamiast stopki biblioteki: bez skrótów klawiszowych (Enter nie zatwierdza),
+    fokus na drugim przycisku („Anuluj”), Escape zamyka okno jak drugi przycisk.
+    Ekrany nie renderują go same – okno pokazuje UiMessages.ConfirmAsync.
+*@
+
+<FluentDialogBody>
+    <ChildContent>
+        <div class="fluent-message-box">
+            <FluentIcon Value="@Icon" Color="@IconColor" Width="32px" Class="icon" />
+            <div class="message">@((MarkupString)Message)</div>
+        </div>
+    </ChildContent>
+    <ActionTemplate>
+        <FluentButton Appearance="ButtonAppearance.Primary" OnClick="ConfirmAsync" class="eod-confirm-primary">@PrimaryButton</FluentButton>
+        <FluentButton AutoFocus="true" OnClick="CancelAsync" class="eod-confirm-secondary">@SecondaryButton</FluentButton>
+    </ActionTemplate>
+</FluentDialogBody>
+
+@code {
+    /// <summary>Instancja okna przekazywana przez dostawcę okien biblioteki.</summary>
+    [CascadingParameter]
+    public required IDialogInstance Dialog { get; set; }
+
+    /// <summary>Treść (HTML: p, strong, ul, li); wartości użytkownika koduje ekran.</summary>
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>Tekst przycisku głównego – czynność, np. „Usuń”.</summary>
+    [Parameter]
+    public string PrimaryButton { get; set; } = string.Empty;
+
+    /// <summary>Tekst drugiego przycisku; ma fokus po otwarciu okna.</summary>
+    [Parameter]
+    public string SecondaryButton { get; set; } = "Anuluj";
+
+    /// <summary>Rodzaj okna – wyznacza ikonę i jej kolor jak w oknie MessageBox.</summary>
+    [Parameter]
+    public MessageBoxKind Kind { get; set; } = MessageBoxKind.Confirmation;
+
+    private Icon Icon => UiMessages.KindIcon(Kind).Icon;
+
+    private Color IconColor => UiMessages.KindIcon(Kind).Color;
+
+    private Task ConfirmAsync() => Dialog.CloseAsync();
+
+    private Task CancelAsync() => Dialog.CancelAsync();
+}

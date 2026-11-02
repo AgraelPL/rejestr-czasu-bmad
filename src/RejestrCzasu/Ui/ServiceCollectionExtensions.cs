@@ -7,7 +7,7 @@ using Microsoft.FluentUI.AspNetCore.Components;
 namespace RejestrCzasu.Ui;
 
 /// <summary>
-/// Podłączenie wzorca UI MOJE EOD do aplikacji: rejestracja usług biblioteki i polska kultura interfejsu.
+/// Podłączenie kopii wzorca UI eod-ui do aplikacji: rejestracja usług biblioteki i polska kultura interfejsu.
 /// Aplikacja wywołuje obie metody raz, w <c>Program.cs</c>.
 /// </summary>
 /// <remarks>Specyfikacja UI, sekcje 3.1 (pułapki Fluent UI Blazor v5) i 18 (biblioteka – komponenty i usługi).</remarks>
@@ -35,7 +35,7 @@ public static class ServiceCollectionExtensions
             options.Localizer = new PolishLocalizer();
 
             // Fluent v5 dodaje każdemu polu z etykietą klasę „my-3-o” (12 px marginesu nad i pod polem).
-            // Odstępy między polami daje układ (.eod-fields, .eod-stack, FluentGrid) – margines pola je podwajał.
+            // Odstępy między polami daje układ (.eod-stack, FluentGrid) – margines pola je podwajał.
             options.DefaultStyles.FluentFieldClass = null;
         });
         services.AddScoped<UiMessages>();
