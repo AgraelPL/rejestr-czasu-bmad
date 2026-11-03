@@ -181,53 +181,144 @@ h1:focus {
         content: "Wystąpił błąd.";
     }
 
-/* Static /konto pages (AccountLayout, AD-11): no menu, a narrow centred form. */
-.account-header {
-    align-items: center;
-    border-bottom: 1px solid #d1d1d1;
+/* Static /konto pages (AccountLayout, AD-11): the brand top bar of EodShell without a menu, a centred column of
+   eod-page; native form fields (SSR, no circuit) look like Fluent 2 inputs and buttons, tokens only. */
+.account-layout {
     display: flex;
-    justify-content: space-between;
-    padding: 0.75rem 1.5rem;
+    flex-direction: column;
+    min-height: 100%;
 }
 
-.account-app-name {
-    font-weight: 600;
+.account-header {
+    align-items: center;
+    background: var(--colorBrandBackground);
+    color: var(--colorNeutralForegroundOnBrand);
+    display: flex;
+    flex: none;
+    gap: 4px;
+    height: var(--eod-header-height);
+    min-width: 0;
+    padding: 0 12px;
+}
+
+/* Phone width: the same top bar as EodShell (eod.css "Wąskie ekrany"; .eod-appname is narrowed there too). */
+@media (max-width: 900px) {
+    .account-header {
+        padding: 0 8px;
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+}
+
+.account-help {
+    border-radius: var(--borderRadiusMedium);
+    font-weight: var(--fontWeightSemibold);
+    padding: 4px 8px;
+    text-decoration: none;
 }
 
 .account-content {
-    margin: 0 auto;
-    max-width: 26rem;
-    padding: 1.5rem;
+    flex: 1 0 auto;
+    margin-inline: auto;
+    max-width: 32rem;
+    width: 100%;
 }
+
+    /* Help topics on EodPage (HelpLayout, AD-22): a wider reading column. */
+    .account-content:has(.eod-page-head) {
+        max-width: 60rem;
+    }
 
 .account-form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: var(--spacingVerticalL);
 }
 
 .account-field {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: var(--spacingVerticalXS);
 }
 
     .account-field input {
+        background: var(--colorNeutralBackground1);
+        border: var(--strokeWidthThin) solid var(--colorNeutralStroke1);
+        border-bottom-color: var(--colorNeutralStrokeAccessible);
+        border-radius: var(--borderRadiusMedium);
+        color: var(--colorNeutralForeground1);
         font: inherit;
-        padding: 0.4rem 0.5rem;
+        min-height: 32px;
+        padding: 0 var(--spacingHorizontalM);
     }
+
+        .account-field input:hover {
+            border-color: var(--colorNeutralStroke1Hover);
+            border-bottom-color: var(--colorNeutralStrokeAccessibleHover);
+        }
+
+        .account-field input:focus,
+        .account-field input:focus-visible {
+            outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+            outline-offset: 1px;
+        }
+
+        .account-field input.invalid {
+            border-color: var(--colorPaletteRedBorder2);
+        }
 
 .account-submit {
     align-self: flex-start;
+    background: var(--colorBrandBackground);
+    border: var(--strokeWidthThin) solid transparent;
+    border-radius: var(--borderRadiusMedium);
+    color: var(--colorNeutralForegroundOnBrand);
+    cursor: pointer;
     font: inherit;
-    padding: 0.4rem 1.25rem;
+    font-weight: var(--fontWeightSemibold);
+    min-height: 32px;
+    min-width: 96px;
+    padding: 0 var(--spacingHorizontalM);
 }
 
+    .account-submit:hover {
+        background: var(--colorBrandBackgroundHover);
+    }
+
+    .account-submit:active {
+        background: var(--colorBrandBackgroundPressed);
+    }
+
+/* Wyloguj during a required password change: a Secondary button. */
+.account-logout {
+    margin: 0;
+}
+
+.account-secondary {
+    background: var(--colorNeutralBackground1);
+    border-color: var(--colorNeutralStroke1);
+    color: var(--colorNeutralForeground1);
+}
+
+    .account-secondary:hover {
+        background: var(--colorNeutralBackground1Hover);
+        border-color: var(--colorNeutralStroke1Hover);
+    }
+
+    .account-secondary:active {
+        background: var(--colorNeutralBackground1Pressed);
+        border-color: var(--colorNeutralStroke1Pressed);
+    }
+
 .account-message {
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacingVerticalL);
+}
+
+.eod-card-body > p + .account-links {
+    margin-top: var(--spacingVerticalM);
 }
 
 .validation-message {
-    color: #b10e1c;
+    color: var(--colorStatusDangerForeground1);
+    font-size: var(--fontSizeBase200);
+    line-height: var(--lineHeightBase200);
 }

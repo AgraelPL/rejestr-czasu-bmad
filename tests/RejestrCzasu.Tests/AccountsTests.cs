@@ -364,6 +364,9 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.DoesNotContain("\"type\":\"server\"", html);
         Assert.DoesNotContain("https://", html);
         Assert.Contains("href=\"/pomoc", html);
+        // The eod-ui copy classes in AccountLayout, without EodShell (AD-11).
+        Assert.Contains("class=\"eod-h1\"", html);
+        Assert.DoesNotContain("eod-shell", html);
     }
 
     [Fact]

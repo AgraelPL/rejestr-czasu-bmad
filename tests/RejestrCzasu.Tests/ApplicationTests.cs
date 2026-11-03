@@ -44,7 +44,7 @@ public sealed class ApplicationTests(PostgresFixture postgres)
         Assert.Contains("script-src 'self'", csp);
 
         var html = await response.Content.ReadAsStringAsync(Ct);
-        Assert.Contains("Rejestr czasu pracy", html);
+        Assert.Contains("<title>Logowanie · Rejestr czasu</title>", html);
         Assert.Contains("<html lang=\"pl\">", html);
         Assert.DoesNotContain("importmap", html);
         Assert.DoesNotContain("https://", html);
