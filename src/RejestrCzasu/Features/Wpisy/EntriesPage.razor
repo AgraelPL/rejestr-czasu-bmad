@@ -9,68 +9,105 @@
 @inject ProjectStore Projects
 @inject WorkTypeStore WorkTypes
 @inject TimeProvider TimeProvider
-@* Lista wpisów (R8, R17, R2): the User's Entries with the screen filters (date range, Projekt, Typ pracy) above the
-   grid. The count and the sum of Czas come from the query result, i.e. from the screen filters only; the grid's value
-   filter never changes them (AD-9). Data only through the stores (AD-4, AD-16). The row icons edit, copy and delete
-   the Entry through EntryDialogs (R6, R7); after a change the list is read again from the database. *@
+@* Lista wpisów (R8, R17, R2): the User's Entries on EodPage with EodReport (AD-9, AD-11). The screen filters (date
+   range, Projekt, Typ pracy) sit in the filter bar above the report; the sum of Czas in the footer comes from the list
+   EntryStore returns for them (AD-5), so the report's column filters only hide rows and never change it. Data only
+   through the stores (AD-4, AD-16). The row icons edit, copy and delete the Entry through EntryDialogs by its Id
+   (R6, R7, AD-10); after a change the list is read again from the database. *@
 
-<PageHeader Title="Lista wpisów" Subtitle="Twoje Wpisy z zakresu dat, Projektu i Typu pracy, od najnowszych."
-            Topic="@HelpTopics.Wpisy" />
-
-<div class="entries-filters">
-    <FluentDatePicker TValue="DateOnly?" Value="_from" ValueChanged="OnFromChangedAsync" ValueExpression="() => _from"
-                      RenderStyle="DatePickerRenderStyle.Native" Label="Od" class="entries-from" />
-    <FluentDatePicker TValue="DateOnly?" Value="_to" ValueChanged="OnToChangedAsync" ValueExpression="() => _to"
-                      RenderStyle="DatePickerRenderStyle.Native" Label="Do" class="entries-to" />
-    <FluentSelect TOption="FilterOption" TValue="FilterOption" Items="_projectOptions" Value="_project"
-                  ValueChanged="OnProjectChangedAsync" ValueExpression="() => _project" OptionText="OptionText"
-                  Label="Projekt" class="entries-project" />
-    <FluentSelect TOption="FilterOption" TValue="FilterOption" Items="_workTypeOptions" Value="_workType"
-                  ValueChanged="OnWorkTypeChangedAsync" ValueExpression="() => _workType" OptionText="OptionText"
-                  Label="Typ pracy" class="entries-work-type" />
-</div>
-@if (_rangeError)
-{
-    <p class="entries-filter-error" role="alert">@RangeErrorMessage</p>
-}
-
-@if (_rows is not null)
-{
-    <ReportGrid T="EntryRow" Items="_rows" Columns="Columns" Actions="_actions" />
-    <p class="entries-summary">@Summary(_rows)</p>
-}
+<EodPage Title="Lista wpisów" Description="Twoje Wpisy z zakresu dat, Projektu i Typu pracy, od najnowszych." Fill="true">
+    <PageHelp Topic="@HelpTopics.Wpisy" />
+    <EodCard NoPadding="true" Fill="true">
+        <div class="eod-formbar eod-filterbar">
+            <FluentDatePicker TValue="DateOnly?" Value="_from" ValueChanged="OnFromChangedAsync" ValueExpression="() => _from"
+                              RenderStyle="DatePickerRenderStyle.Native" Label="Od" class="entries-from" />
+            <FluentDatePicker TValue="DateOnly?" Value="_to" ValueChanged="OnToChangedAsync" ValueExpression="() => _to"
+                              RenderStyle="DatePickerRenderStyle.Native" Label="Do" class="entries-to" />
+            <FluentSelect TOption="FilterOption" TValue="FilterOption" Items="_projectOptions" Value="_project"
+                          ValueChanged="OnProjectChangedAsync" ValueExpression="() => _project" OptionText="OptionText"
+                          Label="Projekt" class="entries-project" />
+            <FluentSelect TOption="FilterOption" TValue="FilterOption" Items="_workTypeOptions" Value="_workType"
+                          ValueChanged="OnWorkTypeChangedAsync" ValueExpression="() => _workType" OptionText="OptionText"
+                          Label="Typ pracy" class="entries-work-type" />
+            @if (_rangeError)
+            {
+                <span class="entries-filter-error" role="alert">@RangeErrorMessage</span>
+            }
+        </div>
+        <EodReport Definition="Report" Rows="_rows" LayoutKey="@HelpTopics.Wpisy" ShowExport="false"
+                   PreserveRowOrder="true" Loading="_entries is null" FooterSummary="@Summary(_entries ?? [])">
+            <RowActions Context="row">
+                @{ var id = (int)row[IdKey]!; }
+                <FluentButton IconStart="@(new Icons.Regular.Size20.Edit())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                              Title="Edytuj" aria-label="Edytuj" OnClick="@(() => ReloadAfterAsync(() => Dialogs.EditAsync(id)))" />
+                <FluentButton IconStart="@(new Icons.Regular.Size20.Copy())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                              Title="Kopiuj" aria-label="Kopiuj" OnClick="@(() => ReloadAfterAsync(() => Dialogs.CopyAsync(id)))" />
+                <FluentButton IconStart="@(new Icons.Regular.Size20.Delete())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                              Title="Usuń" aria-label="Usuń" OnClick="@(() => ReloadAfterAsync(() => Dialogs.DeleteAsync(id)))" />
+            </RowActions>
+        </EodReport>
+    </EodCard>
+</EodPage>
 
 @code {
     internal const string RangeErrorMessage = "Data „Od” jest późniejsza niż „Do”.";
 
     private static readonly FilterOption All = new(null, "Wszystkie");
 
-    private static readonly IReadOnlyList<ReportColumn<EntryRow>> Columns =
-    [
-        new("Data", e => e.DateText),
-        new("Dzień", e => e.DayName),
-        new("Projekt", e => e.ProjectCode),
-        new("Typ pracy", e => e.WorkTypeName),
-        new("Opis", e => e.Description),
-        new("Czas", e => e.CzasText),
-    ];
+    /// <summary>Key of the Entry id in a report row, outside the columns; only the row actions use it (AD-9).</summary>
+    private const string IdKey = nameof(EntryRow.Id);
 
-    private IReadOnlyList<ReportAction<EntryRow>> _actions = [];
+    /// <summary>
+    /// The report of the screen (AD-9): value filter in every column, counter in the footer, no export. Data is a
+    /// <see cref="DateOnly"/> and Czas an <see cref="int"/> of minutes, so both sort by value, not by text.
+    /// </summary>
+    internal static readonly ReportDefinition Report = new()
+    {
+        Key = HelpTopics.Wpisy,
+        Title = "Lista wpisów",
+        Description = "Twoje Wpisy z zakresu dat, Projektu i Typu pracy, od najnowszych.",
+        FileName = HelpTopics.Wpisy,
+        Columns =
+        [
+            new(nameof(EntryRow.Date), "Data", ColumnType.List) { IsKey = true, Format = v => EntryMessages.Date((DateOnly)v!) },
+            new(nameof(EntryRow.DayName), "Dzień", ColumnType.List),
+            new(nameof(EntryRow.ProjectCode), "Projekt", ColumnType.List),
+            new(nameof(EntryRow.WorkTypeName), "Typ pracy", ColumnType.List),
+            new(nameof(EntryRow.Description), "Opis", ColumnType.List),
+            new(nameof(EntryRow.Minutes), "Czas", ColumnType.List) { Format = v => Czas.Format((int)v!) },
+        ],
+    };
+
     private DateOnly? _from;
     private DateOnly? _to;
     private FilterOption _project = All;
     private FilterOption _workType = All;
     private IReadOnlyList<FilterOption> _projectOptions = [All];
     private IReadOnlyList<FilterOption> _workTypeOptions = [All];
-    private IReadOnlyList<EntryRow>? _rows;
+    // The list of the screen filters (source of the footer sum, AD-5); null until the first load.
+    private IReadOnlyList<EntryRow>? _entries;
+    private IReadOnlyList<IReadOnlyDictionary<string, object?>> _rows = [];
     private bool _rangeError;
+    private bool _busy;
     // Every reload takes the next version; an older query finishing later never overwrites a newer result.
     private int _version;
 
     /// <summary>An option of the Projekt or Typ pracy filter; <c>Id</c> <c>null</c> is „Wszystkie”.</summary>
     public sealed record FilterOption(int? Id, string Text);
 
-    /// <summary>The summary under the list: count and sum of Czas of the query result.</summary>
+    /// <summary>The report row of an Entry: the columns plus <c>Id</c> for the row actions (AD-9).</summary>
+    internal static IReadOnlyDictionary<string, object?> ToRow(EntryRow entry) => new Dictionary<string, object?>
+    {
+        [IdKey] = entry.Id,
+        [nameof(EntryRow.Date)] = entry.Date,
+        [nameof(EntryRow.DayName)] = entry.DayName,
+        [nameof(EntryRow.ProjectCode)] = entry.ProjectCode,
+        [nameof(EntryRow.WorkTypeName)] = entry.WorkTypeName,
+        [nameof(EntryRow.Description)] = entry.Description,
+        [nameof(EntryRow.Minutes)] = entry.Minutes,
+    };
+
+    /// <summary>The text of the footer after the report's counter: count and sum of Czas of the screen filters' list.</summary>
     internal static string Summary(IReadOnlyList<EntryRow> rows) =>
         $"Wpisy: {rows.Count}, suma Czasu: {Czas.Format(rows.Sum(r => r.Minutes))}";
 
@@ -80,12 +117,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _actions =
-        [
-            new(new Icons.Regular.Size20.Edit(), "Edytuj", e => ReloadAfterAsync(Dialogs.EditAsync(e.Id))),
-            new(new Icons.Regular.Size20.Copy(), "Kopiuj", e => ReloadAfterAsync(Dialogs.CopyAsync(e.Id))),
-            new(new Icons.Regular.Size20.Delete(), "Usuń", e => ReloadAfterAsync(Dialogs.DeleteAsync(e.Id))),
-        ];
         var month = YearMonth.From(PolishCalendar.Today(TimeProvider));
         _from = month.FirstDay;
         _to = month.LastDay;
@@ -97,11 +128,24 @@
         await ReloadAsync();
     }
 
-    private async Task ReloadAfterAsync(Task<bool> action)
+    // A row action while another one is still running (e.g. a second click while its window is open) is ignored.
+    private async Task ReloadAfterAsync(Func<Task<bool>> action)
     {
-        if (await action)
+        if (_busy)
         {
-            await ReloadAsync();
+            return;
+        }
+        _busy = true;
+        try
+        {
+            if (await action())
+            {
+                await ReloadAsync();
+            }
+        }
+        finally
+        {
+            _busy = false;
         }
     }
 
@@ -111,7 +155,7 @@
         if (_from is { } from && _to is { } to && from > to)
         {
             _rangeError = true;
-            _rows = [];
+            Show([]);
             return;
         }
 
@@ -119,8 +163,14 @@
         var rows = await Store.ListAsync(new EntryFilter(_from, _to, _project.Id, _workType.Id));
         if (version == _version)
         {
-            _rows = rows;
+            Show(rows);
         }
+    }
+
+    private void Show(IReadOnlyList<EntryRow> entries)
+    {
+        _entries = entries;
+        _rows = entries.Select(ToRow).ToList();
     }
 
     private Task OnFromChangedAsync(DateOnly? value)

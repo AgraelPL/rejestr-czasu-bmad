@@ -55,11 +55,16 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
     }
 
     [Fact]
-    public void Open_TodayInPoland_EmptyFields_HeaderAndHelpTopic()
+    public void Open_TodayInPoland_EmptyFields_EodPageWithCard_HelpTopic()
     {
         var cut = RenderScreen();
 
-        Assert.Equal("Nowy wpis", cut.Find("h1").TextContent);
+        Assert.Equal("Nowy wpis", cut.Find(".eod-page h1").TextContent);
+        Assert.Equal("Kolejne Wpisy samą klawiaturą: data, Projekt, Typ pracy, opis, Czas i Enter.",
+            cut.Find(".eod-page-head .eod-caption").TextContent);
+        Assert.Empty(cut.FindAll(".page-header"));
+        Assert.NotNull(cut.Find(".eod-page .eod-card form.entry-form"));
+        Assert.Equal(["Zapisz"], cut.FindAll(".entry-form-buttons fluent-button").Select(b => b.TextContent.Trim()));
         Assert.Equal("/pomoc/wpisy-nowy", cut.Find(".app-help").GetAttribute("href"));
         var date = DatePicker(cut).Instance;
         Assert.Equal(Today, date.Value);
@@ -99,6 +104,8 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         await EnterAsync(cut, Czas(cut), "1h 30m");
 
         WaitForMessage(cut, "success", "Zapisano Wpis: 03.09.2026, RDZ, 1h 30m.");
+        // The bar lies in the message section of EodPage, under the header.
+        Assert.Contains("Zapisano Wpis", cut.Find(".eod-page .eod-messages").TextContent);
         var entry = Assert.Single(await EntriesAsync());
         Assert.Equal(
             (_user, Today, projects["RDZ"].Id, workTypes["Development"].Id, "Spotkanie", 90),
@@ -253,6 +260,7 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         await EnterAsync(cut, Czas(cut), "1:30");
 
         WaitForMessage(cut, "error", "Wybrany Projekt lub Typ pracy już nie istnieje.");
+        Assert.Contains("już nie istnieje", cut.Find(".eod-page .eod-messages").TextContent);
         Assert.Empty(await EntriesAsync());
         cut.WaitForAssertion(() => Assert.Equal(["ABC"], ProjectList(cut).Instance.Items!.Select(p => p.Code)));
         Assert.Equal(projects["RDZ"], ProjectList(cut).Instance.Value);

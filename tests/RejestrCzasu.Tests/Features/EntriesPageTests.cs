@@ -12,6 +12,7 @@ using RejestrCzasu.Features.TypyPracy;
 using RejestrCzasu.Features.Wpisy;
 using RejestrCzasu.Shared;
 using RejestrCzasu.Tests.Shared;
+using RejestrCzasu.Ui;
 using FilterSelect = Microsoft.FluentUI.AspNetCore.Components.FluentSelect<
     RejestrCzasu.Features.Wpisy.EntriesPage.FilterOption, RejestrCzasu.Features.Wpisy.EntriesPage.FilterOption>;
 
@@ -59,22 +60,27 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task Open_CurrentMonth_NewestFirst_CountAndSum_HeaderAndHelpTopic()
+    public async Task Open_CurrentMonth_NewestFirst_CountAndSum_EodPageWithReport_HelpTopic()
     {
         await SeedAsync();
 
         var cut = RenderScreen();
 
-        Assert.Equal("Lista wpisów", cut.Find("h1").TextContent);
+        Assert.Equal("Lista wpisów", cut.Find(".eod-page h1").TextContent);
+        Assert.Empty(cut.FindAll(".page-header"));
+        Assert.Equal(["Data", "Dzień", "Projekt", "Typ pracy", "Opis", "Czas"], Headers(cut));
+        // The screen filters lie in the filter bar of the card, above the report.
+        var bar = cut.Find(".eod-page .eod-card > .eod-formbar.eod-filterbar");
+        Assert.Equal(4, bar.QuerySelectorAll(".entries-from, .entries-to, .entries-project, .entries-work-type").Length);
         Assert.Equal("/pomoc/wpisy", cut.Find(".app-help").GetAttribute("href"));
         var pickers = cut.FindComponents<FluentDatePicker<DateOnly?>>();
         Assert.Equal([new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 30)], pickers.Select(p => p.Instance.Value));
         Assert.All(pickers, p => Assert.Equal(DatePickerRenderStyle.Native, p.Instance.RenderStyle));
         cut.WaitForAssertion(() => Assert.Equal(["Koniec września", "Drugi 1 września", "Pierwszy 1 września"], Descriptions(cut)));
         Assert.Equal(["30.09.2026", "Środa", "OLD", "Development", "Koniec września", "24h"],
-            cut.FindAll("tbody tr")[0].QuerySelectorAll("td").Take(6).Select(td => td.TextContent));
-        Assert.Equal("Wpisy: 3, suma Czasu: 25h 30m", Summary(cut));
-        Assert.Equal("Pozycje: 3", cut.Find(".report-grid-counter").TextContent);
+            Rows(cut)[0].QuerySelectorAll("td").Take(6).Select(td => td.TextContent.Trim()));
+        Assert.Equal("3 pozycje · Wpisy: 3, suma Czasu: 25h 30m", Summary(cut));
+        Assert.DoesNotContain("Eksport CSV", cut.Markup);
         Assert.DoesNotContain("Cudzy", cut.Markup);
     }
 
@@ -100,16 +106,16 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
 
         await SelectAsync(cut, ProjectSelect(cut), "RDZ — Rozwój");
         cut.WaitForAssertion(() => Assert.Equal(["Drugi 1 września", "Pierwszy 1 września"], Descriptions(cut)));
-        Assert.Equal("Wpisy: 2, suma Czasu: 1h 30m", Summary(cut));
+        Assert.Equal("2 pozycje · Wpisy: 2, suma Czasu: 1h 30m", Summary(cut));
 
         await SetDateAsync(cut, 0, new DateOnly(2026, 8, 1));
         await SetDateAsync(cut, 1, new DateOnly(2026, 8, 31));
         cut.WaitForAssertion(() => Assert.Equal(["Sierpień"], Descriptions(cut)));
-        Assert.Equal("Wpisy: 1, suma Czasu: 2h", Summary(cut));
+        Assert.Equal("1 pozycja · Wpisy: 1, suma Czasu: 2h", Summary(cut));
 
         await SelectAsync(cut, WorkTypeSelect(cut), "Spotkanie");
         cut.WaitForAssertion(() => Assert.Empty(Descriptions(cut)));
-        Assert.Equal("Wpisy: 0, suma Czasu: 0h", Summary(cut));
+        Assert.Equal("0 pozycji · Wpisy: 0, suma Czasu: 0h", Summary(cut));
     }
 
     [Fact]
@@ -121,7 +127,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         await SelectAsync(cut, ProjectSelect(cut), "OLD — Stary (nieaktywny)");
 
         cut.WaitForAssertion(() => Assert.Equal(["Koniec września"], Descriptions(cut)));
-        Assert.Equal("Wpisy: 1, suma Czasu: 24h", Summary(cut));
+        Assert.Equal("1 pozycja · Wpisy: 1, suma Czasu: 24h", Summary(cut));
     }
 
     [Fact]
@@ -133,7 +139,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         await SetDateAsync(cut, 0, null);
 
         cut.WaitForAssertion(() => Assert.Equal(4, Descriptions(cut).Count));
-        Assert.Equal("Wpisy: 4, suma Czasu: 27h 30m", Summary(cut));
+        Assert.Equal("4 pozycje · Wpisy: 4, suma Czasu: 27h 30m", Summary(cut));
     }
 
     [Fact]
@@ -147,8 +153,9 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         await SetDateAsync(cut, 1, new DateOnly(2026, 9, 1));
 
         cut.WaitForAssertion(() => Assert.Empty(Descriptions(cut)));
-        Assert.Equal("Data „Od” jest późniejsza niż „Do”.", cut.Find(".entries-filter-error").TextContent);
-        Assert.Equal("Wpisy: 0, suma Czasu: 0h", Summary(cut));
+        Assert.Equal("Data „Od” jest późniejsza niż „Do”.", cut.Find(".eod-filterbar .entries-filter-error").TextContent);
+        Assert.Equal("alert", cut.Find(".entries-filter-error").GetAttribute("role"));
+        Assert.Equal("0 pozycji · Wpisy: 0, suma Czasu: 0h", Summary(cut));
 
         await SetDateAsync(cut, 1, new DateOnly(2026, 9, 30));
         cut.WaitForAssertion(() => Assert.Equal(["Koniec września"], Descriptions(cut)));
@@ -160,7 +167,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
     {
         var cut = RenderScreen();
 
-        cut.WaitForAssertion(() => Assert.Equal("Wpisy: 0, suma Czasu: 0h", Summary(cut)));
+        cut.WaitForAssertion(() => Assert.Equal("0 pozycji · Wpisy: 0, suma Czasu: 0h", Summary(cut)));
         Assert.Empty(Descriptions(cut));
     }
 
@@ -171,7 +178,64 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         var cut = RenderScreen();
         cut.WaitForAssertion(() => Assert.Equal(3, Descriptions(cut).Count));
 
-        Assert.All(cut.FindAll("tbody tr"), row => Assert.Equal(["Edytuj", "Kopiuj", "Usuń"], ActionLabels(row)));
+        Assert.All(Rows(cut), row => Assert.Equal(["Edytuj", "Kopiuj", "Usuń"], ActionLabels(row)));
+        Assert.All(Rows(cut)[0].QuerySelectorAll("fluent-button[aria-label]"), b => Assert.Equal("subtle", b.GetAttribute("appearance")));
+    }
+
+    [Fact]
+    public async Task ColumnFilter_HidesRows_CounterAfterFilters_SumOfScreenFiltersUnchanged()
+    {
+        await SeedAsync();
+        var cut = RenderScreen();
+
+        await OpenColumnFilterAsync(cut, "Projekt");
+        var old = cut.FindComponents<FluentCheckbox>().Single(c => c.Instance.Label == "OLD (1)");
+        await cut.InvokeAsync(() => old.Instance.ValueChanged.InvokeAsync(false));
+
+        Assert.Equal(["Drugi 1 września", "Pierwszy 1 września"], Descriptions(cut));
+        Assert.Equal("2 pozycje · Wpisy: 3, suma Czasu: 25h 30m · po filtrach, z 3", Summary(cut));
+    }
+
+    [Fact]
+    public async Task SortByCzas_OrdersByMinutes_NotByText()
+    {
+        await SeedAsync();
+        await AddEntriesAsync(new DateOnly(2026, 9, 15), ("Dziesięć godzin", 600), ("Kwadranse", 45), ("Dwie godziny", 120));
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(6, Descriptions(cut).Count));
+
+        var czas = cut.FindAll("thead th [col-sort-button]").Single(b => b.TextContent.Trim().StartsWith("Czas", StringComparison.Ordinal));
+        await cut.InvokeAsync(() => czas.Click());
+
+        cut.WaitForAssertion(() => Assert.Equal(["30m", "45m", "1h", "2h", "10h", "24h"], Column(cut, 5)));
+    }
+
+    [Fact]
+    public async Task SameDay_HigherIdFirst_DateColumnFormatted()
+    {
+        await SeedAsync();
+        await AddEntriesAsync(new DateOnly(2026, 9, 15), ("Rano", 60), ("Wieczorem", 60));
+        var cut = RenderScreen();
+
+        cut.WaitForAssertion(() => Assert.Equal(
+            ["Koniec września", "Wieczorem", "Rano", "Drugi 1 września", "Pierwszy 1 września"], Descriptions(cut)));
+        Assert.Equal(["30.09.2026", "15.09.2026", "15.09.2026", "01.09.2026", "01.09.2026"], Column(cut, 0));
+    }
+
+    [Fact]
+    public void Report_StaticDefinition_ListColumnsByEntryRowProperties_IdOutsideColumns()
+    {
+        Assert.Equal(HelpTopics.Wpisy, EntriesPage.Report.Key);
+        Assert.All(EntriesPage.Report.Columns, c => Assert.Equal(ColumnType.List, c.Type));
+        Assert.Equal(
+            [nameof(EntryRow.Date), nameof(EntryRow.DayName), nameof(EntryRow.ProjectCode), nameof(EntryRow.WorkTypeName),
+                nameof(EntryRow.Description), nameof(EntryRow.Minutes)],
+            EntriesPage.Report.Columns.Select(c => c.Key));
+        var row = EntriesPage.ToRow(new EntryRow(7, new DateOnly(2026, 9, 3), 1, "RDZ", 2, "Development", "Opis", 90));
+        Assert.Equal(7, row["Id"]);
+        Assert.Equal(new DateOnly(2026, 9, 3), row[nameof(EntryRow.Date)]);
+        Assert.Equal(90, row[nameof(EntryRow.Minutes)]);
+        Assert.DoesNotContain(EntriesPage.Report.Columns, c => c.Key == "Id");
     }
 
     [Fact]
@@ -190,6 +254,8 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         _ = OpenWindow(cut, "Sierpień", "Edytuj");
 
         Assert.Contains("Edycja Wpisu", cut.Find("fluent-dialog").TextContent);
+        // Zapisz first, Anuluj next to it in the one button row of EntryForm.
+        Assert.Equal(["Zapisz", "Anuluj"], cut.FindAll("fluent-dialog .entry-form-buttons fluent-button").Select(b => b.TextContent.Trim()));
         Assert.Equal(new DateOnly(2026, 8, 20), DialogDate(cut).Instance.Value);
         Assert.Equal("RDZ", ProjectList(cut).Instance.Value?.Code);
         Assert.Equal("Development", WorkTypeList(cut).Instance.Value?.Name);
@@ -206,13 +272,15 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
 
         WaitForMessage(cut, "success", "Zapisano Wpis: 21.08.2026, ABC, 3h 15m.");
         cut.WaitForAssertion(() => Assert.Empty(cut.FindAll("fluent-dialog")));
+        // The bar is shown by EntryDialogs after the window has closed, in the message section of the page.
+        Assert.Contains("Zapisano Wpis: 21.08.2026", cut.Find(".eod-page .eod-messages").TextContent);
         var entry = await EntryAsync(ids["Sierpień"]);
         Assert.Equal(
             (new DateOnly(2026, 8, 21), abc.Id, spotkanie.Id, "Sierpień poprawiony", 195),
             (entry!.Date, entry.ProjectId, entry.WorkTypeId, entry.Description, entry.Minutes));
         cut.WaitForAssertion(() => Assert.Contains("Sierpień poprawiony", Descriptions(cut)));
         Assert.Equal("ABC", Row(cut, "Sierpień poprawiony").QuerySelectorAll("td")[2].TextContent);
-        Assert.Equal("Wpisy: 4, suma Czasu: 28h 45m", Summary(cut));
+        Assert.Equal("4 pozycje · Wpisy: 4, suma Czasu: 28h 45m", Summary(cut));
         Assert.Equal(4, await CountAsync());
     }
 
@@ -245,6 +313,32 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         Assert.Equal("Drugi 1 września", TextInput(cut, "entry-description").Instance.Value);
         cut.WaitForAssertion(() => Assert.DoesNotContain("Spotkanie", WorkTypeList(cut).Instance.Items!.Select(w => w.Name)));
         Assert.Equal(60, (await EntryAsync(ids["Drugi 1 września"]))!.Minutes);
+    }
+
+    [Fact]
+    public async Task Edit_SaveErrorThenInvalidSubmit_ClearsErrorInWindow()
+    {
+        await SeedAsync();
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(3, Descriptions(cut).Count));
+
+        _ = OpenWindow(cut, "Drugi 1 września", "Edytuj");
+        var spotkanie = WorkTypeList(cut).Instance.Items!.Single(w => w.Name == "Spotkanie");
+        await cut.InvokeAsync(() => WorkTypeList(cut).Instance.ValueChanged.InvokeAsync(spotkanie));
+        await using (var db = await _postgres.CreateUserContextAsync(_user))
+        {
+            db.WorkTypes.Remove(await db.WorkTypes.SingleAsync(w => w.Id == spotkanie.Id, Ct));
+            await db.SaveChangesAsync(Ct);
+        }
+        await cut.Find(".entry-save").ClickAsync(new MouseEventArgs());
+        cut.WaitForElement("fluent-dialog .entry-dialog-error", TimeSpan.FromSeconds(5));
+
+        await cut.InvokeAsync(() => TextInput(cut, "entry-czas").Instance.ValueChanged.InvokeAsync(""));
+        await cut.Find(".entry-save").ClickAsync(new MouseEventArgs());
+
+        cut.WaitForAssertion(() => Assert.Contains(EntryFormValidator.CzasMessage, cut.Markup));
+        Assert.Empty(cut.FindAll(".entry-dialog-error"));
+        Assert.NotEmpty(cut.FindAll("fluent-dialog"));
     }
 
     [Fact]
@@ -368,7 +462,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
 
         WaitForMessage(cut, "success", "Usunięto Wpis: 30.09.2026, OLD, 24h.");
         cut.WaitForAssertion(() => Assert.Equal(["Drugi 1 września", "Pierwszy 1 września"], Descriptions(cut)));
-        Assert.Equal("Wpisy: 2, suma Czasu: 1h 30m", Summary(cut));
+        Assert.Equal("2 pozycje · Wpisy: 2, suma Czasu: 1h 30m", Summary(cut));
         Assert.Null(await EntryAsync(ids["Koniec września"]));
     }
 
@@ -422,6 +516,20 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         cut.WaitForAssertion(() => Assert.Empty(cut.FindAll("fluent-dialog")));
         Assert.Equal(4, await CountAsync());
         Assert.Equal(3, Descriptions(cut).Count);
+    }
+
+    [Fact]
+    public async Task Delete_SecondClickWhileConfirmationOpen_OpensNoSecondWindow()
+    {
+        await SeedAsync();
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(3, Descriptions(cut).Count));
+
+        _ = OpenWindow(cut, "Koniec września", "Usuń", ".eod-confirm-secondary");
+        await Action(cut, "Koniec września", "Usuń").ClickAsync(new MouseEventArgs());
+
+        Assert.Single(cut.FindAll("fluent-dialog"));
+        Assert.Single(cut.FindAll(".eod-confirm-secondary"));
     }
 
     [Theory]
@@ -505,7 +613,12 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
             b.OpenComponent<EntriesPage>(0);
             b.CloseComponent();
         }));
-        cut.WaitForElement(".entries-summary", TimeSpan.FromSeconds(5));
+        // The list is loaded from the database; the report shows skeleton rows until then.
+        cut.WaitForAssertion(() =>
+        {
+            Assert.NotEmpty(cut.FindAll(".eod-page table"));
+            Assert.Empty(cut.FindAll(".eod-skeleton-row"));
+        }, TimeSpan.FromSeconds(5));
         return cut;
     }
 
@@ -530,8 +643,22 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
     private static List<string> Options(IRenderedComponent<FilterSelect> select) =>
         select.Instance.Items!.Select(o => o.Text).ToList();
 
+    private static IReadOnlyList<IElement> Rows(IRenderedComponent<MainLayout> cut) => cut.FindAll("tbody tr[hover]");
+
+    private static List<string> Column(IRenderedComponent<MainLayout> cut, int index) =>
+        Rows(cut).Select(tr => tr.QuerySelectorAll("td")[index].TextContent.Trim()).ToList();
+
+    private static List<string> Headers(IRenderedComponent<MainLayout> cut) =>
+        cut.FindAll("thead th[col-index] [col-sort-button]").Select(e => e.TextContent.Trim()).ToList();
+
+    private static async Task OpenColumnFilterAsync(IRenderedComponent<MainLayout> cut, string label)
+    {
+        var button = cut.FindAll("th fluent-button").Single(b => b.GetAttribute("title")?.EndsWith($": {label}", StringComparison.Ordinal) == true);
+        await cut.InvokeAsync(() => button.Click());
+    }
+
     private static IElement Row(IRenderedComponent<MainLayout> cut, string description) =>
-        cut.FindAll("tbody tr").Single(tr => tr.QuerySelectorAll("td")[4].TextContent == description);
+        Rows(cut).Single(tr => tr.QuerySelectorAll("td")[4].TextContent.Trim() == description);
 
     private static IElement Action(IRenderedComponent<MainLayout> cut, string description, string label) =>
         Row(cut, description).QuerySelector($"fluent-button[aria-label='{label}']")!;
@@ -587,10 +714,26 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         await db.SaveChangesAsync(Ct);
     }
 
-    private static List<string> Descriptions(IRenderedComponent<MainLayout> cut) =>
-        cut.FindAll("tbody tr td:nth-child(5)").Select(td => td.TextContent).ToList();
+    private static List<string> Descriptions(IRenderedComponent<MainLayout> cut) => Column(cut, 4);
 
-    private static string Summary(IRenderedComponent<MainLayout> cut) => cut.Find(".entries-summary").TextContent;
+    /// <summary>The report footer: the counter of visible rows, then the screen's text of count and sum (AD-5).</summary>
+    private static string Summary(IRenderedComponent<MainLayout> cut) => cut.Find(".eod-card-foot .eod-num").TextContent.Trim();
+
+    /// <summary>Adds Entries of RDZ / Development on <paramref name="date"/>, one save each, so the Ids follow the order.</summary>
+    private async Task AddEntriesAsync(DateOnly date, params (string Description, int Minutes)[] entries)
+    {
+        await using var db = await _postgres.CreateUserContextAsync(_user);
+        var rdz = await db.Projects.SingleAsync(p => p.Code == "RDZ", Ct);
+        var development = await db.WorkTypes.SingleAsync(w => w.Name == "Development", Ct);
+        foreach (var (description, minutes) in entries)
+        {
+            db.TimeEntries.Add(new TimeEntry
+            {
+                Date = date, ProjectId = rdz.Id, WorkTypeId = development.Id, Description = description, Minutes = minutes,
+            });
+            await db.SaveChangesAsync(Ct);
+        }
+    }
 
     /// <summary>
     /// RDZ (active) and OLD (inactive); Development, Spotkanie and inactive Archiwalny. Entries: August RDZ 2h; September

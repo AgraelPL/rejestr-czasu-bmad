@@ -4,7 +4,7 @@
 @using Microsoft.JSInterop
 @inject IJSRuntime JS
 @* The one Entry form (AD-10): presentation only. It gets the model, the options of DictionaryOptions and the save
-   call from its host (the /wpisy/nowy page; the dialog of story 2.3); it never creates a database context.
+   call from its host (the /wpisy/nowy page; EntryDialog); it never creates a database context.
    Focus order follows the markup: Data → Projekt → Typ pracy → Opis → Czas (no tabindex > 0).
    Enter: in Data, Opis and Czas it saves the form without a confirmation; in a combobox it only picks the option.
    Opis and Czas send their current text with the Enter key (ChangeAfterKeyPress), so the save never sees a value the
@@ -31,6 +31,7 @@
                      OnChangeAfterKeyPress="OnEnterAsync" class="entry-czas" />
     <div class="entry-form-buttons">
         <FluentButton Appearance="ButtonAppearance.Primary" OnClick="SubmitAsync" class="entry-save">Zapisz</FluentButton>
+        @Buttons
     </div>
 </EditForm>
 
@@ -58,6 +59,12 @@
 
     /// <summary>Called after every change of the date field (also to <c>null</c> when it is cleared).</summary>
     [Parameter] public EventCallback<DateOnly?> OnDateChanged { get; set; }
+
+    /// <summary>Further buttons after Zapisz in the same row (the Entry window: Anuluj); none on Nowy wpis.</summary>
+    [Parameter] public RenderFragment? Buttons { get; set; }
+
+    /// <summary>Called when a save is asked for but the model does not pass <see cref="EntryFormValidator"/>.</summary>
+    [Parameter] public EventCallback OnInvalid { get; set; }
 
     /// <summary>Text of a Project option: "KOD — nazwa".</summary>
     internal static string ProjectText(ProjectOption? project) => project is null ? "" : $"{project.Code} — {project.Name}";
@@ -127,8 +134,13 @@
 
     private async Task SubmitAsync()
     {
-        if (_saving || !_editContext.Validate())
+        if (_saving)
         {
+            return;
+        }
+        if (!_editContext.Validate())
+        {
+            await OnInvalid.InvokeAsync();
             return;
         }
         _saving = true;

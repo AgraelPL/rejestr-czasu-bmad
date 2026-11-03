@@ -12,7 +12,7 @@
     width: 100%;
 }
 
-/* Until stories 7.4 and 7.5: screens with PageHeader (no EodPage) get the page gutter of eod.css. */
+/* Until story 7.7: screens with PageHeader (no EodPage) get the page gutter of eod.css. */
 .eod-content:not(:has(> .eod-page)) {
     padding: 20px var(--eod-gutter, 24px) 24px;
 }
@@ -104,30 +104,16 @@
     margin-top: 0.25rem;
 }
 
-/* Entry window (EntryDialog): Anuluj in its own row right under the Zapisz row of EntryForm. */
-.entry-dialog-buttons {
+/* EntryForm: Zapisz and, in the Entry window (EntryDialog), Anuluj next to it. */
+.entry-form-buttons {
     display: flex;
     gap: 0.5rem;
     margin-top: 0.75rem;
 }
 
-/* Lista wpisów: screen filters above the grid, summary under it. */
-.entries-filters {
-    align-items: flex-end;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-bottom: 0.5rem;
-}
-
+/* Lista wpisów: the message of a date range Od > Do in the filter bar above the report. */
 .entries-filter-error {
-    color: var(--colorPaletteRedForeground1, #b10e1c);
-    margin: 0 0 0.5rem;
-}
-
-.entries-summary {
-    font-weight: 600;
-    margin: 0.5rem 0 0;
+    color: var(--colorStatusDangerForeground1, #b10e1c);
 }
 
 /* Lost connection (R31): hidden until blazor.web.js sets one of its classes on the element; no JS of our own. */

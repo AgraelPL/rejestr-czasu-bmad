@@ -110,10 +110,11 @@ public sealed class EntryDialogs(
         var result = await dialogs.ShowDialogAsync<EntryDialog>(dialog =>
         {
             dialog.Modal = true;
+            dialog.Size = DialogSize.Medium;
             // The library renders the title as (sanitized) HTML; the title is plain text.
             dialog.Header.Title = WebUtility.HtmlEncode(title);
-            // The library footer stays hidden and without shortcuts, as in UiMessages.ConfirmAsync: Zapisz is in EntryForm, Anuluj in
-            // EntryDialog. Escape closes the native dialog, which the library reports as Cancel.
+            // The library footer stays hidden and without shortcuts, as in UiMessages.ConfirmAsync: Zapisz and Anuluj (from
+            // EntryDialog) are in the button row of EntryForm. Escape closes the native dialog, which the library reports as Cancel.
             Confirm.HideLibraryFooter(dialog);
             dialog.Parameters.Add(nameof(EntryDialog.Model), input);
             dialog.Parameters.Add(nameof(EntryDialog.Projects), projects);
@@ -122,6 +123,20 @@ public sealed class EntryDialogs(
             dialog.Parameters.Add(nameof(EntryDialog.CurrentProjectId), currentProjectId);
             dialog.Parameters.Add(nameof(EntryDialog.CurrentWorkTypeId), currentWorkTypeId);
         });
-        return !result.Cancelled;
+        if (result.Cancelled)
+        {
+            return false;
+        }
+        // The window has closed, so the bar is shown on the page, not under the modal (AD-10). The form's model holds the
+        // saved values.
+        if (result.GetValue<EntryChange>() is EntryChange.Done done)
+        {
+            await messages.ShowSuccessAsync(EntryMessages.Saved(input.Date!.Value, input.Project!.Code, done.Minutes));
+        }
+        else
+        {
+            await messages.ShowWarningAsync(EntryMessages.NotFound);
+        }
+        return true;
     }
 }
