@@ -1,0 +1,86 @@
+@using System.Net
+@using Blazilla
+@inject ProjectStore Store
+@* The Project window (R1, UI_SPEC 9.13 A): one modal window for adding (Model.Id null) and editing a Project. The
+   window saves through ProjectStore itself; a duplicate code keeps it open with the typed values and the error in its
+   own content (the page's message bars lie under the modal, AD-10). Done and NotFound close it with the change as the
+   result, so the screen reloads the list and shows the bar. Anuluj and Escape close it without saving. *@
+<FluentDialogBody>
+    <ChildContent>
+        @if (_error is not null)
+        {
+            <FluentMessageBar Intent="MessageBarIntent.Error" AllowDismiss="false" role="alert" class="project-dialog-error">@_error</FluentMessageBar>
+        }
+        @* novalidate: the browser's own check of Required would block submit before ProjectFormValidator shows its messages. *@
+        <EditForm Model="Model" OnValidSubmit="SaveAsync" OnInvalidSubmit="ClearError" class="project-form dictionary-dialog-form" novalidate>
+            <FluentValidator Validator="_validator" />
+            <FluentTextInput @bind-Value="Model.Code" Label="Kod" Required="true" Autofocus="true" class="project-code" />
+            <FluentTextInput @bind-Value="Model.Name" Label="Nazwa" Required="true" class="project-name" />
+            <div class="dictionary-dialog-buttons">
+                <FluentButton Type="ButtonType.Submit" Appearance="ButtonAppearance.Primary" class="project-save">Zapisz</FluentButton>
+                <FluentButton OnClick="CancelAsync" class="project-cancel">Anuluj</FluentButton>
+            </div>
+        </EditForm>
+    </ChildContent>
+</FluentDialogBody>
+
+@code {
+    private readonly ProjectFormValidator _validator = new();
+    private string? _error;
+    private bool _busy;
+
+    /// <summary>The window instance cascaded by the library's dialog provider.</summary>
+    [CascadingParameter] public required IDialogInstance Dialog { get; set; }
+
+    /// <summary>The values shown when the window opens; <see cref="ProjectForm.Id"/> <c>null</c> adds a Project.</summary>
+    [Parameter, EditorRequired] public ProjectForm Model { get; set; } = default!;
+
+    /// <summary>
+    /// Opens the window: „Dodaj Projekt” for a new Project, „Edytuj Projekt {kod}” for <paramref name="form"/> with an Id.
+    /// Not cancelled: the result value is the <see cref="ProjectChange"/> (<c>Done</c> or <c>NotFound</c>).
+    /// </summary>
+    public static Task<DialogResult> ShowAsync(IDialogService dialogs, ProjectForm form, string? editedCode = null) =>
+        dialogs.ShowDialogAsync<ProjectDialog>(dialog =>
+        {
+            dialog.Modal = true;
+            dialog.Size = DialogSize.Medium;
+            // The library renders the title as (sanitized) HTML; the title is plain text with the User's code.
+            dialog.Header.Title = WebUtility.HtmlEncode(form.Id is null ? "Dodaj Projekt" : $"Edytuj Projekt {editedCode}");
+            // The library footer stays hidden and without shortcuts: Zapisz and Anuluj are in the window's form.
+            // Escape closes the native dialog, which the library reports as Cancel.
+            Confirm.HideLibraryFooter(dialog);
+            dialog.Parameters.Add(nameof(Model), form);
+        });
+
+    private async Task SaveAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+        _busy = true;
+        try
+        {
+            _error = null;
+            var change = Model.Id is { } id
+                ? await Store.UpdateAsync(id, Model.Code, Model.Name)
+                : await Store.AddAsync(Model.Code, Model.Name);
+            if (change is ProjectChange.DuplicateCode duplicate)
+            {
+                // The window stays open with the values the User typed.
+                _error = ProjectsPage.DuplicateMessage(duplicate.Code);
+                return;
+            }
+            await Dialog.CloseAsync(change);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // A submit that fails validation shows the field messages only; an earlier duplicate error no longer applies.
+    private void ClearError() => _error = null;
+
+    private Task CancelAsync() => Dialog.CancelAsync();
+}

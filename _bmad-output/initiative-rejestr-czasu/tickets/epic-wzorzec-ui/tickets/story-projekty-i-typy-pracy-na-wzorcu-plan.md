@@ -3,14 +3,14 @@ title: 'Projekty i Typy pracy na wzorcu'
 type: 'feature'
 ticket: '4'
 created: '2026-11-03'
-status: 'ready-for-dev'
-baseline_revision: ''
+status: 'built'
+baseline_revision: '9eafd137716179d117b17a47e35a7863d373e461'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/_bmad-output/initiative-rejestr-czasu/architecture-rejestr-czasu/architecture-rejestr-czasu.md'
@@ -62,12 +62,12 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `Features/Projekty/ProjectDialog.razor` -- okno dodania i edycji (tytuł „Dodaj Projekt” / „Edytuj Projekt {kod}”).
-- [ ] `Features/Projekty/ProjectsPage.razor` (+ `ToRow`) -- `EodPage` + `EodReport` + `RowActions` + otwieranie okna i usunięcie.
-- [ ] `Features/TypyPracy/WorkTypeDialog.razor`, `WorkTypesPage.razor` (+ `ToRow`) -- to samo dla Typów pracy.
-- [ ] `Features/Pomoc/Topics/ProjektyHelp.razor`, `TypyPracyHelp.razor` -- treść zgodna z ekranem.
-- [ ] `wwwroot/app.css` -- sprzątanie reguł starego formularza.
-- [ ] Testy -- przepisać `ProjectsPageTests`, `WorkTypesPageTests` i pokryć wiersze macierzy.
+- [x] `Features/Projekty/ProjectDialog.razor` -- okno dodania i edycji (tytuł „Dodaj Projekt” / „Edytuj Projekt {kod}”).
+- [x] `Features/Projekty/ProjectsPage.razor` (+ `ToRow`) -- `EodPage` + `EodReport` + `RowActions` + otwieranie okna i usunięcie.
+- [x] `Features/TypyPracy/WorkTypeDialog.razor`, `WorkTypesPage.razor` (+ `ToRow`) -- to samo dla Typów pracy.
+- [x] `Features/Pomoc/Topics/ProjektyHelp.razor`, `TypyPracyHelp.razor` -- treść zgodna z ekranem.
+- [x] `wwwroot/app.css` -- sprzątanie reguł starego formularza.
+- [x] Testy -- przepisać `ProjectsPageTests`, `WorkTypesPageTests` i pokryć wiersze macierzy.
 
 **Acceptance Criteria:**
 - Given aplikacja po zmianie, when `grep` w `Features/Projekty` i `Features/TypyPracy` po `ReportGrid`, `PageHeader`, `Notify`, then brak trafień.
@@ -78,6 +78,10 @@ context:
 ## Plan Change Log
 
 ## Review Triage Log
+
+| Lens | Location | Finding | Verdict | Evidence | Route |
+|---|---|---|---|---|---|
+| quick | `ProjectDialog.razor`, `WorkTypeDialog.razor` `SaveAsync` | Komunikat duplikatu zostaje po nieudanej walidacji | low | `_error` czyszczony tylko w `OnValidSubmit`; przy błędzie walidacji alert ze starą wartością zostaje obok błędów pól | patch |
 
 ## Verification
 

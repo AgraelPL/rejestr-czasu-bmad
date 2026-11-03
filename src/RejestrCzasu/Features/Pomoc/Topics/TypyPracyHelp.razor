@@ -7,21 +7,26 @@
 <h2>Lista</h2>
 <p>
     Lista pokazuje wszystkie Twoje Typy pracy, aktywne i nieaktywne, uporządkowane według nazwy. Kolumny:
-    <strong>Nazwa</strong> i <strong>Stan</strong> (Aktywny albo Nieaktywny). W nagłówku każdej kolumny możesz odznaczyć
-    wartości, których nie chcesz widzieć; pod listą jest licznik pozycji.
+    <strong>Nazwa</strong> i <strong>Stan</strong> (Aktywny albo Nieaktywny). Przycisk filtra w nagłówku kolumny pozwala
+    odznaczyć wartości, których nie chcesz widzieć, a kliknięcie nagłówka sortuje listę. Pole <strong>Szukaj</strong>
+    nad listą zawęża ją do wierszy z wpisanym tekstem. W stopce listy jest licznik pozycji (po filtrach z liczbą
+    wszystkich). Ikony akcji są na końcu każdego wiersza.
 </p>
 
 <h2>Dodawanie i edycja</h2>
 <ul>
-    <li><strong>Dodaj Typ pracy</strong> otwiera nad listą formularz z polem <strong>Nazwa</strong>.
-        <strong>Zapisz</strong> dodaje Typ pracy jako aktywny, <strong>Anuluj</strong> zamyka formularz bez zapisu.</li>
-    <li>Ikona <strong>Edytuj</strong> w wierszu otwiera ten sam formularz z nazwą Typu pracy. Zmiana nazwy nie zmienia
-        Wpisów: nadal wskazują ten sam Typ pracy, już z nową nazwą.</li>
+    <li><strong>Dodaj Typ pracy</strong> w nagłówku strony otwiera okno „Dodaj Typ pracy” z polem <strong>Nazwa</strong>;
+        kursor stoi w tym polu. <strong>Zapisz</strong> dodaje Typ pracy jako aktywny i zamyka okno,
+        <strong>Anuluj</strong> albo klawisz Escape zamyka je bez zapisu.</li>
+    <li>Ikona <strong>Edytuj</strong> w wierszu otwiera okno „Edytuj Typ pracy …” z nazwą Typu pracy. Zmiana nazwy nie
+        zmienia Wpisów: nadal wskazują ten sam Typ pracy, już z nową nazwą. Jeśli Typ pracy został w międzyczasie
+        usunięty, okno się zamyka, a lista jest wczytywana ponownie.</li>
     <li>Nazwa jest wymagana i może mieć najwyżej 200 znaków. Spacje na początku i końcu są pomijane; wielkość liter
-        zostaje taka, jak ją wpiszesz.</li>
+        zostaje taka, jak ją wpiszesz. Błąd widać pod polem, a okno zostaje otwarte.</li>
     <li>Nazwa musi być unikalna bez względu na wielkość liter („Development” i „development” to ta sama nazwa). Gdy
-        masz już Typ pracy o takiej nazwie, zobaczysz komunikat „Typ pracy o nazwie … już istnieje.”, a formularz
-        zostanie otwarty z wpisaną wartością.</li>
+        masz już Typ pracy o takiej nazwie, okno pokaże komunikat „Typ pracy o nazwie … już istnieje.” i zostanie
+        otwarte z wpisaną wartością.</li>
+    <li>Po zapisie nad listą pojawia się komunikat, np. „Dodano Typ pracy Development.”.</li>
 </ul>
 
 <h2>Dezaktywacja i przywrócenie</h2>
@@ -33,7 +38,8 @@
 
 <h2>Usuwanie</h2>
 <p>
-    Ikona <strong>Usuń</strong> pyta o potwierdzenie. Usunąć można tylko Typ pracy, który nie występuje w żadnym Wpisie.
+    Ikona <strong>Usuń</strong> otwiera okno potwierdzenia; Typ pracy znika dopiero po kliknięciu <strong>Usuń</strong>
+    w oknie (klawisz Enter go nie usuwa, <strong>Anuluj</strong> i Escape zamykają okno). Usunąć można tylko Typ pracy, który nie występuje w żadnym Wpisie.
     Jeśli występuje, nic nie jest usuwane, a komunikat podaje liczbę Wpisów z tym Typem pracy — taki Typ pracy
     dezaktywuj.
 </p>

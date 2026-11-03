@@ -1,54 +1,80 @@
 @page "/projekty"
 @using System.Net
-@using Blazilla
 @using RejestrCzasu.Features.Pomoc
 @using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
 @inject ProjectStore Store
 @inject UiMessages Messages
-@* Projekty (R1–R3, R17): the User's Project Dictionary. Data only through ProjectStore (AD-4, AD-16); after every
-   change the list is read again from the database. *@
+@inject IDialogService Dialogs
+@* Projekty (R1–R3, R17): the User's Project Dictionary on EodPage with EodReport (AD-9, AD-11). Adding and editing
+   in ProjectDialog (UI_SPEC 9.13 A), deleting after UiMessages.ConfirmAsync; every change is saved at once. Data only
+   through ProjectStore (AD-4, AD-16); after every change the list is read again from the database, then the bar shows. *@
 
-<PageHeader Title="Projekty" Subtitle="Kody i nazwy Projektów, które wybierasz we Wpisach." Topic="@HelpTopics.Projekty" />
-
-@if (_form is null)
-{
-    <FluentButton Appearance="ButtonAppearance.Primary" IconStart="@(new Icons.Regular.Size20.Add())" OnClick="OpenAdd"
-                  class="projects-add">Dodaj Projekt</FluentButton>
-}
-else
-{
-    @* novalidate: the browser's own check of Required would block submit before ProjectFormValidator shows its messages. *@
-    <EditForm @key="_form" Model="_form" OnValidSubmit="SaveAsync" class="project-form" novalidate>
-        <FluentValidator Validator="_validator" />
-        <h2 class="project-form-title">@(_form.Id is null ? "Nowy Projekt" : $"Edycja Projektu {_editedCode}")</h2>
-        <FluentTextInput @bind-Value="_form.Code" Label="Kod" Required="true" AutoFocus="true" class="project-code" />
-        <FluentTextInput @bind-Value="_form.Name" Label="Nazwa" Required="true" class="project-name" />
-        <div class="project-form-buttons">
-            <FluentButton Type="ButtonType.Submit" Appearance="ButtonAppearance.Primary" class="project-save">Zapisz</FluentButton>
-            <FluentButton OnClick="CloseForm" class="project-cancel">Anuluj</FluentButton>
-        </div>
-    </EditForm>
-}
-
-@if (_rows is not null)
-{
-    <ReportGrid T="ProjectRow" Items="_rows" Columns="Columns" Actions="_actions" />
-}
+<EodPage Title="Projekty" Description="Kody i nazwy Projektów, które wybierasz we Wpisach." Fill="true">
+    <Actions>
+        <FluentButton Appearance="ButtonAppearance.Primary" IconStart="@(new Icons.Regular.Size20.Add())" OnClick="OpenAddAsync"
+                      class="projects-add">Dodaj Projekt</FluentButton>
+    </Actions>
+    <ChildContent>
+        <PageHelp Topic="@HelpTopics.Projekty" />
+        <EodCard NoPadding="true" Fill="true">
+            <EodReport Definition="Report" Rows="_rows" LayoutKey="@HelpTopics.Projekty" ShowExport="false"
+                       PreserveRowOrder="true" Loading="_loading">
+                <RowActions Context="row">
+                    @if (_byId.TryGetValue((int)row[IdKey]!, out var project))
+                    {
+                        <FluentButton IconStart="@(new Icons.Regular.Size20.Edit())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                      Title="Edytuj" aria-label="Edytuj" OnClick="@(() => OpenEditAsync(project))" />
+                        @if (project.IsActive)
+                        {
+                            <FluentButton IconStart="@(new Icons.Regular.Size20.Archive())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                          Title="Dezaktywuj" aria-label="Dezaktywuj" OnClick="@(() => SetActiveAsync(project, false))" />
+                        }
+                        else
+                        {
+                            <FluentButton IconStart="@(new Icons.Regular.Size20.ArrowUndo())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                          Title="Przywróć" aria-label="Przywróć" OnClick="@(() => SetActiveAsync(project, true))" />
+                        }
+                        <FluentButton IconStart="@(new Icons.Regular.Size20.Delete())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                      Title="Usuń" aria-label="Usuń" OnClick="@(() => DeleteAsync(project))" />
+                    }
+                </RowActions>
+            </EodReport>
+        </EodCard>
+    </ChildContent>
+</EodPage>
 
 @code {
-    private static readonly IReadOnlyList<ReportColumn<ProjectRow>> Columns =
-    [
-        new("Kod", p => p.Code),
-        new("Nazwa", p => p.Name),
-        new("Stan", p => p.State),
-    ];
+    /// <summary>Key of the entity id in a report row, outside the columns; only the row actions use it (AD-9).</summary>
+    private const string IdKey = nameof(ProjectRow.Id);
 
-    private readonly ProjectFormValidator _validator = new();
-    private IReadOnlyList<ReportAction<ProjectRow>> _actions = [];
-    private IReadOnlyList<ProjectRow>? _rows;
-    private ProjectForm? _form;
-    private string _editedCode = "";
+    /// <summary>The report of the screen (AD-9): value filter in every column, counter in the footer, no export.</summary>
+    internal static readonly ReportDefinition Report = new()
+    {
+        Key = HelpTopics.Projekty,
+        Title = "Projekty",
+        Description = "Kody i nazwy Projektów, które wybierasz we Wpisach.",
+        FileName = HelpTopics.Projekty,
+        Columns =
+        [
+            new(nameof(ProjectRow.Code), "Kod", ColumnType.List) { IsKey = true },
+            new(nameof(ProjectRow.Name), "Nazwa", ColumnType.List),
+            new(nameof(ProjectRow.State), "Stan", ColumnType.List),
+        ],
+    };
+
+    private IReadOnlyList<IReadOnlyDictionary<string, object?>> _rows = [];
+    private IReadOnlyDictionary<int, ProjectRow> _byId = new Dictionary<int, ProjectRow>();
+    private bool _loading = true;
     private bool _busy;
+
+    /// <summary>The report row of a Project: the columns plus <c>Id</c> for the row actions (AD-9).</summary>
+    internal static IReadOnlyDictionary<string, object?> ToRow(ProjectRow project) => new Dictionary<string, object?>
+    {
+        [IdKey] = project.Id,
+        [nameof(ProjectRow.Code)] = project.Code,
+        [nameof(ProjectRow.Name)] = project.Name,
+        [nameof(ProjectRow.State)] = project.State,
+    };
 
     /// <summary>Warning shown when a Project used by Entries is to be deleted (R3).</summary>
     internal static string InUseMessage(string code, int entryCount) =>
@@ -56,59 +82,49 @@ else
 
     internal static string DuplicateMessage(string code) => $"Projekt o kodzie {code} już istnieje.";
 
+    internal const string NotFoundMessage = "Ten Projekt już nie istnieje. Lista została wczytana ponownie.";
+
     protected override async Task OnInitializedAsync()
     {
-        _actions =
-        [
-            new(new Icons.Regular.Size20.Edit(), "Edytuj", OpenEdit),
-            new(new Icons.Regular.Size20.Archive(), "Dezaktywuj", p => SetActiveAsync(p, false)) { Visible = p => p.IsActive },
-            new(new Icons.Regular.Size20.ArrowUndo(), "Przywróć", p => SetActiveAsync(p, true)) { Visible = p => !p.IsActive },
-            new(new Icons.Regular.Size20.Delete(), "Usuń", DeleteAsync),
-        ];
         await ReloadAsync();
+        _loading = false;
     }
 
-    private async Task ReloadAsync() => _rows = await Store.ListAsync();
-
-    private void OpenAdd() => _form = new ProjectForm();
-
-    private Task OpenEdit(ProjectRow row)
+    private async Task ReloadAsync()
     {
-        _form = new ProjectForm { Id = row.Id, Code = row.Code, Name = row.Name };
-        _editedCode = row.Code;
-        return Task.CompletedTask;
+        var projects = await Store.ListAsync();
+        _byId = projects.ToDictionary(p => p.Id);
+        _rows = projects.Select(ToRow).ToList();
     }
 
-    private void CloseForm() => _form = null;
+    private Task OpenAddAsync() => RunDialogAsync(new ProjectForm(), null);
 
-    private async Task SaveAsync()
+    private Task OpenEditAsync(ProjectRow row) =>
+        RunDialogAsync(new ProjectForm { Id = row.Id, Code = row.Code, Name = row.Name }, row.Code);
+
+    private async Task RunDialogAsync(ProjectForm form, string? editedCode)
     {
-        if (_form is not { } form || _busy)
+        if (_busy)
         {
             return;
         }
         _busy = true;
         try
         {
-            var change = form.Id is { } id
-                ? await Store.UpdateAsync(id, form.Code, form.Name)
-                : await Store.AddAsync(form.Code, form.Name);
-            switch (change)
+            var result = await ProjectDialog.ShowAsync(Dialogs, form, editedCode);
+            if (result.Cancelled)
             {
-                case ProjectChange.Done done:
-                    _form = null;
-                    await ReloadAsync();
-                    await Messages.ShowSuccessAsync(form.Id is null ? $"Dodano Projekt {done.Code}." : $"Zapisano Projekt {done.Code}.");
-                    break;
-                case ProjectChange.DuplicateCode duplicate:
-                    // The form stays open with the values the User typed.
-                    await Messages.ShowErrorAsync(DuplicateMessage(duplicate.Code));
-                    break;
-                case ProjectChange.NotFound:
-                    _form = null;
-                    await ReloadAsync();
-                    await Messages.ShowWarningAsync(NotFoundMessage);
-                    break;
+                return;
+            }
+            var change = result.GetValue<ProjectChange>();
+            await ReloadAsync();
+            if (change is ProjectChange.Done done)
+            {
+                await Messages.ShowSuccessAsync(form.Id is null ? $"Dodano Projekt {done.Code}." : $"Zapisano Projekt {done.Code}.");
+            }
+            else
+            {
+                await Messages.ShowWarningAsync(NotFoundMessage);
             }
         }
         finally
@@ -138,10 +154,6 @@ else
             return;
         }
         var change = await Store.DeleteAsync(row.Id);
-        if (change is ProjectChange.Done or ProjectChange.NotFound && _form?.Id == row.Id)
-        {
-            _form = null;
-        }
         await ReloadAsync();
         switch (change)
         {
@@ -156,6 +168,4 @@ else
                 break;
         }
     }
-
-    private const string NotFoundMessage = "Ten Projekt już nie istnieje. Lista została wczytana ponownie.";
 }
