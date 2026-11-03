@@ -35,12 +35,13 @@ public sealed class AccountSignIn(
     /// <summary>
     /// Creates a <see cref="AccountStatus.Pending"/> Account with the <see cref="AppRoles.User"/> role, all or nothing.
     /// No <c>account_settings</c> row (AD-7). Errors come from the Identity configuration, in Polish.
+    /// White space around the login is dropped, as at login; the password is kept as typed.
     /// </summary>
     public async Task<IdentityResult> RegisterAsync(string userName, string password)
     {
         var user = new AppUser
         {
-            UserName = userName,
+            UserName = userName.Trim(),
             Status = AccountStatus.Pending,
             RegisteredAt = timeProvider.GetUtcNow().UtcDateTime,
         };

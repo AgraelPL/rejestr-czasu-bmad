@@ -52,6 +52,18 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Register_WhiteSpaceAroundLogin_IsDropped()
+    {
+        await using var app = new AppClient(postgres);
+
+        using var response = await app.RegisterAsync("  nowy.user\t", Password);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        await using var db = postgres.CreateContext();
+        Assert.Equal("nowy.user", await NonAdministrators(db).Select(u => u.UserName).SingleAsync(Ct));
+    }
+
+    [Fact]
     public async Task Register_Form_SaysThatAdministratorSeesAllData()
     {
         await using var app = new AppClient(postgres);
