@@ -196,7 +196,13 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
 
         using var home = await app.Http.GetAsync("/", Ct);
         Assert.Equal(HttpStatusCode.OK, home.StatusCode);
-        Assert.Contains("Rejestr czasu pracy", await TextAsync(home));
+        var homeHtml = await TextAsync(home);
+        Assert.Contains("Rejestr czasu pracy", homeHtml);
+        // EodHead of the eod-ui copy: only scripts from files of the application (CSP script-src 'self', AD-12).
+        Assert.Contains("<script src=\"ui/eod-scale.js\"></script>", homeHtml);
+        Assert.All(System.Text.RegularExpressions.Regex.Matches(homeHtml, "<script[^>]*>").Select(m => m.Value),
+            tag => Assert.Contains(" src=\"", tag));
+        Assert.DoesNotContain("https://", homeHtml);
     }
 
     [Theory]

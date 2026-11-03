@@ -11,20 +11,24 @@
 }
 @if (string.IsNullOrEmpty(Temat))
 {
-    <PageHeader Title="Pomoc" Subtitle="Spis tematów pomocy." />
-    @if (_available.Count == 0)
-    {
-        <p>Bez logowania nie ma dostępnych tematów pomocy. <a href="@AccountEndpoints.LoginPath">Zaloguj się</a>, aby zobaczyć spis tematów.</p>
-    }
-    else
-    {
-        <ul class="help-index">
-            @foreach (var topic in _available)
+    <EodPage Title="Pomoc" Description="Spis tematów pomocy.">
+        <PageHelp />
+        <EodCard>
+            @if (_available.Count == 0)
             {
-                <li><a href="@HelpButton.HrefOf(topic.Key)">@topic.Title</a></li>
+                <p>Bez logowania nie ma dostępnych tematów pomocy. <a href="@AccountEndpoints.LoginPath">Zaloguj się</a>, aby zobaczyć spis tematów.</p>
             }
-        </ul>
-    }
+            else
+            {
+                <ul class="help-index">
+                    @foreach (var topic in _available)
+                    {
+                        <li><a href="@HelpButton.HrefOf(topic.Key)">@topic.Title</a></li>
+                    }
+                </ul>
+            }
+        </EodCard>
+    </EodPage>
 }
 else if (_topic is not null)
 {

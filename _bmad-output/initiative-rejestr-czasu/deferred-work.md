@@ -44,3 +44,6 @@
 - source_plan: `tickets/epic-wzorzec-ui/tickets/story-dopasowanie-komunikatow-szkieletu-i-eodhead-w-kopii-wzorca-plan.md`
   summary: `EodUI.showSelectedText` (i `eod-scale.js`) mają tylko testy tekstu źródła, bez testu zachowania w przeglądarce.
   evidence: Repo nie ma środowiska testów JS; zachowanie (tekst po pojawieniu się pola, koniec po 30 klatkach) sprawdzono ręcznie w node w 7.2.
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-szkielet-aplikacji-na-eodshell-z-kopii-wzorca-plan.md`
+  summary: Pasek sukcesu i ostrzeżenia po zamknięciu okna Wpisu wysyła sam `EntryDialog` po `Dialog.CloseAsync()`, a AD-10 każe robić to `EntryDialogs` po zamknięciu okna.
+  evidence: Przegląd 7.3; tak było już z `Notify`, działa dzięki usłudze scoped; do uporządkowania w 7.5 (okno Wpisu na wzorcu).

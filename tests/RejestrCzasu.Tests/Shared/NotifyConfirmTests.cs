@@ -10,7 +10,11 @@ namespace RejestrCzasu.Tests.Shared;
 /// <summary>Notify and Confirm (AD-11): message bars in one area, cleared on navigation; confirmation without shortcut.</summary>
 public sealed class NotifyConfirmTests : BunitContext
 {
-    public NotifyConfirmTests() => this.AddAppUi();
+    public NotifyConfirmTests()
+    {
+        this.AddAppUi();
+        this.AddLegacyNotifyConfirm();
+    }
 
     [Fact]
     public async Task Notify_Error_ShowsMessageBar_WithPlainText()

@@ -4,11 +4,13 @@ using System.Resources;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.FluentUI.AspNetCore.Components;
 using RejestrCzasu.Accounts;
+using Microsoft.Extensions.DependencyInjection;
 using RejestrCzasu.Localization;
+using RejestrCzasu.Ui;
 
 namespace RejestrCzasu.Tests;
 
-/// <summary>Polish texts (AD-6): Fluent UI, Identity errors; and the local return URL rule of the login page.</summary>
+/// <summary>Polish texts (AD-6): Fluent UI (PolishLocalizer of the eod-ui copy; FluentLocalizer until story 7.7), Identity errors; and the local return URL rule of the login page.</summary>
 public sealed class PolishTextsTests
 {
     [Fact]
@@ -30,6 +32,16 @@ public sealed class PolishTextsTests
 
         Assert.Equal("Anuluj", localizer["MessageBox_ButtonCancel"]);
         Assert.Equal("Strona 2 z 5", localizer["Paginator_Status", 2, 5]);
+    }
+
+    [Fact]
+    public void AddEodPlatformUI_RegistersPolishLocalizer_OfTheCopy()
+    {
+        using var services = new ServiceCollection().AddEodPlatformUI().BuildServiceProvider();
+
+        var configuration = services.GetRequiredService<LibraryConfiguration>();
+        Assert.IsType<PolishLocalizer>(configuration.Localizer);
+        Assert.Equal("Anuluj", configuration.Localizer!["MessageBox_ButtonCancel"]);
     }
 
     [Fact]

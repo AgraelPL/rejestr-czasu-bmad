@@ -1,6 +1,7 @@
 using AngleSharp.Dom;
 using Bunit;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FluentUI.AspNetCore.Components;
 using RejestrCzasu.Data;
@@ -50,7 +51,7 @@ public sealed class WorkTypesPageTests : BunitContext, IAsyncLifetime
         var cut = RenderScreen();
 
         Assert.Equal("Typy pracy", cut.Find("h1").TextContent);
-        Assert.Equal("/pomoc/typy-pracy", cut.Find(".app-header .app-help").GetAttribute("href"));
+        Assert.Equal("/pomoc/typy-pracy", cut.Find(".app-help").GetAttribute("href"));
         Assert.Empty(cut.FindAll(".page-breadcrumbs"));
         cut.WaitForAssertion(() => Assert.Equal(["Analiza", "Spotkanie"], Names(cut)));
         Assert.Equal(["Nieaktywny", "Aktywny"], cut.FindAll("tbody tr td:nth-child(2)").Select(td => td.TextContent));
@@ -189,11 +190,32 @@ public sealed class WorkTypesPageTests : BunitContext, IAsyncLifetime
         cut.WaitForAssertion(() => Assert.Single(Names(cut)));
 
         Action(cut, "Development", "Usuń").Click();
-        cut.WaitForElement(".confirm-primary").Click();
+        cut.WaitForElement(".eod-confirm-primary").Click();
 
         cut.WaitForAssertion(() => Assert.DoesNotContain("Development", Names(cut)));
         Assert.Empty(await Store.ListAsync(Ct));
         WaitForMessage(cut, "success", "Usunięto Typ pracy Development.");
+    }
+
+    [Fact]
+    public async Task Delete_Window_EncodesValues_EnterDoesNotConfirm()
+    {
+        JSInterop.Setup<bool>("Microsoft.FluentUI.Blazor.Components.Dialog.ShouldHandleShortcut", _ => true).SetResult(true);
+        await SeedAsync(("Spotkanie <b>x</b>", true));
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Single(Names(cut)));
+
+        Action(cut, "Spotkanie <b>x</b>", "Usuń").Click();
+        cut.WaitForElement(".eod-confirm-secondary");
+
+        var dialog = cut.Find("fluent-dialog");
+        Assert.Contains("Usunąć Typ pracy Spotkanie <b>x</b>?", dialog.TextContent);
+        Assert.Empty(dialog.QuerySelectorAll(".message b"));
+        Assert.True(cut.Find(".eod-confirm-secondary").HasAttribute("autofocus"));
+        await dialog.KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
+
+        Assert.NotEmpty(cut.FindAll("fluent-dialog"));
+        Assert.Single(await Store.ListAsync(Ct));
     }
 
     [Fact]
@@ -204,7 +226,7 @@ public sealed class WorkTypesPageTests : BunitContext, IAsyncLifetime
         cut.WaitForAssertion(() => Assert.Single(Names(cut)));
 
         Action(cut, "Development", "Usuń").Click();
-        cut.WaitForElement(".confirm-cancel").Click();
+        cut.WaitForElement(".eod-confirm-secondary").Click();
 
         cut.WaitForAssertion(() => Assert.Empty(cut.FindAll("fluent-dialog")));
         Assert.Single(await Store.ListAsync(Ct));
@@ -222,7 +244,7 @@ public sealed class WorkTypesPageTests : BunitContext, IAsyncLifetime
         cut.WaitForAssertion(() => Assert.Single(Names(cut)));
 
         Action(cut, "Development", "Usuń").Click();
-        cut.WaitForElement(".confirm-primary").Click();
+        cut.WaitForElement(".eod-confirm-primary").Click();
 
         WaitForMessage(cut, "warning", message);
         Assert.Equal(["Development"], Names(cut));

@@ -1,18 +1,12 @@
-using System.Globalization;
-using Microsoft.FluentUI.AspNetCore.Components;
 using RejestrCzasu;
 using RejestrCzasu.Accounts;
 using RejestrCzasu.Components;
 using RejestrCzasu.Data;
 using RejestrCzasu.Features;
-using RejestrCzasu.Localization;
 using RejestrCzasu.Options;
 using RejestrCzasu.Shared;
 using RejestrCzasu.Startup;
-
-var polish = CultureInfo.GetCultureInfo("pl-PL");
-CultureInfo.DefaultThreadCurrentCulture = polish;
-CultureInfo.DefaultThreadCurrentUICulture = polish;
+using RejestrCzasu.Ui;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,10 +52,10 @@ builder.Services.AddStartupSequence();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Fluent UI 5: components and services (incl. IDialogService); providers rendered by <FluentProviders /> in MainLayout.
-// Polish texts of the Fluent UI components (AD-6).
-builder.Services.AddFluentUIComponents(options => options.Localizer = new FluentLocalizer());
-// Screen messages, confirmations and the data of the Dictionary screens (AD-4, AD-11), one instance per circuit.
+// The eod-ui copy (AD-6, AD-11, AD-23): Fluent UI 5 with the Polish texts of PolishLocalizer, UiMessages and
+// AppearanceSettings; the providers are rendered by EodShell in MainLayout.
+builder.Services.AddEodPlatformUI();
+// The data of the screens (AD-4, AD-10), one instance per circuit.
 builder.Services.AddAppScreens();
 
 var app = builder.Build();
@@ -97,7 +91,8 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseRequestLocalization(polish.Name);
+// pl-PL with the short date dd.MM.yyyy for threads and every request (AD-6).
+app.UseEodPolishCulture();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

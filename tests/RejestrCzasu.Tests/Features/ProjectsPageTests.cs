@@ -1,6 +1,7 @@
 using AngleSharp.Dom;
 using Bunit;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FluentUI.AspNetCore.Components;
 using RejestrCzasu.Data;
@@ -50,7 +51,7 @@ public sealed class ProjectsPageTests : BunitContext, IAsyncLifetime
         var cut = RenderScreen();
 
         Assert.Equal("Projekty", cut.Find("h1").TextContent);
-        Assert.Equal("/pomoc/projekty", cut.Find(".app-header .app-help").GetAttribute("href"));
+        Assert.Equal("/pomoc/projekty", cut.Find(".app-help").GetAttribute("href"));
         Assert.Empty(cut.FindAll(".page-breadcrumbs"));
         cut.WaitForAssertion(() => Assert.Equal(["NIE", "RDZ"], Codes(cut)));
         Assert.Equal(["Nieaktywny", "Aktywny"], cut.FindAll("tbody tr td:nth-child(3)").Select(td => td.TextContent));
@@ -185,11 +186,32 @@ public sealed class ProjectsPageTests : BunitContext, IAsyncLifetime
         cut.WaitForAssertion(() => Assert.Single(Codes(cut)));
 
         Action(cut, "RDZ", "Usuń").Click();
-        cut.WaitForElement(".confirm-primary").Click();
+        cut.WaitForElement(".eod-confirm-primary").Click();
 
         cut.WaitForAssertion(() => Assert.DoesNotContain("RDZ", Codes(cut)));
         Assert.Empty(await Store.ListAsync(Ct));
         WaitForMessage(cut, "success", "Usunięto Projekt RDZ.");
+    }
+
+    [Fact]
+    public async Task Delete_Window_EncodesValues_EnterDoesNotConfirm()
+    {
+        JSInterop.Setup<bool>("Microsoft.FluentUI.Blazor.Components.Dialog.ShouldHandleShortcut", _ => true).SetResult(true);
+        await SeedAsync(("RDZ", "Rozwój <b>x</b>", true));
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Single(Codes(cut)));
+
+        Action(cut, "RDZ", "Usuń").Click();
+        cut.WaitForElement(".eod-confirm-secondary");
+
+        var dialog = cut.Find("fluent-dialog");
+        Assert.Contains("Usunąć Projekt RDZ (Rozwój <b>x</b>)?", dialog.TextContent);
+        Assert.Empty(dialog.QuerySelectorAll(".message b"));
+        Assert.True(cut.Find(".eod-confirm-secondary").HasAttribute("autofocus"));
+        await dialog.KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
+
+        Assert.NotEmpty(cut.FindAll("fluent-dialog"));
+        Assert.Single(await Store.ListAsync(Ct));
     }
 
     [Fact]
@@ -200,7 +222,7 @@ public sealed class ProjectsPageTests : BunitContext, IAsyncLifetime
         cut.WaitForAssertion(() => Assert.Single(Codes(cut)));
 
         Action(cut, "RDZ", "Usuń").Click();
-        cut.WaitForElement(".confirm-cancel").Click();
+        cut.WaitForElement(".eod-confirm-secondary").Click();
 
         cut.WaitForAssertion(() => Assert.Empty(cut.FindAll("fluent-dialog")));
         Assert.Single(await Store.ListAsync(Ct));
@@ -218,7 +240,7 @@ public sealed class ProjectsPageTests : BunitContext, IAsyncLifetime
         cut.WaitForAssertion(() => Assert.Single(Codes(cut)));
 
         Action(cut, "RDZ", "Usuń").Click();
-        cut.WaitForElement(".confirm-primary").Click();
+        cut.WaitForElement(".eod-confirm-primary").Click();
 
         WaitForMessage(cut, "warning", message);
         Assert.Equal(["RDZ"], Codes(cut));

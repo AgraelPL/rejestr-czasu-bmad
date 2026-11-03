@@ -60,7 +60,7 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         var cut = RenderScreen();
 
         Assert.Equal("Nowy wpis", cut.Find("h1").TextContent);
-        Assert.Equal("/pomoc/wpisy-nowy", cut.Find(".app-header .app-help").GetAttribute("href"));
+        Assert.Equal("/pomoc/wpisy-nowy", cut.Find(".app-help").GetAttribute("href"));
         var date = DatePicker(cut).Instance;
         Assert.Equal(Today, date.Value);
         Assert.Equal(DatePickerRenderStyle.Native, date.RenderStyle);

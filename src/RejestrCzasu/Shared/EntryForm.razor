@@ -81,14 +81,14 @@
         {
             return;
         }
-        await using var module = await JS.InvokeAsync<IJSObjectReference>("import", "./Shared/EntryForm.razor.js");
+        // The workaround of Fluent UI 5.0.1 lives in eod.js of the eod-ui copy (AD-1, AD-23 item 9).
         if (Model.Project is not null && _project is not null)
         {
-            await module.InvokeVoidAsync("showSelectedText", _project.Element, ProjectText(Model.Project));
+            await JS.InvokeVoidAsync("EodUI.showSelectedText", _project.Element, ProjectText(Model.Project));
         }
         if (Model.WorkType is not null && _workType is not null)
         {
-            await module.InvokeVoidAsync("showSelectedText", _workType.Element, WorkTypeText(Model.WorkType));
+            await JS.InvokeVoidAsync("EodUI.showSelectedText", _workType.Element, WorkTypeText(Model.WorkType));
         }
     }
 

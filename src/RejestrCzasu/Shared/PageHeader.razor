@@ -1,12 +1,11 @@
-@using Microsoft.AspNetCore.Components.Sections
 @using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
-@* The only header of a screen (AD-11): title, subtitle, breadcrumbs, Odśwież and the help topic for the "?" of the
-   top bar, passed to MainLayout through a section (the AccountHelp pattern). *@
+@* The header of the screens not yet on EodPage (Projekty, Typy pracy, Nowy wpis, Lista wpisów until stories 7.4 and
+   7.5): title, subtitle, breadcrumbs, Odśwież and the help topic for the "?" of the top bar (PageHelp, AD-22). Until
+   then it also renders the message section of UiMessages under the header, which EodPage renders for the other screens;
+   without it the screen's message bars would not show (UiMessages ignores a missing provider). *@
 <PageTitle>@PageTitleText</PageTitle>
 
-<SectionContent SectionName="@MainLayout.HelpSection">
-    <HelpButton Topic="@Topic" />
-</SectionContent>
+<PageHelp Topic="@Topic" />
 
 <header class="page-header">
     @if (Breadcrumbs.Count > 0)
@@ -35,6 +34,10 @@
     }
 </header>
 
+<div class="eod-messages page-header-messages" aria-live="polite">
+    <FluentMessageBarProvider Section="@EodSections.Page" />
+</div>
+
 @code {
     public const string AppName = "Rejestr czasu pracy";
 
@@ -51,5 +54,6 @@
     /// <summary>Help topic key of the screen (AD-22); without it the "?" opens the help index.</summary>
     [Parameter] public string? Topic { get; set; }
 
-    private string PageTitleText => Title == AppName ? AppName : $"{Title} — {AppName}";
+    // The same tab title as EodPage of the eod-ui copy (AD-11, AD-23 item 7).
+    private string PageTitleText => Title == AppName ? "Rejestr czasu" : $"{Title} · Rejestr czasu";
 }

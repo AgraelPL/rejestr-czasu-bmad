@@ -4,12 +4,13 @@ using RejestrCzasu.Accounts;
 using RejestrCzasu.Data;
 using RejestrCzasu.Domain;
 using RejestrCzasu.Shared;
+using RejestrCzasu.Ui;
 
 namespace RejestrCzasu.Features.Wpisy;
 
 /// <summary>
 /// The row actions of an Entry in every report (R6, R7, AD-10): edit and copy in <see cref="EntryDialog"/>, delete
-/// after <see cref="Confirm"/> (<c>DeleteEntry</c>). The input is the Entry's id, so the Lista wpisów and the Widok
+/// after <see cref="UiMessages.ConfirmAsync"/> (<c>DeleteEntry</c>). The input is the Entry's id, so the Lista wpisów and the Widok
 /// miesiąca call the same methods; every method returns whether the report has to load its data again.
 /// </summary>
 public sealed class EntryDialogs(
@@ -19,8 +20,7 @@ public sealed class EntryDialogs(
     CurrentUser currentUser,
     TimeProvider timeProvider,
     IDialogService dialogs,
-    Confirm confirm,
-    Notify notify)
+    UiMessages messages)
 {
     /// <summary>Opens the „Edycja Wpisu” window with the Entry as saved; <c>true</c> after a save or a missing Entry.</summary>
     public async Task<bool> EditAsync(int entryId)
@@ -62,17 +62,17 @@ public sealed class EntryDialogs(
         {
             return true;
         }
-        if (!await confirm.AskAsync("Usuń Wpis", EntryMessages.DeleteQuestion(row), "Usuń"))
+        if (!await messages.ConfirmAsync("Usunąć Wpis?", EntryMessages.DeleteQuestionHtml(row), "Usuń"))
         {
             return false;
         }
         if (await store.DeleteAsync(entryId) is EntryChange.Done)
         {
-            await notify.Success(EntryMessages.Deleted(row));
+            await messages.ShowSuccessAsync(EntryMessages.Deleted(row));
         }
         else
         {
-            await notify.Warning(EntryMessages.NotFound);
+            await messages.ShowWarningAsync(EntryMessages.NotFound);
         }
         return true;
     }
@@ -82,7 +82,7 @@ public sealed class EntryDialogs(
         var row = await store.FindAsync(entryId);
         if (row is null)
         {
-            await notify.Warning(EntryMessages.NotFound);
+            await messages.ShowWarningAsync(EntryMessages.NotFound);
         }
         return row;
     }
@@ -112,7 +112,7 @@ public sealed class EntryDialogs(
             dialog.Modal = true;
             // The library renders the title as (sanitized) HTML; the title is plain text.
             dialog.Header.Title = WebUtility.HtmlEncode(title);
-            // The library footer stays hidden and without shortcuts, as in Confirm: Zapisz is in EntryForm, Anuluj in
+            // The library footer stays hidden and without shortcuts, as in UiMessages.ConfirmAsync: Zapisz is in EntryForm, Anuluj in
             // EntryDialog. Escape closes the native dialog, which the library reports as Cancel.
             Confirm.HideLibraryFooter(dialog);
             dialog.Parameters.Add(nameof(EntryDialog.Model), input);

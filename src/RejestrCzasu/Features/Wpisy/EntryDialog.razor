@@ -1,12 +1,17 @@
 @using RejestrCzasu.Data
 @inject EntryStore Store
 @inject DictionaryOptions Options
-@inject Notify Notify
+@inject UiMessages Messages
 @* The Entry window (R6, R7, AD-10): the one EntryForm in a modal window of EntryDialogs, for the edit (EntryId set)
    and the copy (EntryId null) of an Entry. The window saves through EntryStore itself and closes only after Done or
    NotFound, so a missing Dictionary item keeps the typed values. Anuluj and Escape close it without saving. *@
 <FluentDialogBody>
     <ChildContent>
+        @if (_error is not null)
+        {
+            @* AD-10: a save error is shown in the window, the page's message bars lie under the modal. *@
+            <FluentMessageBar Intent="MessageBarIntent.Error" AllowDismiss="false" role="alert" class="entry-dialog-error">@_error</FluentMessageBar>
+        }
         <EntryForm Model="Model" Projects="_projects" WorkTypes="_workTypes" OnSave="SaveAsync" />
         <div class="entry-dialog-buttons">
             <FluentButton OnClick="CancelAsync" class="entry-dialog-cancel">Anuluj</FluentButton>
@@ -17,6 +22,7 @@
 @code {
     private IReadOnlyList<ProjectOption> _projects = [];
     private IReadOnlyList<WorkTypeOption> _workTypes = [];
+    private string? _error;
 
     /// <summary>The window instance cascaded by the library's dialog provider.</summary>
     [CascadingParameter] public required IDialogInstance Dialog { get; set; }
@@ -45,6 +51,7 @@
 
     private async Task SaveAsync(EntryInput input)
     {
+        _error = null;
         var date = input.Date!.Value;
         var project = input.Project!;
         var workTypeId = input.WorkType!.Id;
@@ -55,15 +62,15 @@
         {
             case EntryChange.Done done:
                 await Dialog.CloseAsync();
-                await Notify.Success(EntryMessages.Saved(date, project.Code, done.Minutes));
+                await Messages.ShowSuccessAsync(EntryMessages.Saved(date, project.Code, done.Minutes));
                 break;
             case EntryChange.NotFound:
                 await Dialog.CloseAsync();
-                await Notify.Warning(EntryMessages.NotFound);
+                await Messages.ShowWarningAsync(EntryMessages.NotFound);
                 break;
             case EntryChange.MissingDictionaryItem:
                 // The window stays open with the typed values; the lists no longer offer the missing item.
-                await Notify.Error(EntryMessages.MissingDictionaryItem);
+                _error = EntryMessages.MissingDictionaryItem;
                 _projects = await Options.ProjectsAsync(CurrentProjectId, CancellationToken.None);
                 _workTypes = await Options.WorkTypesAsync(CurrentWorkTypeId, CancellationToken.None);
                 break;

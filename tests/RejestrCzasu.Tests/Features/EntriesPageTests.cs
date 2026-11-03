@@ -66,7 +66,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         var cut = RenderScreen();
 
         Assert.Equal("Lista wpisów", cut.Find("h1").TextContent);
-        Assert.Equal("/pomoc/wpisy", cut.Find(".app-header .app-help").GetAttribute("href"));
+        Assert.Equal("/pomoc/wpisy", cut.Find(".app-help").GetAttribute("href"));
         var pickers = cut.FindComponents<FluentDatePicker<DateOnly?>>();
         Assert.Equal([new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 30)], pickers.Select(p => p.Instance.Value));
         Assert.All(pickers, p => Assert.Equal(DatePickerRenderStyle.Native, p.Instance.RenderStyle));
@@ -235,7 +235,11 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         }
         await cut.Find(".entry-save").ClickAsync(new MouseEventArgs());
 
-        WaitForMessage(cut, "error", "Wybrany Projekt lub Typ pracy już nie istnieje.");
+        // In the window itself (AD-10), not in the page bar under the modal.
+        cut.WaitForAssertion(() => Assert.Contains("Wybrany Projekt lub Typ pracy już nie istnieje.",
+            cut.Find("fluent-dialog .entry-dialog-error").TextContent), TimeSpan.FromSeconds(5));
+        Assert.Equal("alert", cut.Find(".entry-dialog-error").GetAttribute("role"));
+        Assert.DoesNotContain(cut.FindAll(".eod-messages fluent-message-bar"), b => b.TextContent.Contains("już nie istnieje"));
         Assert.NotEmpty(cut.FindAll("fluent-dialog"));
         Assert.Equal("5h", TextInput(cut, "entry-czas").Instance.Value);
         Assert.Equal("Drugi 1 września", TextInput(cut, "entry-description").Instance.Value);
@@ -358,14 +362,51 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         var cut = RenderScreen();
         cut.WaitForAssertion(() => Assert.Equal(3, Descriptions(cut).Count));
 
-        _ = OpenWindow(cut, "Koniec września", "Usuń", ".confirm-primary");
+        _ = OpenWindow(cut, "Koniec września", "Usuń", ".eod-confirm-primary");
         Assert.Contains("Usunąć Wpis z 30.09.2026 (OLD, 24h): Koniec września?", cut.Find("fluent-dialog").TextContent);
-        await cut.Find(".confirm-primary").ClickAsync(new MouseEventArgs());
+        await cut.Find(".eod-confirm-primary").ClickAsync(new MouseEventArgs());
 
         WaitForMessage(cut, "success", "Usunięto Wpis: 30.09.2026, OLD, 24h.");
         cut.WaitForAssertion(() => Assert.Equal(["Drugi 1 września", "Pierwszy 1 września"], Descriptions(cut)));
         Assert.Equal("Wpisy: 2, suma Czasu: 1h 30m", Summary(cut));
         Assert.Null(await EntryAsync(ids["Koniec września"]));
+    }
+
+    [Theory]
+    [InlineData("Edytuj")]
+    [InlineData("Kopiuj")]
+    public async Task EditAndCopy_PresetProjectAndWorkType_ShowTheirTextThroughEodUi(string action)
+    {
+        await SeedAsync();
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(3, Descriptions(cut).Count));
+
+        _ = OpenWindow(cut, "Drugi 1 września", action);
+
+        var project = ProjectList(cut).Instance.Value!;
+        var workType = WorkTypeList(cut).Instance.Value!;
+        cut.WaitForAssertion(() => Assert.Equal(
+            [$"{project.Code} — {project.Name}", workType.Name],
+            JSInterop.Invocations.Where(i => i.Identifier == "EodUI.showSelectedText").Select(i => (string?)i.Arguments[1])));
+        // The workaround lives only in eod.js of the eod-ui copy (AD-1): no module of EntryForm.
+        Assert.DoesNotContain(JSInterop.Invocations, i => i.Identifier == "import" && i.Arguments.Any(a => a is string path && path.Contains("EntryForm", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task Delete_EnterInTheWindow_DoesNotConfirm_EntryStays()
+    {
+        await SeedAsync();
+        JSInterop.Setup<bool>("Microsoft.FluentUI.Blazor.Components.Dialog.ShouldHandleShortcut", _ => true).SetResult(true);
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(3, Descriptions(cut).Count));
+
+        var action = OpenWindow(cut, "Koniec września", "Usuń", ".eod-confirm-secondary");
+        Assert.True(cut.Find(".eod-confirm-secondary").HasAttribute("autofocus"));
+        await cut.Find("fluent-dialog").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
+
+        Assert.False(action.IsCompleted);
+        Assert.NotEmpty(cut.FindAll("fluent-dialog"));
+        Assert.Equal(4, await CountAsync());
     }
 
     [Fact]
@@ -375,8 +416,8 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         var cut = RenderScreen();
         cut.WaitForAssertion(() => Assert.Equal(3, Descriptions(cut).Count));
 
-        _ = OpenWindow(cut, "Koniec września", "Usuń", ".confirm-cancel");
-        await cut.Find(".confirm-cancel").ClickAsync(new MouseEventArgs());
+        _ = OpenWindow(cut, "Koniec września", "Usuń", ".eod-confirm-secondary");
+        await cut.Find(".eod-confirm-secondary").ClickAsync(new MouseEventArgs());
 
         cut.WaitForAssertion(() => Assert.Empty(cut.FindAll("fluent-dialog")));
         Assert.Equal(4, await CountAsync());

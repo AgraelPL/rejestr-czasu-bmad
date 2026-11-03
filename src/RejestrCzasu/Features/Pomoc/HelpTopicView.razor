@@ -8,22 +8,27 @@
         {
             <AccountHelp Topic="@Topic.Key" />
         }
-        <PageHeader Title="@Topic.Title" Topic="@Topic.Key" Breadcrumbs="@Crumbs" />
-        <div class="help-content">
-            <DynamicComponent Type="@Topic.Content" />
-        </div>
+        <EodPage Title="@Topic.Title" Breadcrumb="@Crumbs(Topic)">
+            <PageHelp Topic="@Topic.Key" />
+            <EodCard>
+                <div class="help-content">
+                    <DynamicComponent Type="@Topic.Content" />
+                </div>
+            </EodCard>
+        </EodPage>
         break;
     case HelpDecision.LoginRequired:
         <RedirectToLogin />
         break;
     default:
-        <PageTitle>Brak dostępu — @PageHeader.AppName</PageTitle>
+        <PageTitle>Brak dostępu · Rejestr czasu</PageTitle>
         <AccessDeniedContent />
         break;
 }
 
 @code {
-    private static readonly IReadOnlyList<Breadcrumb> Crumbs = [new("Pomoc", HelpButton.HrefOf(null))];
+    // Pomoc › the topic (the current page, without an address).
+    private static IReadOnlyList<BreadcrumbItem> Crumbs(HelpTopic topic) => [new("Pomoc", HelpButton.HrefOf(null)), new(topic.Title)];
 
     [Parameter, EditorRequired] public HelpTopic Topic { get; set; } = default!;
 

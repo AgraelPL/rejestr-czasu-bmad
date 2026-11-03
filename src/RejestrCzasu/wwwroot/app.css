@@ -1,108 +1,30 @@
-/* System font only (AD-12): no external fonts. */
-html, body {
-    font-family: "Segoe UI", system-ui, sans-serif;
-    margin: 0;
-}
+/* Application styles on top of ui/eod.css of the eod-ui copy (AD-11): the layout, the font, the scale and the
+   colours come from eod.css (EodShell, EodPage); only rules of the Rejestr screens are here. */
 
-/* Scale 90/100/110/125% by window width (AD-11), CSS only. The layout height is divided by the zoom, so the
-   zoomed layout still fills exactly one window. */
-:root {
-    --app-zoom: 1;
-    --app-layout-height: calc(100dvh / var(--app-zoom));
-}
-
-@media (max-width: 1279.98px) {
-    :root { --app-zoom: 0.9; }
-}
-
-@media (min-width: 1920px) {
-    :root { --app-zoom: 1.1; }
-}
-
-@media (min-width: 2560px) {
-    :root { --app-zoom: 1.25; }
-}
-
-body {
-    background: var(--colorNeutralBackground1, #fff);
-    color: var(--colorNeutralForeground1, #242424);
-    zoom: var(--app-zoom);
-}
-
-/* Top bar of MainLayout (AD-11). */
-.app-header {
-    align-items: center;
-    background: var(--colorBrandBackground, #0f6cbd);
-    color: var(--colorNeutralForegroundOnBrand, #fff);
-    display: flex;
-    gap: 0.5rem;
-    padding: 0 0.75rem;
-}
-
-    .app-header fluent-button,
-    .app-header fluent-anchor-button {
-        color: var(--colorNeutralForegroundOnBrand, #fff);
-    }
-
-.app-name {
-    color: inherit;
-    font-size: 1.05rem;
-    font-weight: 600;
-    text-decoration: none;
-    white-space: nowrap;
-}
-
-.app-header-actions {
-    align-items: center;
-    display: flex;
-    gap: 0.25rem;
-    margin-left: auto;
-}
-
+/* Wyloguj in the EodShell top bar: a plain form POST (AD-15), laid out like the other buttons. */
 .app-logout {
     display: inline-flex;
     margin: 0;
 }
 
-/* Side menu. */
-.app-nav {
-    border-right: 1px solid var(--colorNeutralStroke2, #e0e0e0);
-}
-
-.app-menu {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.75rem 0.5rem;
-}
-
+/* Nowy wpis at the top of the side menu: the full width, like "Nowa sprawa" of the pattern. */
 .app-new-entry {
-    margin: 0 0.25rem;
+    width: 100%;
 }
 
-/* Screen area: messages (Notify) under the top bar, then the screen. */
-.app-content {
-    padding: 1rem 1.5rem;
+/* Until stories 7.4 and 7.5: screens with PageHeader (no EodPage) get the page gutter of eod.css. */
+.eod-content:not(:has(> .eod-page)) {
+    padding: 20px var(--eod-gutter, 24px) 24px;
 }
 
-/* Notify messages (AD-11): a floating panel in the top right corner, under the top bar, above the screen. */
-.app-messages:not(:empty) {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    position: fixed;
-    right: 1rem;
-    top: 3.75rem;
-    width: min(26rem, calc(100vw - 2rem));
-    z-index: 1000;
-}
-
-    .app-messages fluent-message-bar {
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-    }
-
+/* The screen failing on every render (AppErrorBoundary), shown without the shell. */
 .app-error {
-    margin: 1rem 0;
+    gap: 8px;
+}
+
+/* Message bars of UiMessages under PageHeader (the EodPage section of screens not yet on EodPage). */
+.page-header-messages:not(:empty) {
+    margin-bottom: 1rem;
 }
 
 /* PageHeader with own breadcrumbs (Fluent UI 5.0.1 has no breadcrumb). */
@@ -146,9 +68,27 @@ body {
     color: var(--colorBrandForegroundLink, #115ea3);
 }
 
+/* Help topics in an EodCard: eod.css resets the margins and list markers. */
 .help-content h2 {
-    font-size: 1.2rem;
+    font-size: var(--fontSizeBase400);
+    font-weight: var(--fontWeightSemibold);
     margin: 1.25rem 0 0.5rem;
+}
+
+.help-content p {
+    margin: 0 0 0.75rem;
+}
+
+.help-content ul,
+.help-index {
+    list-style: disc;
+    margin: 0 0 0.75rem;
+    padding-left: 1.5rem;
+}
+
+.help-content li,
+.help-index li {
+    margin: 0.25rem 0;
 }
 
 /* Projekty and Typy pracy: add button and the add/edit form above the grid. */
@@ -227,22 +167,15 @@ body {
         z-index: 2000;
     }
 
+/* The box: eod-card of the eod-ui copy, here only its width and elevation. */
 .reconnect-box {
-    background: var(--colorNeutralBackground1, #fff);
-    border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    color: var(--colorNeutralForeground1, #242424);
+    box-shadow: var(--shadow16, 0 4px 16px rgba(0, 0, 0, 0.3));
+    margin: 0 16px;
     max-width: 26rem;
-    padding: 1.25rem 1.5rem;
-}
-
-.reconnect-title {
-    font-weight: 600;
-    margin-top: 0;
 }
 
 .reconnect-reload {
-    font-weight: 600;
+    font-weight: var(--fontWeightSemibold, 600);
 }
 
 h1:focus {

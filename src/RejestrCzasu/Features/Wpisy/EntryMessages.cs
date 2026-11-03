@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using RejestrCzasu.Domain;
 
 namespace RejestrCzasu.Features.Wpisy;
@@ -25,6 +26,9 @@ internal static class EntryMessages
     /// <summary>The question of the delete confirmation.</summary>
     public static string DeleteQuestion(EntryRow row) =>
         $"Usunąć Wpis z {row.DateText} ({row.ProjectCode}, {row.CzasText}): {row.Description}?";
+
+    /// <summary>The content of the delete confirmation window: <see cref="DeleteQuestion"/> as HTML, the User's values encoded.</summary>
+    public static string DeleteQuestionHtml(EntryRow row) => $"<p>{WebUtility.HtmlEncode(DeleteQuestion(row))}</p>";
 
     /// <summary>The message after a deleted Entry.</summary>
     public static string Deleted(EntryRow row) => $"Usunięto Wpis: {row.DateText}, {row.ProjectCode}, {row.CzasText}.";

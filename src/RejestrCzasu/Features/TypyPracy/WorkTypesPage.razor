@@ -1,10 +1,10 @@
 @page "/typy-pracy"
+@using System.Net
 @using Blazilla
 @using RejestrCzasu.Features.Pomoc
 @using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
 @inject WorkTypeStore Store
-@inject Notify Notify
-@inject Confirm Confirm
+@inject UiMessages Messages
 @* Typy pracy (R1–R3, R17): the User's Work type Dictionary, the same pattern as Projekty. Data only through
    WorkTypeStore (AD-4, AD-16); after every change the list is read again from the database. *@
 
@@ -96,16 +96,16 @@ else
                 case WorkTypeChange.Done done:
                     _form = null;
                     await ReloadAsync();
-                    await Notify.Success(form.Id is null ? $"Dodano Typ pracy {done.Name}." : $"Zapisano Typ pracy {done.Name}.");
+                    await Messages.ShowSuccessAsync(form.Id is null ? $"Dodano Typ pracy {done.Name}." : $"Zapisano Typ pracy {done.Name}.");
                     break;
                 case WorkTypeChange.DuplicateName duplicate:
                     // The form stays open with the value the User typed.
-                    await Notify.Error(DuplicateMessage(duplicate.Name));
+                    await Messages.ShowErrorAsync(DuplicateMessage(duplicate.Name));
                     break;
                 case WorkTypeChange.NotFound:
                     _form = null;
                     await ReloadAsync();
-                    await Notify.Warning(NotFoundMessage);
+                    await Messages.ShowWarningAsync(NotFoundMessage);
                     break;
             }
         }
@@ -121,17 +121,17 @@ else
         await ReloadAsync();
         if (change is WorkTypeChange.Done done)
         {
-            await Notify.Success(isActive ? $"Przywrócono Typ pracy {done.Name}." : $"Dezaktywowano Typ pracy {done.Name}.");
+            await Messages.ShowSuccessAsync(isActive ? $"Przywrócono Typ pracy {done.Name}." : $"Dezaktywowano Typ pracy {done.Name}.");
         }
         else
         {
-            await Notify.Warning(NotFoundMessage);
+            await Messages.ShowWarningAsync(NotFoundMessage);
         }
     }
 
     private async Task DeleteAsync(WorkTypeRow row)
     {
-        if (!await Confirm.AskAsync("Usuń Typ pracy", $"Usunąć Typ pracy {row.Name}?", "Usuń"))
+        if (!await Messages.ConfirmAsync("Usunąć Typ pracy?", $"<p>Usunąć Typ pracy <strong>{WebUtility.HtmlEncode(row.Name)}</strong>?</p>", "Usuń"))
         {
             return;
         }
@@ -144,13 +144,13 @@ else
         switch (change)
         {
             case WorkTypeChange.Done done:
-                await Notify.Success($"Usunięto Typ pracy {done.Name}.");
+                await Messages.ShowSuccessAsync($"Usunięto Typ pracy {done.Name}.");
                 break;
             case WorkTypeChange.InUse inUse:
-                await Notify.Warning(InUseMessage(inUse.Name, inUse.EntryCount));
+                await Messages.ShowWarningAsync(InUseMessage(inUse.Name, inUse.EntryCount));
                 break;
             default:
-                await Notify.Warning(NotFoundMessage);
+                await Messages.ShowWarningAsync(NotFoundMessage);
                 break;
         }
     }

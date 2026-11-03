@@ -1,10 +1,10 @@
 @page "/projekty"
+@using System.Net
 @using Blazilla
 @using RejestrCzasu.Features.Pomoc
 @using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
 @inject ProjectStore Store
-@inject Notify Notify
-@inject Confirm Confirm
+@inject UiMessages Messages
 @* Projekty (R1–R3, R17): the User's Project Dictionary. Data only through ProjectStore (AD-4, AD-16); after every
    change the list is read again from the database. *@
 
@@ -98,16 +98,16 @@ else
                 case ProjectChange.Done done:
                     _form = null;
                     await ReloadAsync();
-                    await Notify.Success(form.Id is null ? $"Dodano Projekt {done.Code}." : $"Zapisano Projekt {done.Code}.");
+                    await Messages.ShowSuccessAsync(form.Id is null ? $"Dodano Projekt {done.Code}." : $"Zapisano Projekt {done.Code}.");
                     break;
                 case ProjectChange.DuplicateCode duplicate:
                     // The form stays open with the values the User typed.
-                    await Notify.Error(DuplicateMessage(duplicate.Code));
+                    await Messages.ShowErrorAsync(DuplicateMessage(duplicate.Code));
                     break;
                 case ProjectChange.NotFound:
                     _form = null;
                     await ReloadAsync();
-                    await Notify.Warning(NotFoundMessage);
+                    await Messages.ShowWarningAsync(NotFoundMessage);
                     break;
             }
         }
@@ -123,17 +123,17 @@ else
         await ReloadAsync();
         if (change is ProjectChange.Done done)
         {
-            await Notify.Success(isActive ? $"Przywrócono Projekt {done.Code}." : $"Dezaktywowano Projekt {done.Code}.");
+            await Messages.ShowSuccessAsync(isActive ? $"Przywrócono Projekt {done.Code}." : $"Dezaktywowano Projekt {done.Code}.");
         }
         else
         {
-            await Notify.Warning(NotFoundMessage);
+            await Messages.ShowWarningAsync(NotFoundMessage);
         }
     }
 
     private async Task DeleteAsync(ProjectRow row)
     {
-        if (!await Confirm.AskAsync("Usuń Projekt", $"Usunąć Projekt {row.Code} ({row.Name})?", "Usuń"))
+        if (!await Messages.ConfirmAsync("Usunąć Projekt?", $"<p>Usunąć Projekt <strong>{WebUtility.HtmlEncode(row.Code)}</strong> ({WebUtility.HtmlEncode(row.Name)})?</p>", "Usuń"))
         {
             return;
         }
@@ -146,13 +146,13 @@ else
         switch (change)
         {
             case ProjectChange.Done done:
-                await Notify.Success($"Usunięto Projekt {done.Code}.");
+                await Messages.ShowSuccessAsync($"Usunięto Projekt {done.Code}.");
                 break;
             case ProjectChange.InUse inUse:
-                await Notify.Warning(InUseMessage(inUse.Code, inUse.EntryCount));
+                await Messages.ShowWarningAsync(InUseMessage(inUse.Code, inUse.EntryCount));
                 break;
             default:
-                await Notify.Warning(NotFoundMessage);
+                await Messages.ShowWarningAsync(NotFoundMessage);
                 break;
         }
     }

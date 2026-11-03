@@ -7,7 +7,7 @@
 @inject EntryDateMemory DateMemory
 @inject CurrentUser CurrentUser
 @inject TimeProvider TimeProvider
-@inject Notify Notify
+@inject UiMessages Messages
 @* Nowy wpis (R4, R5, R16): the Sesja wpisywania. Every opening starts with today's date in Poland; after a save the
    form stays with the same date and the focus goes to Projekt. The date set here is remembered for the copy of an
    Entry (EntryDateMemory, R7). Data only through EntryStore and DictionaryOptions (AD-4, AD-16). *@
@@ -63,11 +63,11 @@
                 {
                     await _form.FocusProjectAsync();
                 }
-                await Notify.Success(message);
+                await Messages.ShowSuccessAsync(message);
                 break;
             case EntryChange.MissingDictionaryItem:
                 // The form keeps the typed values; the lists no longer offer the missing item.
-                await Notify.Error(EntryMessages.MissingDictionaryItem);
+                await Messages.ShowErrorAsync(EntryMessages.MissingDictionaryItem);
                 await LoadOptionsAsync();
                 break;
         }
