@@ -177,6 +177,18 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Login_WhiteSpaceAroundLogin_IsIgnored()
+    {
+        await using var app = new AppClient(postgres);
+        await app.CreateAccountAsync("adam", Password, AccountStatus.Active);
+
+        using var response = await app.LoginAsync(" \tAdam  ", Password);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.True(HasLoginCookie(response));
+    }
+
+    [Fact]
     public async Task Login_ActiveAccount_SignsIn_SavesLastLogin_AndRedirectsToLocalReturnUrl()
     {
         await using var app = new AppClient(postgres);
