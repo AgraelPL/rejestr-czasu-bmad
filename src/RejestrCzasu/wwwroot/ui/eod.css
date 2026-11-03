@@ -123,7 +123,7 @@ fluent-message-bar .title { font-weight: var(--fontWeightSemibold); margin-inlin
 .eod-grid-fill .eod-stack > :last-child { flex: 1 0 auto; }
 .eod-card-fill { display: flex; flex-direction: column; }
 .eod-page > .eod-card-fill { flex: 1 0 auto; }
-.eod-card-fill > .eod-table-wrap, .eod-card-fill > .eod-list { flex: 1 0 auto; }
+.eod-card-fill > .eod-table-wrap { flex: 1 0 auto; }
 .eod-card-foot { padding: 8px 16px; border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
 /* ── FluentDataGrid: uzupełnienia ─────────────────────────────────────── */
@@ -134,7 +134,6 @@ fluent-message-bar .title { font-weight: var(--fontWeightSemibold); margin-inlin
 .fluent-data-grid td:not([col-select="true"]) { max-width: 420px; }
 /* Kolumna opisowa (numer + przedmiot): 42% szerokości. W trybie Table siatka ma table-layout: fixed – szerokość bierze się z nagłówka. */
 .fluent-data-grid :is(th, td).eod-col-flex { max-width: 0; width: 42%; }
-.eod-due { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding-block: 4px; }
 .fluent-data-grid td.eod-cell-actions { padding: 0 8px; text-align: end; white-space: nowrap; overflow: visible; }
 .fluent-data-grid tbody tr:last-child td { border-bottom-color: transparent; }
 .fluent-data-grid td .eod-caption { display: block; overflow: hidden; text-overflow: ellipsis; }
@@ -147,11 +146,7 @@ a.eod-cell-main:active { color: var(--colorBrandForegroundLinkPressed); }
 .eod-paginator { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 8px 12px; border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); }
 .eod-paginator > :first-child { flex: 1; }
 
-/* Listy (regulacje, komunikaty, powiadomienia) */
-.eod-list > li { display: flex; gap: 12px; padding: 10px 16px; align-items: flex-start; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
-.eod-list > li:last-child { border-bottom: 0; }
-.eod-list .eod-grow > a, .eod-list .eod-grow > strong { font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); text-decoration: none; display: block; }
-.eod-list .eod-grow > a:hover { color: var(--colorBrandForegroundLink); text-decoration: underline; }
+/* Aktualności: kafle wiadomości w siatce */
 .eod-news { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
 .eod-news article { display: flex; flex-direction: column; gap: 6px; }
 .eod-news h3 a { color: inherit; text-decoration: none; }
@@ -214,8 +209,6 @@ fluent-dialog-body { max-width: 100%; }
 .eod-filterbar fluent-dropdown { min-width: 200px; }
 fluent-field > label[slot="label"][data-req]::after { content: " *"; color: var(--colorPaletteRedForeground1); }
 .eod-field-msg { display: flex; align-items: center; gap: 4px; color: var(--colorStatusDangerForeground1); margin-top: -6px; }
-.eod-kind { display: inline-flex; align-items: center; gap: 6px; }
-.eod-roles { display: flex; flex-wrap: wrap; gap: 4px; padding-block: 6px; }
 .fluent-data-grid td[multiline="true"] { align-content: center; padding-block: 10px; overflow: visible; }
 
 /* ── Raport tabelaryczny (EodReport) ──────────────────────────────────── */
@@ -298,17 +291,8 @@ th[col-justify="end"] .eod-th .eod-th-text { text-align: end; }
 .eod-report-wrap { container-type: inline-size; }
 .eod-report tr[row-state="empty-content"] .eod-empty { position: sticky; left: 0; width: 100cqi; padding-block: 40px; }
 
-/* Szkielety wczytywania (EodPlaceholder, EodReport Loading) – FluentSkeleton w kształcie treści */
-.eod-placeholder { display: flex; flex-direction: column; min-width: 0; }
-.eod-placeholder .fluent-skeleton, .eod-skeleton-row .fluent-skeleton { display: block; }
-.eod-placeholder-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
-.eod-placeholder-item:last-of-type { border-bottom: 0; }
-.eod-placeholder-item > .eod-grow { display: flex; flex-direction: column; gap: 8px; padding-top: 2px; }
-.eod-placeholder-row { display: grid; grid-template-columns: repeat(var(--eod-placeholder-columns, 4), minmax(0, 1fr)); gap: 24px; align-items: center; min-height: 44px; padding: 0 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
-.eod-placeholder-row[data-head] { min-height: 40px; }
-.eod-placeholder-row:last-of-type { border-bottom: 0; }
-.eod-placeholder-field { display: flex; flex-direction: column; gap: 8px; }
-.eod-placeholder-tile { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; }
+/* Szkielety wczytywania (EodReport Loading) – FluentSkeleton w kształcie treści */
+.eod-skeleton-row .fluent-skeleton { display: block; }
 @media (prefers-reduced-motion: reduce) { [class*="fluent-skeleton"]::after { animation: none; display: none; } }
 
 /* Treść opcji listy (awatar, podpis) nie przechwytuje kliknięcia – musi trafić w fluent-option (FluentAutocomplete, FluentSelect) */
@@ -323,37 +307,8 @@ fluent-option * { pointer-events: none; }
 /* Tekst w polu przed / za wartością (jednostka „PLN”, „%”, prefiks): rozmiar treści, nie ikony (Fluent daje slotom 20 px) */
 :is(fluent-text-input, fluent-textarea) :is([slot="start"], [slot="end"]) > span { font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
 
-/* ── Administracja: lista wyboru i tabela edycyjna (EodListItem Selected, EodEditableTable) – specyfikacja 9.13 ── */
-/* Lista wyboru (master–detail): cała pozycja klikalna (link tytułu rozciągnięty na wiersz); wybrana – tło zaznaczenia i akcent marki */
-.eod-list > li[data-selectable] { position: relative; }
-.eod-list > li[data-selectable]:hover { background: var(--colorNeutralBackground1Hover); }
-.eod-list > li[data-selectable] .eod-grow > a::after { content: ""; position: absolute; inset: 0; }
-.eod-list > li[data-selectable] .eod-grow > a:focus-visible { outline: 0; }
-.eod-list > li[data-selectable]:has(a:focus-visible) { outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2); outline-offset: -2px; }
-.eod-list > li[data-selected] { background: var(--colorNeutralBackground1Selected); box-shadow: inset 3px 0 0 var(--colorCompoundBrandStroke); }
-.eod-list > li[data-selected] > .ic { color: var(--colorCompoundBrandForeground1); }
-
-/* Tabela edycyjna: pasek stanu nad tabelą, komórki z kontrolkami wyrównane do góry (komunikat pod polem nie przesuwa sąsiednich) */
-.eod-edit-table { display: flex; flex-direction: column; min-width: 0; }
-.eod-card-fill > .eod-edit-table { flex: 1 0 auto; }
-.eod-edit-bar { gap: 4px 16px; min-height: 44px; }
-.eod-edit-bar > .eod-grow { flex: 1 1 240px; }
-.eod-edit-state, .eod-edit-errors { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground3); }
-.eod-edit-state[data-dirty] { color: var(--colorNeutralForeground1); font-weight: var(--fontWeightSemibold); }
-.eod-edit-state[data-dirty] .ic { color: var(--colorBrandForeground1); }
-.eod-edit-errors { color: var(--colorStatusDangerForeground1); font-weight: var(--fontWeightSemibold); }
-.eod-edit-table .fluent-data-grid td:not([col-select="true"]) { white-space: normal; overflow: visible; align-content: start; padding: 6px 8px; }
-.eod-edit-table .fluent-data-grid th[cell-type="columnheader"] { padding-inline: 8px; }
-.eod-edit-table .fluent-data-grid tr[row-state="empty-content"] > td { align-content: center; padding-block: 16px; }
-/* Linia pola: tekst, przełącznik i przyciski w komórce na wysokości pola tekstowego (32 px) */
-.eod-cell-line { display: flex; align-items: center; gap: 2px; min-height: 32px; }
-.eod-edit-table td.eod-cell-actions .eod-cell-line { justify-content: flex-end; gap: 8px; }
-.eod-cell-line.eod-cell-center { justify-content: center; }
-.eod-order-no { min-width: 28px; padding-inline-end: 4px; text-align: end; color: var(--colorNeutralForeground2); }
-/* Wiersz nowy / zmieniony: akcent 3 px z lewej (jak oznaczenie w komentarzach) + znaczek „Nowa” / „Zmieniona” */
-.fluent-data-grid tr:is(.eod-row-added, .eod-row-modified) > td:first-child { box-shadow: inset 3px 0 0 var(--colorCompoundBrandStroke); }
-.eod-edit-table fluent-text-input[readonly] { width: 100%; }
-/* Nagłówek kolumny z polem wymaganym (tabela edycyjna): gwiazdka jak przy etykiecie pola */
+/* ── Pola wymagane i komunikaty pod polem ── */
+/* Nagłówek kolumny z polem wymaganym: gwiazdka jak przy etykiecie pola */
 .eod-th-required::after { content: " *"; color: var(--colorPaletteRedForeground1); }
 /* Komunikat pod polem w kilku wierszach (wąska komórka tabeli, okno): ikona nie kurczy się i stoi przy pierwszym wierszu */
 fluent-text[slot="message"] > svg { flex: none; align-self: flex-start; margin-top: 2px; }

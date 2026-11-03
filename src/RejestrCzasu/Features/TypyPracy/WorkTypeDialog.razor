@@ -47,7 +47,7 @@
             dialog.Header.Title = WebUtility.HtmlEncode(form.Id is null ? "Dodaj Typ pracy" : $"Edytuj Typ pracy {editedName}");
             // The library footer stays hidden and without shortcuts: Zapisz and Anuluj are in the window's form.
             // Escape closes the native dialog, which the library reports as Cancel.
-            Confirm.HideLibraryFooter(dialog);
+            DialogFooter.HideLibraryFooter(dialog);
             dialog.Parameters.Add(nameof(Model), form);
         });
 

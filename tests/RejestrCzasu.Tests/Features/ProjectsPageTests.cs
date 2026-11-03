@@ -60,7 +60,6 @@ public sealed class ProjectsPageTests : BunitContext, IAsyncLifetime
         Assert.Equal(["Nieaktywny", "Aktywny"], Column(cut, 2));
         Assert.Equal("2 pozycje", Footer(cut));
         Assert.DoesNotContain("Eksport CSV", cut.Markup);
-        Assert.Empty(cut.FindAll(".page-header"));
     }
 
     [Fact]

@@ -115,7 +115,7 @@ public sealed class EntryDialogs(
             dialog.Header.Title = WebUtility.HtmlEncode(title);
             // The library footer stays hidden and without shortcuts, as in UiMessages.ConfirmAsync: Zapisz and Anuluj (from
             // EntryDialog) are in the button row of EntryForm. Escape closes the native dialog, which the library reports as Cancel.
-            Confirm.HideLibraryFooter(dialog);
+            DialogFooter.HideLibraryFooter(dialog);
             dialog.Parameters.Add(nameof(EntryDialog.Model), input);
             dialog.Parameters.Add(nameof(EntryDialog.Projects), projects);
             dialog.Parameters.Add(nameof(EntryDialog.WorkTypes), workTypes);

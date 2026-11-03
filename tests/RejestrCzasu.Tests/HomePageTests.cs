@@ -19,7 +19,6 @@ public sealed class HomePageTests : BunitContext
         Assert.Equal("Rejestr czasu pracy", page.Find(".eod-page h1.eod-h1").TextContent);
         Assert.Equal("start", page.FindComponent<PageHelp>().Instance.Topic);
         Assert.NotNull(page.Find(".eod-page .eod-card"));
-        Assert.Empty(page.FindComponents<PageHeader>());
     }
 
     [Fact]

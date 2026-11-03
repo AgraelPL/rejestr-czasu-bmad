@@ -134,22 +134,6 @@ public sealed class LayoutTests : BunitContext
     }
 
     [Fact]
-    public void HelpIcon_WithPageHeaderTopic_LinksToTopic()
-    {
-        var cut = RenderLayout(b =>
-        {
-            b.OpenComponent<PageHeader>(0);
-            b.AddAttribute(1, nameof(PageHeader.Title), "Ekran");
-            b.AddAttribute(2, nameof(PageHeader.Topic), "start");
-            b.CloseComponent();
-        });
-
-        var help = Assert.Single(TopBar(cut).QuerySelectorAll(".app-help"));
-        Assert.Equal("/pomoc/start", help.GetAttribute("href"));
-        Assert.Equal("Ekran", cut.Find("h1").TextContent);
-    }
-
-    [Fact]
     public void HelpIcon_WithoutTopic_LinksToIndex()
     {
         var cut = RenderLayout(b =>

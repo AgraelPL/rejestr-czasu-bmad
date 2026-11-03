@@ -47,3 +47,25 @@
 - source_plan: `tickets/epic-wzorzec-ui/tickets/story-szkielet-aplikacji-na-eodshell-z-kopii-wzorca-plan.md`
   summary: Pasek sukcesu i ostrzeżenia po zamknięciu okna Wpisu wysyła sam `EntryDialog` po `Dialog.CloseAsync()`, a AD-10 każe robić to `EntryDialogs` po zamknięciu okna.
   evidence: Przegląd 7.3; tak było już z `Notify`, działa dzięki usłudze scoped; do uporządkowania w 7.5 (okno Wpisu na wzorcu).
+
+## Rozstrzygnięte (7.7, Refactor sweep, 03.11.2026)
+
+- „W kopii wzorca `wwwroot/ui/eod.css` zostały reguły pominiętych komponentów…” — rozstrzygnięte w 7.7: reguły `.eod-placeholder*`, `.eod-edit-*`, `.eod-row-added/modified`, `.eod-due`, `.eod-list`, `.eod-roles`, `.eod-kind`, `.eod-cell-line`, `.eod-cell-center`, `.eod-order-no` usunięte, linia w poz. 10 `docs/ui/DOPASOWANIA.md` (decyzja Autora 03.11.2026).
+- „Pasek sukcesu i ostrzeżenia po zamknięciu okna Wpisu wysyła sam `EntryDialog`…” — rozstrzygnięte w 7.5: `EntryDialogs.ShowAsync` pokazuje pasek z wyniku `EntryChange` po zamknięciu okna.
+
+## Przeniesione (7.7, Refactor sweep, 03.11.2026)
+
+- „`EodUI.showSelectedText` (i `eod-scale.js`) mają tylko testy tekstu źródła…” — nowa historia techniczna „testy E2E w przeglądarce (Playwright)”, propozycja po epiku 3, gdy powstanie Widok miesiąca; wymaga nowego narzędzia.
+
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-refactor-sweep-plan.md`
+  summary: Reguła przejściowa `.eod-content:not(:has(> .eod-page))` w `app.css` zostaje, bo daje odstęp strony `/Error` i „Sprawdzanie uprawnień...” w `EodShell` bez `EodPage`.
+  evidence: Przeniesione: drobna historia w epiku 3 — przeniesienie `/Error` i „Sprawdzanie uprawnień...” na `EodPage` (zmienia wygląd), potem usunięcie reguły.
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-refactor-sweep-plan.md`
+  summary: Pasek komunikatu pojawia się przed ponownym wczytaniem Listy wpisów (przegląd 7.5 #3, odrzucone w 7.5).
+  evidence: Przeniesione do rozważenia w historii Widoku miesiąca (epik 3), bo poprawka przebudowuje `EntryDialogs` i zmienia zachowanie.
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-refactor-sweep-plan.md`
+  summary: Po usunięciu `FluentLocalizer` (7.7) żaden test nie pilnuje, że każdy klucz Fluent UI ma polski tekst; `PolishLocalizer` nie ma m.in. `FluentInputBase_RequiredMessage`, `PresenceStatus_*`.
+  evidence: Przeniesione: nowa historia w epiku 3 — uzupełnienie kluczy `PolishLocalizer` z testem pokrycia zasobu `LanguageResource.resources` (decyzja Autora 03.11.2026).
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-refactor-sweep-plan.md`
+  summary: Kontrola ręczna z 7.5 (Sesja 10 Wpisów ≤ 10 s, konsola bez naruszeń CSP) niewykonana.
+  evidence: Nie kod — kontrola ręczna Autora przed PR epiku 7 (`dotnet run`: okna Projektu i Wpisu bez stopki biblioteki, Enter nie potwierdza usunięcia, Sesja 10 Wpisów ≤ 10 s, konsola bez naruszeń CSP).

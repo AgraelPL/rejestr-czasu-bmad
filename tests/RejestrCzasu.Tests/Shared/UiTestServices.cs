@@ -20,13 +20,6 @@ internal static class UiTestServices
         context.Services.AddSingleton<AntiforgeryStateProvider>(new FakeAntiforgery());
     }
 
-    /// <summary>The old Notify and Confirm (removed in story 7.7), only for their own tests.</summary>
-    public static void AddLegacyNotifyConfirm(this BunitContext context)
-    {
-        context.Services.AddScoped<Notify>();
-        context.Services.AddScoped<Confirm>();
-    }
-
     public const string AntiforgeryFieldName = "__RequestVerificationToken";
 
     private sealed class FakeAntiforgery : AntiforgeryStateProvider

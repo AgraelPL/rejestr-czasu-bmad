@@ -67,7 +67,6 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         var cut = RenderScreen();
 
         Assert.Equal("Lista wpisów", cut.Find(".eod-page h1").TextContent);
-        Assert.Empty(cut.FindAll(".page-header"));
         Assert.Equal(["Data", "Dzień", "Projekt", "Typ pracy", "Opis", "Czas"], Headers(cut));
         // The screen filters lie in the filter bar of the card, above the report.
         var bar = cut.Find(".eod-page .eod-card > .eod-formbar.eod-filterbar");

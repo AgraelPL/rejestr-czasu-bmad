@@ -62,7 +62,6 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         Assert.Equal("Nowy wpis", cut.Find(".eod-page h1").TextContent);
         Assert.Equal("Kolejne Wpisy samą klawiaturą: data, Projekt, Typ pracy, opis, Czas i Enter.",
             cut.Find(".eod-page-head .eod-caption").TextContent);
-        Assert.Empty(cut.FindAll(".page-header"));
         Assert.NotNull(cut.Find(".eod-page .eod-card form.entry-form"));
         Assert.Equal(["Zapisz"], cut.FindAll(".entry-form-buttons fluent-button").Select(b => b.TextContent.Trim()));
         Assert.Equal("/pomoc/wpisy-nowy", cut.Find(".app-help").GetAttribute("href"));
