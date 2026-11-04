@@ -3,13 +3,15 @@
     EodReport – raport tabelaryczny (specyfikacja UI, sekcja 9.7). Jeden silnik dla wszystkich raportów: raport różni się
     tylko definicją (ReportDefinition) i wierszami. Umieszczaj go na stronie EodPage Fill="true" – zajmuje całą przestrzeń,
     przewija się tylko tabela.
-    Pasek narzędzi (szukaj · Kolumny · Eksport CSV), pasek układu (grupowanie · sortowanie · filtry), tabela w wyglądzie
+    Pasek narzędzi (szukaj · Kolumny · Eksportuj), pasek układu (grupowanie · sortowanie · filtry), tabela w wyglądzie
     FluentDataGrid (nagłówek przyklejony, pierwsza kolumna i „Akcje” przypięte), wiersze grup z sumami, stopka z podsumowaniem.
     Okienko kolumny (FluentPopover): sortowanie, grupowanie, kolejność, filtr zależny od typu kolumny.
     Tabela jest własna (klasy FluentDataGrid), bo FluentDataGrid nie ma wierszy grup z podsumowaniami.
     Stany (specyfikacja UI, sekcja 9.14): Loading="true" – szkielety wierszy zamiast danych (pasek narzędzi zostaje, tabela ma
     aria-busy); brak wierszy – jeden wiersz ze stanem pustym (EmptyContent albo „Raport nie zawiera pozycji.”); brak wierszy
     po wyszukiwaniu i filtrach – „Brak pozycji spełniających filtry.” z akcją „Wyczyść filtry”.
+    Dopasowanie Rejestru (AD-23 poz. 11): PageSize – strony po PageSize wierszy (FluentPaginator pod tabelą, gdy wierszy
+    po filtrach jest więcej), bez paginacji przy grupowaniu; stopka i eksport liczą wszystkie wiersze po filtrach.
     Przykład:
         <EodReport Definition="@definition" Rows="@rows" RowHref="@(row => CaseHref(row))" DataAsOf="@today">
             <RowActions Context="row">…</RowActions>
@@ -48,7 +50,7 @@
         </FluentMenu>
         @if (ShowExport)
         {
-            <FluentButton IconStart="@(new Icons.Regular.Size20.ArrowDownload())" OnClick="@ExportAsync">Eksport CSV</FluentButton>
+            <FluentButton IconStart="@(new Icons.Regular.Size20.ArrowDownload())" OnClick="@ExportAsync">Eksportuj</FluentButton>
         }
     </div>
 
@@ -267,11 +269,20 @@
                 }
                 else
                 {
-                    @RenderLevel(_filteredRows, 0, string.Empty)
+                    @RenderLevel(_pageRows, 0, string.Empty)
                 }
             </tbody>
         </table>
     </div>
+
+    @* Paginacja (dopasowanie Rejestru, AD-23 poz. 11): teksty jak lista użytkowników wzorca *@
+    @if (ShowPaginator)
+    {
+        <FluentPaginator State="@(_pagination!)" Class="eod-paginator" CurrentPageIndexChanged="@OnPageChanged">
+            <SummaryTemplate>@ItemRangeText</SummaryTemplate>
+            <PaginationTextTemplate>@PageText</PaginationTextTemplate>
+        </FluentPaginator>
+    }
 
     <div class="eod-card-foot"><span class="eod-num" aria-live="polite">@(Loading ? "Wczytywanie danych…" : FooterText)</span></div>
 

@@ -79,7 +79,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         Assert.Equal(["30.09.2026", "Środa", "OLD", "Development", "Koniec września", "24h"],
             Rows(cut)[0].QuerySelectorAll("td").Take(6).Select(td => td.TextContent.Trim()));
         Assert.Equal("3 pozycje · Wpisy: 3, suma Czasu: 25h 30m", Summary(cut));
-        Assert.DoesNotContain("Eksport CSV", cut.Markup);
+        Assert.Contains("Eksportuj", cut.Markup);
         Assert.DoesNotContain("Cudzy", cut.Markup);
     }
 
@@ -597,6 +597,59 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
     }
 
     [Fact]
+    public async Task Pages_30PerPage_FooterForAllRows_ScreenFilterChange_BackToPage1()
+    {
+        await SeedAsync();
+        await AddEntriesAsync(new DateOnly(2026, 9, 2), [.. Enumerable.Range(1, 40).Select(i => ($"Seria {i}", 90))]);
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(30, Rows(cut).Count));
+
+        Assert.Equal(("Pozycje 1–30 z 43", "Strona 1 z 2"), PaginatorTexts(cut));
+        Assert.Equal("43 pozycje · Wpisy: 43, suma Czasu: 85h 30m", Summary(cut));
+
+        await GoToNextPageAsync(cut);
+        Assert.Equal(13, Rows(cut).Count);
+        Assert.Equal("Strona 2 z 2", PaginatorTexts(cut).Page);
+
+        await SelectAsync(cut, ProjectSelect(cut), "RDZ — Rozwój");
+        cut.WaitForAssertion(() => Assert.Equal(("Pozycje 1–30 z 42", "Strona 1 z 2"), PaginatorTexts(cut)));
+        Assert.Equal("Seria 40", Descriptions(cut)[0]);
+    }
+
+    [Fact]
+    public async Task Eksportuj_ScreenFilter_ColumnFilter_Search_AllPages_PolishDateAndDecimalHours()
+    {
+        await SeedAsync();
+        await AddEntriesAsync(new DateOnly(2026, 9, 2), [.. Enumerable.Range(1, 40).Select(i => ($"Seria {i}", 90))]);
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(30, Rows(cut).Count));
+
+        await SelectAsync(cut, ProjectSelect(cut), "RDZ — Rozwój");
+        cut.WaitForAssertion(() => Assert.StartsWith("42 pozycje", Summary(cut)));
+        await OpenColumnFilterAsync(cut, "Czas");
+        var checkbox = cut.FindComponents<FluentCheckbox>().Single(c => c.Instance.Label == "30m (1)");
+        await cut.InvokeAsync(() => checkbox.Instance.ValueChanged.InvokeAsync(false));
+        await cut.InvokeAsync(() => cut.FindComponents<FluentTextInput>()
+            .Single(i => i.Instance.AriaLabel == "Szukaj we wszystkich kolumnach").Instance.ValueChanged.InvokeAsync("Seria"));
+        Assert.Equal(("Pozycje 1–30 z 40", "Strona 1 z 2"), PaginatorTexts(cut));
+
+        await cut.InvokeAsync(() => ExportButton(cut).Click());
+
+        var download = Assert.Single(JSInterop.Invocations, i => i.Identifier == "EodUI.downloadFile");
+        // 22:30 UTC on 2 September is 3 September in Poland.
+        Assert.Equal("wpisy-2026-09-03.csv", download.Arguments[0]);
+        var lines = ((string)download.Arguments[1]!).Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(41, lines.Length);
+        Assert.Equal("Data;Dzień;Projekt;Typ pracy;Opis;Godziny", lines[0]);
+        Assert.Equal("02.09.2026;Środa;RDZ;Development;Seria 40;1,5", lines[1]);
+        Assert.Equal("02.09.2026;Środa;RDZ;Development;Seria 1;1,5", lines[^1]);
+        // Title and text of the message bar (UiMessages): the export counts all 40 rows, not the page.
+        cut.WaitForAssertion(() => Assert.Contains(Messages(cut), m =>
+            m.StartsWith("success: Wyeksportowano raport.", StringComparison.Ordinal)
+            && m.EndsWith("wpisy-2026-09-03.csv: 40 wierszy, 6 kolumn.", StringComparison.Ordinal)), TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
     public void HelpTopic_Wpisy_IsForLoggedInUsers()
     {
         var topic = HelpTopics.Find("wpisy");
@@ -714,6 +767,19 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
     }
 
     private static List<string> Descriptions(IRenderedComponent<MainLayout> cut) => Column(cut, 4);
+
+    private static IElement ExportButton(IRenderedComponent<MainLayout> cut) =>
+        cut.FindAll(".eod-report .eod-formbar fluent-button").Single(b => b.TextContent.Trim() == "Eksportuj");
+
+    private static (string Range, string Page) PaginatorTexts(IRenderedComponent<MainLayout> cut) =>
+        (cut.Find(".eod-paginator .summary").TextContent.Trim(), cut.Find(".eod-paginator .pagination-text").TextContent.Trim());
+
+    // The third button of FluentPaginator: first, previous, next, last.
+    private static Task GoToNextPageAsync(IRenderedComponent<MainLayout> cut)
+    {
+        var next = cut.FindComponent<FluentPaginator>().FindComponents<FluentButton>()[2];
+        return cut.InvokeAsync(() => next.Instance.OnClick.InvokeAsync());
+    }
 
     /// <summary>The report footer: the counter of visible rows, then the screen's text of count and sum (AD-5).</summary>
     private static string Summary(IRenderedComponent<MainLayout> cut) => cut.Find(".eod-card-foot .eod-num").TextContent.Trim();

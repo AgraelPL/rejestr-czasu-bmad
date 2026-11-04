@@ -11,7 +11,8 @@
    (date range, Projekt, Typ pracy) sit in the filter bar above the report; the sum of Czas in the footer comes from the
    list EntryStore returns for them (AD-5), so the report's column filters only hide rows and never change it. Data only
    through the stores (AD-4, AD-16). The row icons of EntriesReport go through EntryDialogs (R6, R7, AD-10); after a
-   change the list is read again from the database. *@
+   change the list is read again from the database. A change of a screen filter starts the report again on page 1
+   (@key: a new report keeps the User's layout from ReportLayoutStore); a reload after a row action keeps the page. *@
 
 <EodPage Title="Lista wpisów" Description="Twoje Wpisy z zakresu dat, Projektu i Typu pracy, od najnowszych." Fill="true">
     <PageHelp Topic="@HelpTopics.Wpisy" />
@@ -32,7 +33,7 @@
                 <span class="entries-filter-error" role="alert">@RangeErrorMessage</span>
             }
         </div>
-        <EntriesReport Entries="_entries" LayoutKey="@HelpTopics.Wpisy" OnChanged="ReloadAsync" />
+        <EntriesReport @key="ScreenFilter" Entries="_entries" LayoutKey="@HelpTopics.Wpisy" OnChanged="ReloadAsync" />
     </EodCard>
 </EodPage>
 
@@ -55,6 +56,9 @@
 
     /// <summary>An option of the Projekt or Typ pracy filter; <c>Id</c> <c>null</c> is „Wszystkie”.</summary>
     public sealed record FilterOption(int? Id, string Text);
+
+    // The screen filters as one value: its change gives the report a new key, so it starts on page 1 (plan 7.9).
+    private (DateOnly? From, DateOnly? To, int? Project, int? WorkType) ScreenFilter => (_from, _to, _project.Id, _workType.Id);
 
     private static string OptionText(FilterOption? option) => option?.Text ?? "";
 
@@ -96,24 +100,32 @@
     private Task OnFromChangedAsync(DateOnly? value)
     {
         _from = value;
-        return ReloadAsync();
+        return ReloadForScreenFilterAsync();
     }
 
     private Task OnToChangedAsync(DateOnly? value)
     {
         _to = value;
-        return ReloadAsync();
+        return ReloadForScreenFilterAsync();
     }
 
     private Task OnProjectChangedAsync(FilterOption? value)
     {
         _project = value ?? All;
-        return ReloadAsync();
+        return ReloadForScreenFilterAsync();
     }
 
     private Task OnWorkTypeChangedAsync(FilterOption? value)
     {
         _workType = value ?? All;
+        return ReloadForScreenFilterAsync();
+    }
+
+    // A new screen filter: the report (new @key, page 1) shows the skeleton until the query returns, so its footer and
+    // Eksportuj never use the rows of the previous filter. A reload after a row action keeps the list and the page.
+    private Task ReloadForScreenFilterAsync()
+    {
+        _entries = null;
         return ReloadAsync();
     }
 }

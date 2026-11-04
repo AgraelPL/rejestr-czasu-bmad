@@ -325,21 +325,27 @@ public static class ReportEngine
     /// <remarks>
     /// Separator „;”, przecinek dziesiętny bez odstępów tysięcy, daty dd.mm.rrrr, końce wierszy CRLF; pola ze średnikiem,
     /// cudzysłowem lub końcem wiersza są ujmowane w cudzysłów. BOM UTF-8 dokłada pobranie pliku (<c>EodUI.downloadFile</c>).
+    /// Kolumna z <see cref="ReportColumn.ExportLabel"/> i <see cref="ReportColumn.ExportFormat"/> ma w pliku własny nagłówek
+    /// i wartość (dopasowanie Rejestru, AD-23 poz. 13).
     /// </remarks>
     public static string ToCsv(ReportLayout layout, IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
     {
         var columns = layout.Visible;
         var sb = new StringBuilder();
-        sb.Append(string.Join(';', columns.Select(c => Field(c.Label)))).Append("\r\n");
+        sb.Append(string.Join(';', columns.Select(c => Field(c.ExportLabel ?? c.Label)))).Append("\r\n");
         foreach (var r in rows)
         {
-            sb.Append(string.Join(';', columns.Select(c => Field(CsvValue(c, GetValue(r, c.Key)))))).Append("\r\n");
+            sb.Append(string.Join(';', columns.Select(c => Field(ExportValue(c, GetValue(r, c.Key)))))).Append("\r\n");
         }
 
         return sb.ToString();
 
         static string Field(string s) => s.IndexOfAny([';', '"', '\r', '\n']) >= 0 ? $"\"{s.Replace("\"", "\"\"")}\"" : s;
     }
+
+    // Dopasowanie Rejestru (AD-23 poz. 13): ReportColumn.ExportFormat przed formatem typu kolumny.
+    private static string ExportValue(ReportColumn column, object? value)
+        => column.ExportFormat is { } format && value is not null ? format(value) : CsvValue(column, value);
 
     private static string CsvValue(ReportColumn column, object? value) => column.Type switch
     {

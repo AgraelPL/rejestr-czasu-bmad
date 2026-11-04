@@ -59,7 +59,7 @@ public sealed class WorkTypesPageTests : BunitContext, IAsyncLifetime
         Assert.Equal(["Analiza", "Spotkanie"], Names(cut));
         Assert.Equal(["Nieaktywny", "Aktywny"], Column(cut, 1));
         Assert.Equal("2 pozycje", Footer(cut));
-        Assert.DoesNotContain("Eksport CSV", cut.Markup);
+        Assert.DoesNotContain("Eksportuj", cut.Markup);
     }
 
     [Fact]

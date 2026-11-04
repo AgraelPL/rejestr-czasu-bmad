@@ -142,12 +142,35 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         Assert.Equal("2 pozycje · Wpisy: 2, suma Czasu: 24h 30m", Summary(cut));
         Assert.All(Rows(cut), row => Assert.Equal(["Edytuj", "Kopiuj", "Usuń"],
             row.QuerySelectorAll("fluent-button[aria-label]").Select(b => b.GetAttribute("aria-label"))));
-        Assert.DoesNotContain("Eksport CSV", cut.Markup);
+        Assert.Contains("Eksportuj", cut.Markup);
         // The list has its own layout key, not the one of Lista wpisów.
         Assert.Equal(HelpTopics.WpisyNowy, cut.FindComponent<EodReport>().Instance.LayoutKey);
         Assert.Equal("Wpisy bieżącego Miesiąca", cut.Find("table.fluent-data-grid").GetAttribute("aria-label"));
         Assert.Equal(EntriesReport.Report.Columns, EntriesReport.MonthReport.Columns);
         Assert.NotNull(cut.Find(".eod-page.eod-page-fill > .eod-card.eod-card-fill .eod-report"));
+    }
+
+    [Fact(Timeout = TestTimeoutMs)]
+    public async Task Eksportuj_CurrentMonthOnly_PolishDateInFileName_DecimalHours_PageSize30()
+    {
+        var (projects, workTypes) = await SeedAsync(Xunit.TestContext.Current.CancellationToken);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 8, 31), "Sierpień", 120);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 9, 1), "Pierwszy; \"cytat\"", 90);
+        await AddEntryAsync(projects["ABC"], workTypes["Development"], new DateOnly(2026, 9, 30), "Koniec", 45);
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(2, Descriptions(cut).Count));
+        Assert.Equal(EntriesReport.PageSize, cut.FindComponent<EodReport>().Instance.PageSize);
+
+        var export = cut.FindAll(".eod-report .eod-formbar fluent-button").Single(b => b.TextContent.Trim() == "Eksportuj");
+        await cut.InvokeAsync(() => export.Click());
+
+        var download = Assert.Single(JSInterop.Invocations, i => i.Identifier == "EodUI.downloadFile");
+        Assert.Equal("wpisy-2026-09-03.csv", download.Arguments[0]);
+        Assert.Equal(
+            "Data;Dzień;Projekt;Typ pracy;Opis;Godziny\r\n"
+            + "30.09.2026;Środa;ABC;Development;Koniec;0,75\r\n"
+            + "01.09.2026;Wtorek;RDZ;Development;\"Pierwszy; \"\"cytat\"\"\";1,5\r\n",
+            download.Arguments[1]);
     }
 
     [Fact(Timeout = TestTimeoutMs)]

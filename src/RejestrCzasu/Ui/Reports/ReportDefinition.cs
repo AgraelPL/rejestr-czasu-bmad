@@ -84,6 +84,19 @@ public sealed record ReportColumn(string Key, string Label, ColumnType Type = Co
     /// <value>Domyślnie <see langword="null"/> – format wg <see cref="Type"/>.</value>
     /// <remarks>Dopasowanie Rejestru (AD-23 poz. 2, docs/ui/DOPASOWANIA.md). Funkcja nie dostaje <see langword="null"/>.</remarks>
     public Func<object?, string>? Format { get; init; }
+
+    /// <summary>
+    /// Własny format wartości tylko w eksporcie CSV (np. Czas w minutach jako godziny dziesiętne „1,5”); ekran dalej
+    /// używa <see cref="Format"/>.
+    /// </summary>
+    /// <value>Domyślnie <see langword="null"/> – wartość w pliku wg <see cref="Type"/>, jak we wzorcu.</value>
+    /// <remarks>Dopasowanie Rejestru (AD-23 poz. 13, docs/ui/DOPASOWANIA.md). Funkcja nie dostaje <see langword="null"/>.</remarks>
+    public Func<object?, string>? ExportFormat { get; init; }
+
+    /// <summary>Nagłówek kolumny tylko w eksporcie CSV (np. „Godziny” zamiast „Czas”).</summary>
+    /// <value>Domyślnie <see langword="null"/> – nagłówek <see cref="Label"/>, jak we wzorcu.</value>
+    /// <remarks>Dopasowanie Rejestru (AD-23 poz. 13, docs/ui/DOPASOWANIA.md).</remarks>
+    public string? ExportLabel { get; init; }
 }
 
 /// <summary>Jeden poziom sortowania raportu (kolejne poziomy rozstrzygają remisy poprzednich).</summary>

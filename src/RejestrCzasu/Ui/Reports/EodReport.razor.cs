@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.FluentUI.AspNetCore.Components;
 using Microsoft.JSInterop;
 
 namespace RejestrCzasu.Ui;
@@ -9,7 +10,7 @@ namespace RejestrCzasu.Ui;
 /// Raport różni się tylko definicją (<see cref="ReportDefinition"/>) i wierszami.
 /// </summary>
 /// <remarks>
-/// Komponent ma pasek narzędzi (szukaj, Kolumny, Eksport CSV), pasek układu (grupowanie, sortowanie, filtry), tabelę
+/// Komponent ma pasek narzędzi (szukaj, Kolumny, Eksportuj), pasek układu (grupowanie, sortowanie, filtry), tabelę
 /// w wyglądzie FluentDataGrid z przyklejonym nagłówkiem, przypiętą kolumną kluczową i wierszami grup oraz stopkę
 /// z podsumowaniem. Umieszczaj go na stronie <c>EodPage Fill="true"</c> – raport zajmuje całą przestrzeń, przewija się
 /// tylko tabela. Kliknięcie wiersza nic nie robi; do sprawy prowadzi link w kolumnie kluczowej. Układ ustawiony przez
@@ -35,6 +36,8 @@ public partial class EodReport
     private readonly string _id = "eod-report-" + Guid.NewGuid().ToString("N")[..8];
     private IReadOnlyList<ReportColumn> _visibleColumns = [];
     private IReadOnlyList<IReadOnlyDictionary<string, object?>> _filteredRows = [];
+    private IReadOnlyList<IReadOnlyDictionary<string, object?>> _pageRows = [];
+    private PaginationState? _pagination;
     private ReportColumn? _popoverColumn;
     private string? _draggedKey;
     private string? _dropTargetKey;
@@ -94,9 +97,15 @@ public partial class EodReport
     [Parameter]
     public DateOnly DataAsOf { get; set; }
 
-    /// <summary>Przycisk „Eksport CSV” na pasku narzędzi.</summary>
-    /// <value>Domyślnie <see langword="true"/> – jak we wzorcu; Rejestr zawsze podaje <see langword="false"/> (R17).</value>
-    /// <remarks>Dopasowanie Rejestru, AD-23 poz. 1.</remarks>
+    /// <summary>
+    /// Przycisk „Eksportuj” na pasku narzędzi: plik CSV z widocznymi kolumnami i wszystkimi wierszami po wyszukiwaniu
+    /// i filtrach (ze wszystkich stron), w kolejności z ekranu.
+    /// </summary>
+    /// <value>
+    /// Domyślnie <see langword="true"/> – jak we wzorcu; w Rejestrze <see langword="true"/> tylko na listach Wpisów,
+    /// Słowniki podają <see langword="false"/>.
+    /// </value>
+    /// <remarks>Dopasowanie Rejestru, AD-23 poz. 1 i 12 (etykieta „Eksportuj” zamiast „Eksport CSV”).</remarks>
     [Parameter]
     public bool ShowExport { get; set; } = true;
 
@@ -134,6 +143,19 @@ public partial class EodReport
     public bool LockedLayout { get; set; }
 
     /// <summary>
+    /// Liczba wierszy na stronie: przy większej liczbie wierszy po wyszukiwaniu i filtrach pod tabelą jest
+    /// <see cref="FluentPaginator"/> („Pozycje 1–30 z 95”, „Strona 1 z 4”). Przy grupowaniu bez paginacji (całe grupy).
+    /// </summary>
+    /// <value>Domyślnie <see langword="null"/> – raport przewija się w całości, jak we wzorcu.</value>
+    /// <remarks>
+    /// Dopasowanie Rejestru, AD-23 poz. 11. Stopka i eksport liczą wszystkie wiersze po filtrach, nie stronę. Zmiana
+    /// wyszukiwania, filtra, sortowania, grupowania lub układu wraca na pierwszą stronę; nowe <see cref="Rows"/> zostawiają
+    /// bieżącą stronę, przyciętą do ostatniej istniejącej.
+    /// </remarks>
+    [Parameter]
+    public int? PageSize { get; set; }
+
+    /// <summary>
     /// Dane raportu się wczytują: zamiast wierszy – szkielety (FluentSkeleton) w kolumnach bieżącego układu, w stopce
     /// „Wczytywanie danych…”, tabela z <c>aria-busy="true"</c>.
     /// </summary>
@@ -167,6 +189,26 @@ public partial class EodReport
         => (FooterSummary is null ? ReportEngine.Summary(Definition, _filteredRows) : WithCount(_filteredRows.Count, FooterSummary))
          + (_filteredRows.Count < Rows.Count ? $" · po filtrach, z {Rows.Count}" : string.Empty);
 
+    // Paginacja tylko bez grupowania: strona przecinająca grupy dałaby liczniki części grupy przy sumach całości.
+    private bool Paged => PageSize is > 0 && Layout.Grouping.Count == 0;
+
+    private bool ShowPaginator => Paged && !Loading && _pagination is not null && _filteredRows.Count > PageSize;
+
+    private string ItemRangeText
+    {
+        get
+        {
+            var total = _filteredRows.Count;
+            var size = PageSize ?? 1;
+            var index = _pagination?.CurrentPageIndex ?? 0;
+            var first = total == 0 ? 0 : index * size + 1;
+            var last = Math.Min(total, (index + 1) * size);
+            return $"Pozycje {first}–{last} z {total}";
+        }
+    }
+
+    private string PageText => $"Strona {(_pagination?.CurrentPageIndex ?? 0) + 1} z {(_pagination?.LastPageIndex ?? 0) + 1}";
+
     private string GroupText(ReportGroup group)
         => GroupSummary is null
             ? ReportEngine.Summary(Definition, group.Rows)
@@ -186,10 +228,55 @@ public partial class EodReport
         Refresh();
     }
 
-    private void Refresh()
+    // firstPage: zmiana wyszukiwania, filtra, sortowania, grupowania lub układu wraca na pierwszą stronę (AD-23 poz. 11);
+    // w pozostałych przypadkach (np. nowe Rows) strona zostaje, przycięta do ostatniej istniejącej.
+    private void Refresh(bool firstPage = false)
     {
         _visibleColumns = Layout.Visible;
         _filteredRows = ReportEngine.Rows(Layout, Rows, PreserveRowOrder);
+        if (PageSize is not ({ } size and > 0))
+        {
+            _pageRows = _filteredRows;
+            return;
+        }
+
+        _pagination ??= new PaginationState { ItemsPerPage = size };
+        _pagination.ItemsPerPage = size;
+        var lastPage = Math.Max(0, (_filteredRows.Count - 1) / size);
+        var page = firstPage ? 0 : Math.Min(_pagination.CurrentPageIndex, lastPage);
+        if (page != _pagination.CurrentPageIndex)
+        {
+            Run(_pagination.SetCurrentPageIndexAsync(page));
+        }
+
+        Run(_pagination.SetTotalItemCountAsync(_filteredRows.Count));
+        SlicePage();
+    }
+
+    private void SlicePage()
+    {
+        if (!Paged || _pagination is null)
+        {
+            _pageRows = _filteredRows;
+            return;
+        }
+
+        var size = PageSize!.Value;
+        _pageRows = _filteredRows.Skip(_pagination.CurrentPageIndex * size).Take(size).ToList();
+    }
+
+    // Strona wybrana przyciskami FluentPaginator (PaginationState już ją ma).
+    private void OnPageChanged(int pageIndex) => SlicePage();
+
+    // Założenie (Fluent UI 5.0.1): PaginationState zmienia stan od razu, a zadanie tylko powiadamia FluentPaginator
+    // (jedyny subskrybent, odświeżenie komponentu), więc kończy się synchronicznie. Rzucany jest tylko błąd zadania już
+    // zakończonego; zadanie jeszcze niezakończone (inna wersja Fluent UI) nie jest obserwowane (DOPASOWANIA poz. 11).
+    private static void Run(Task task)
+    {
+        if (task.IsFaulted)
+        {
+            task.GetAwaiter().GetResult();
+        }
     }
 
     private string FilterButtonId(ReportColumn column) => $"{_id}-filter-{column.Key}";
@@ -201,7 +288,7 @@ public partial class EodReport
     private void SetSearch(string? phrase)
     {
         Layout.Search = phrase ?? string.Empty;
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     private void SetColumnVisible(ReportColumn column, bool visible)
@@ -228,7 +315,7 @@ public partial class EodReport
     {
         Layout.Reset();
         _popoverColumn = null;
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     private async Task ExportAsync()
@@ -250,7 +337,7 @@ public partial class EodReport
 
         Layout.Collapsed.Clear();
         _popoverColumn = null;
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     private void RemoveGrouping(string key)
@@ -258,7 +345,7 @@ public partial class EodReport
         Layout.Grouping.Remove(key);
         Layout.Collapsed.Clear();
         _popoverColumn = null;
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     private void ToggleGroup(string id)
@@ -310,7 +397,7 @@ public partial class EodReport
         }
 
         _popoverColumn = null;
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     private void ReverseSort(string key)
@@ -319,7 +406,7 @@ public partial class EodReport
         if (i >= 0)
         {
             Layout.Sorting[i] = Layout.Sorting[i] with { Descending = !Layout.Sorting[i].Descending };
-            Refresh();
+            Refresh(firstPage: true);
         }
     }
 
@@ -327,7 +414,7 @@ public partial class EodReport
     {
         Layout.Sorting.RemoveAll(s => s.Key == key);
         _popoverColumn = null;
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     private void SetSortDirection(string key, bool descending)
@@ -344,7 +431,7 @@ public partial class EodReport
         }
 
         _popoverColumn = null;
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     private void AddSort(string key)
@@ -355,7 +442,7 @@ public partial class EodReport
         }
 
         _popoverColumn = null;
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     // ── Filtry (działają od razu, bez „Zastosuj”) ────────────────────────
@@ -371,7 +458,7 @@ public partial class EodReport
             Layout.Filters[key] = filter;
         }
 
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     // Zaznaczenie wszystkich wartości listy = brak filtra.
@@ -407,13 +494,13 @@ public partial class EodReport
     {
         Layout.Filters.Remove(key);
         _popoverColumn = null;
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     private void ClearFilters()
     {
         Layout.Filters.Clear();
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     // Akcja stanu „Brak pozycji spełniających filtry.”: czyści też wyszukiwanie (oba ukrywają wiersze)
@@ -421,7 +508,7 @@ public partial class EodReport
     {
         Layout.Search = string.Empty;
         Layout.Filters.Clear();
-        Refresh();
+        Refresh(firstPage: true);
     }
 
     // ── Okienko kolumny ──────────────────────────────────────────────────
