@@ -124,10 +124,13 @@ pracy zostanie na liście.
 ### Słowniki testowe
 
 Do ręcznych testów skrypt `docs/dev/seed-slowniki.sql` dodaje Konto 7 Projektów i 5 Typów pracy, w tym po jednym
-nieaktywnym (`OLD`, `Archiwalny`). Pomija kody i nazwy, które Konto już ma, więc można go powtarzać; zamień `<login>`:
+nieaktywnym (`OLD`, `Archiwalny`). Pomija kody i nazwy, które Konto już ma, więc można go powtarzać; zamień `<login>`.
+Plik idzie do kontenera przez `docker cp`, bo potok `Get-Content | docker exec -i` w PowerShell 5.1 zamienia polskie
+litery na `?`; skrypt naprawia też nazwy zepsute w ten sposób wcześniej:
 
 ```powershell
-Get-Content docs/dev/seed-slowniki.sql | docker exec -i rejestr-czasu-db psql -U rejestr -d rejestr -v login=<login>
+docker cp docs/dev/seed-slowniki.sql rejestr-czasu-db:/tmp/seed-slowniki.sql
+docker exec rejestr-czasu-db psql -U rejestr -d rejestr -v login=<login> -f /tmp/seed-slowniki.sql
 ```
 
 ## Obraz aplikacji (Docker)
