@@ -69,3 +69,9 @@
 - source_plan: `tickets/epic-wzorzec-ui/tickets/story-refactor-sweep-plan.md`
   summary: Kontrola ręczna z 7.5 (Sesja 10 Wpisów ≤ 10 s, konsola bez naruszeń CSP) niewykonana.
   evidence: Nie kod — kontrola ręczna Autora przed PR epiku 7 (`dotnet run`: okna Projektu i Wpisu bez stopki biblioteki, Enter nie potwierdza usunięcia, Sesja 10 Wpisów ≤ 10 s, konsola bez naruszeń CSP).
+- source_plan: `plan-7-8-dopracowanie-wpisow-po-tescie.md`
+  summary: Eksport „Eksportuj” i paginacja po 30 wierszy na listach Wpisów wydzielone z planu 7.8 do planu `plan-7-9-eksport-i-paginacja-wpisow.md`.
+  evidence: Decyzja Autora 2026-11-04 (podział): zmiany w kopii `EodReport` (AD-23 poz. 11–13) i odejście od R17 to inne ryzyko niż poprawki układu z 7.8; 7.9 zależy od `EntriesReport` z 7.8.
+- source_plan: `plan-7-9-eksport-i-paginacja-wpisow.md`
+  summary: Ekran „Eksport” z pozycją w menu (epic-miesiac-i-zestawienie, R12/FR-12, NFR-6) odpada, a R17 „brak eksportu CSV” wymaga przepisania (initiative R17 i decyzja 02.11.2026, PRD FR-16 i „Poza zakresem”, epic-wzorzec-ui R1 i Done when).
+  evidence: Decyzja Autora 2026-11-04: eksport tylko przyciskiem „Eksportuj” na Liście wpisów i liście Nowego wpisu, Zestawienie xlsx zostaje w Widoku miesiąca; tickety i PRD do aktualizacji przez PO.

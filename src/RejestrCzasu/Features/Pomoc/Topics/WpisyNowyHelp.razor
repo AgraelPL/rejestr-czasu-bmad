@@ -37,7 +37,7 @@
 
 <h2>Po zapisaniu</h2>
 <p>
-    Pod nagłówkiem strony pojawia się krótki komunikat z datą, kodem Projektu i Czasem zapisanego Wpisu (np. „Zapisano Wpis: 03.09.2026, RDZ, 1h 30m.”). Data zostaje bez zmian,
+    Pod nagłówkiem strony pojawia się krótki komunikat z datą, kodem Projektu i Czasem zapisanego Wpisu (np. „Zapisano Wpis: 03.09.2026, RDZ, 1h 30m.”), a nowy Wpis pojawia się na liście pod formularzem. Data zostaje bez zmian,
     pola Projekt, Typ pracy, Opis i Czas są puste, a kursor stoi w polu Projekt — możesz od razu wpisywać kolejny
     Wpis z tego samego dnia. Wpis z innego dnia zaczynasz od zmiany daty (Shift+Tab z pola Projekt).
 </p>
@@ -45,4 +45,24 @@
     Jeśli wybrany Projekt lub Typ pracy został w międzyczasie usunięty (np. w innym oknie), pod nagłówkiem strony
     zobaczysz komunikat „Wybrany Projekt lub Typ pracy już nie istnieje.”. Wpis nie zostanie zapisany, wpisane wartości zostają,
     a listy wyboru wczytają się ponownie.
+</p>
+
+<h2>Wpisy bieżącego Miesiąca</h2>
+<p>
+    Pod formularzem jest lista Twoich Wpisów z bieżącego Miesiąca (według czasu polskiego), od najnowszej daty;
+    w obrębie jednego dnia ostatnio zapisany Wpis jest wyżej. Kolumny są takie jak na ekranie
+    <strong>Lista wpisów</strong>: <strong>Data</strong>, <strong>Dzień</strong>, <strong>Projekt</strong> (kod),
+    <strong>Typ pracy</strong>, <strong>Opis</strong> i <strong>Czas</strong>. W stopce widać liczbę Wpisów i sumę
+    ich Czasu, np. „Wpisy: 3, suma Czasu: 5h”.
+</p>
+<p>
+    Po każdym zapisaniu Wpisu lista wczytuje się ponownie, więc nowy Wpis od razu na niej widać. Kursor zostaje
+    w polu Projekt. Wpis z datą z innego Miesiąca zapisuje się normalnie, ale tu go nie widać — znajdziesz go na
+    ekranie <strong>Lista wpisów</strong> po ustawieniu zakresu dat.
+</p>
+<p>
+    Na końcu każdego wiersza są ikony <strong>Edytuj</strong>, <strong>Kopiuj</strong> i <strong>Usuń</strong>.
+    Działają tak samo jak na ekranie Lista wpisów: Edycja i Kopia otwierają okno Wpisu, a Usuń pyta o potwierdzenie
+    (Enter nie usuwa Wpisu). Po zmianie lista wczytuje się ponownie. Sortowanie, grupowanie i kolejność kolumn tej
+    listy ustawiasz niezależnie od Listy wpisów; obowiązują do odświeżenia strony.
 </p>

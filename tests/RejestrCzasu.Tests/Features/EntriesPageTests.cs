@@ -224,17 +224,17 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
     [Fact]
     public void Report_StaticDefinition_ListColumnsByEntryRowProperties_IdOutsideColumns()
     {
-        Assert.Equal(HelpTopics.Wpisy, EntriesPage.Report.Key);
-        Assert.All(EntriesPage.Report.Columns, c => Assert.Equal(ColumnType.List, c.Type));
+        Assert.Equal(HelpTopics.Wpisy, EntriesReport.Report.Key);
+        Assert.All(EntriesReport.Report.Columns, c => Assert.Equal(ColumnType.List, c.Type));
         Assert.Equal(
             [nameof(EntryRow.Date), nameof(EntryRow.DayName), nameof(EntryRow.ProjectCode), nameof(EntryRow.WorkTypeName),
                 nameof(EntryRow.Description), nameof(EntryRow.Minutes)],
-            EntriesPage.Report.Columns.Select(c => c.Key));
-        var row = EntriesPage.ToRow(new EntryRow(7, new DateOnly(2026, 9, 3), 1, "RDZ", 2, "Development", "Opis", 90));
+            EntriesReport.Report.Columns.Select(c => c.Key));
+        var row = EntriesReport.ToRow(new EntryRow(7, new DateOnly(2026, 9, 3), 1, "RDZ", 2, "Development", "Opis", 90));
         Assert.Equal(7, row["Id"]);
         Assert.Equal(new DateOnly(2026, 9, 3), row[nameof(EntryRow.Date)]);
         Assert.Equal(90, row[nameof(EntryRow.Minutes)]);
-        Assert.DoesNotContain(EntriesPage.Report.Columns, c => c.Key == "Id");
+        Assert.DoesNotContain(EntriesReport.Report.Columns, c => c.Key == "Id");
     }
 
     [Fact]
@@ -593,7 +593,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         var day = new DateOnly(2026, 9, 3);
         EntryRow[] rows = [new(1, day, 1, "RDZ", 1, "Development", "A", 1440), new(2, day, 1, "RDZ", 1, "Development", "B", 1440)];
 
-        Assert.Equal("Wpisy: 2, suma Czasu: 48h", EntriesPage.Summary(rows));
+        Assert.Equal("Wpisy: 2, suma Czasu: 48h", EntriesReport.Summary(rows));
     }
 
     [Fact]

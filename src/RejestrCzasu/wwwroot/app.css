@@ -58,11 +58,66 @@
     margin-top: 0.25rem;
 }
 
-/* EntryForm: Zapisz and, in the Entry window (EntryDialog), Anuluj next to it. */
+/* EntryForm (Nowy wpis, Entry window): a grid by the width of its host, the fields in the order of the markup (R16:
+   focus order Data → Projekt → Typ pracy → Opis → Czas), never placed against it. A container query cannot style the
+   container itself, so the element holding the form is the container (the card body, the dialog body). */
+:has(> .entry-form) {
+    container: entry-form / inline-size;
+}
+
+.entry-form {
+    align-items: start;
+    display: grid;
+    gap: 0.75rem 1rem;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+    .entry-form > * {
+        min-width: 0;
+    }
+
+    .entry-form fluent-field,
+    .entry-form fluent-text-input,
+    .entry-form fluent-combobox {
+        max-width: none;
+        min-width: 0;
+        width: 100%;
+    }
+
+.entry-form-date {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+/* Medium (the Entry window, a narrow card): Data, Projekt, Typ pracy / Opis over two columns, Czas. */
+@container entry-form (min-width: 480px) {
+    .entry-form {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+        .entry-form > :is(.entry-description, :has(.entry-description)) {
+            grid-column: span 2;
+        }
+}
+
+/* Wide (Nowy wpis on a wide screen): one row, Data and Czas narrow, Opis the widest; Zapisz below. From 60rem only:
+   the column minimums (56rem) and the four gaps (4rem) fit. */
+@container entry-form (min-width: 60rem) {
+    .entry-form {
+        grid-template-columns: minmax(9rem, 10rem) minmax(12rem, 1fr) minmax(12rem, 1fr) minmax(16rem, 2fr) minmax(7rem, 8rem);
+    }
+
+        .entry-form > :is(.entry-description, :has(.entry-description)) {
+            grid-column: auto;
+        }
+}
+
+/* Zapisz and, in the Entry window (EntryDialog), Anuluj next to it; always the full width of the form, below the fields. */
 .entry-form-buttons {
     display: flex;
     gap: 0.5rem;
-    margin-top: 0.75rem;
+    grid-column: 1 / -1;
 }
 
 /* Lista wpisów: the message of a date range Od > Do in the filter bar above the report. */
