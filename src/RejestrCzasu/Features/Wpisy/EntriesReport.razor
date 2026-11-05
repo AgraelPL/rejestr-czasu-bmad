@@ -7,7 +7,8 @@
    list) and of the list of the current Month under the form on Nowy wpis (/wpisy/nowy). The host loads the list
    through EntryStore and gives it here; the footer sum comes from that list (AD-5), so the report's column filters only
    hide rows. The row icons edit, copy and delete the Entry through EntryDialogs by its Id (R6, R7, AD-10); after a
-   change the host reads the list again (OnChanged). Eksportuj writes every row that passes the screen filters, the
+   change the host reads the list again (OnChanged, given to EntryDialogs as afterChange), and only then EntryDialogs
+   shows the bar, on Lista wpisów and on Nowy wpis alike. Eksportuj writes every row that passes the screen filters, the
    column filters and the search, from all pages (30 rows a page), to xlsx (EntriesXlsx): Data a date cell, Czas the
    column "Godziny" as a number of decimal hours. *@
 
@@ -16,11 +17,11 @@
     <RowActions Context="row">
         @{ var id = (int)row[IdKey]!; }
         <FluentButton IconStart="@(new Icons.Regular.Size20.Edit())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
-                      Title="Edytuj" aria-label="Edytuj" OnClick="@(() => ChangeAfterAsync(() => Dialogs.EditAsync(id)))" />
+                      Title="Edytuj" aria-label="Edytuj" OnClick="@(() => ChangeAfterAsync(a => Dialogs.EditAsync(id, a)))" />
         <FluentButton IconStart="@(new Icons.Regular.Size20.Copy())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
-                      Title="Kopiuj" aria-label="Kopiuj" OnClick="@(() => ChangeAfterAsync(() => Dialogs.CopyAsync(id)))" />
+                      Title="Kopiuj" aria-label="Kopiuj" OnClick="@(() => ChangeAfterAsync(a => Dialogs.CopyAsync(id, a)))" />
         <FluentButton IconStart="@(new Icons.Regular.Size20.Delete())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
-                      Title="Usuń" aria-label="Usuń" OnClick="@(() => ChangeAfterAsync(() => Dialogs.DeleteAsync(id)))" />
+                      Title="Usuń" aria-label="Usuń" OnClick="@(() => ChangeAfterAsync(a => Dialogs.DeleteAsync(id, a)))" />
     </RowActions>
 </EodReport>
 
@@ -86,7 +87,7 @@
     /// <summary>The key of the User's layout (AD-9): the help topic of the host screen.</summary>
     [Parameter, EditorRequired] public string LayoutKey { get; set; } = "";
 
-    /// <summary>Called after a row action that changed the data (<see cref="EntryDialogs"/> returned <c>true</c>).</summary>
+    /// <summary>Called after a row action that changed the data or found the Entry missing, before <see cref="EntryDialogs"/> shows its bar.</summary>
     [Parameter] public EventCallback OnChanged { get; set; }
 
     /// <summary>The report row of an Entry: the columns plus <c>Id</c> for the row actions (AD-9).</summary>
@@ -116,7 +117,7 @@
     }
 
     // A row action while another one is still running (e.g. a second click while its window is open) is ignored.
-    private async Task ChangeAfterAsync(Func<Task<bool>> action)
+    private async Task ChangeAfterAsync(Func<Func<Task>, Task<bool>> action)
     {
         if (_busy)
         {
@@ -125,10 +126,8 @@
         _busy = true;
         try
         {
-            if (await action())
-            {
-                await OnChanged.InvokeAsync();
-            }
+            // EntryDialogs calls OnChanged itself (afterChange) before its bar; its result needs nothing more here.
+            await action(() => OnChanged.InvokeAsync());
         }
         finally
         {

@@ -11,7 +11,9 @@ namespace RejestrCzasu.Features.Wpisy;
 /// <summary>
 /// The row actions of an Entry in every report (R6, R7, AD-10): edit and copy in <see cref="EntryDialog"/>, delete
 /// after <see cref="UiMessages.ConfirmAsync"/> (<c>DeleteEntry</c>). The input is the Entry's id, so the Lista wpisów and the Widok
-/// miesiąca call the same methods; every method returns whether the report has to load its data again.
+/// miesiąca call the same methods; every method returns whether the report has to load its data again. With
+/// <c>afterChange</c> (the host reading its data again) the bar of a change or of a missing Entry is shown only after
+/// it has run, so the bar never comes before the new list (AD-10); a cancel calls neither.
 /// </summary>
 public sealed class EntryDialogs(
     EntryStore store,
@@ -23,9 +25,9 @@ public sealed class EntryDialogs(
     UiMessages messages)
 {
     /// <summary>Opens the „Edycja Wpisu” window with the Entry as saved; <c>true</c> after a save or a missing Entry.</summary>
-    public async Task<bool> EditAsync(int entryId)
+    public async Task<bool> EditAsync(int entryId, Func<Task>? afterChange = null)
     {
-        if (await FindAsync(entryId) is not { } row)
+        if (await FindAsync(entryId, afterChange) is not { } row)
         {
             return true;
         }
@@ -33,7 +35,7 @@ public sealed class EntryDialogs(
         var projects = await options.ProjectsAsync(row.ProjectId, CancellationToken.None);
         var workTypes = await options.WorkTypesAsync(row.WorkTypeId, CancellationToken.None);
         var input = InputOf(row, row.Date, projects, workTypes);
-        return await ShowAsync("Edycja Wpisu", input, projects, workTypes, entryId, row.ProjectId, row.WorkTypeId);
+        return await ShowAsync("Edycja Wpisu", input, projects, workTypes, entryId, row.ProjectId, row.WorkTypeId, afterChange);
     }
 
     /// <summary>
@@ -41,9 +43,9 @@ public sealed class EntryDialogs(
     /// Nowy wpis (or today in Poland). An inactive item of the original leaves its field empty (R7). Nothing is saved
     /// before Zapisz; <c>true</c> after a save or a missing Entry.
     /// </summary>
-    public async Task<bool> CopyAsync(int entryId)
+    public async Task<bool> CopyAsync(int entryId, Func<Task>? afterChange = null)
     {
-        if (await FindAsync(entryId) is not { } row)
+        if (await FindAsync(entryId, afterChange) is not { } row)
         {
             return true;
         }
@@ -52,13 +54,13 @@ public sealed class EntryDialogs(
         var projects = await options.ProjectsAsync(null, CancellationToken.None);
         var workTypes = await options.WorkTypesAsync(null, CancellationToken.None);
         var input = InputOf(row, date, projects, workTypes);
-        return await ShowAsync("Kopia Wpisu", input, projects, workTypes, null, null, null);
+        return await ShowAsync("Kopia Wpisu", input, projects, workTypes, null, null, null, afterChange);
     }
 
     /// <summary>Deletes the Entry after a confirmation; <c>true</c> when it was deleted or no longer exists.</summary>
-    public async Task<bool> DeleteAsync(int entryId)
+    public async Task<bool> DeleteAsync(int entryId, Func<Task>? afterChange = null)
     {
-        if (await FindAsync(entryId) is not { } row)
+        if (await FindAsync(entryId, afterChange) is not { } row)
         {
             return true;
         }
@@ -66,7 +68,9 @@ public sealed class EntryDialogs(
         {
             return false;
         }
-        if (await store.DeleteAsync(entryId) is EntryChange.Done)
+        var deleted = await store.DeleteAsync(entryId) is EntryChange.Done;
+        await AfterAsync(afterChange);
+        if (deleted)
         {
             await messages.ShowSuccessAsync(EntryMessages.Deleted(row));
         }
@@ -77,15 +81,19 @@ public sealed class EntryDialogs(
         return true;
     }
 
-    private async Task<EntryRow?> FindAsync(int entryId)
+    private async Task<EntryRow?> FindAsync(int entryId, Func<Task>? afterChange)
     {
         var row = await store.FindAsync(entryId);
         if (row is null)
         {
+            await AfterAsync(afterChange);
             await messages.ShowWarningAsync(EntryMessages.NotFound);
         }
         return row;
     }
+
+    // The host reads its data again before the bar is shown (AD-10).
+    private static Task AfterAsync(Func<Task>? afterChange) => afterChange is null ? Task.CompletedTask : afterChange();
 
     private static EntryInput InputOf(
         EntryRow row, DateOnly date, IReadOnlyList<ProjectOption> projects, IReadOnlyList<WorkTypeOption> workTypes) => new()
@@ -105,7 +113,8 @@ public sealed class EntryDialogs(
         IReadOnlyList<WorkTypeOption> workTypes,
         int? entryId,
         int? currentProjectId,
-        int? currentWorkTypeId)
+        int? currentWorkTypeId,
+        Func<Task>? afterChange)
     {
         var result = await dialogs.ShowDialogAsync<EntryDialog>(dialog =>
         {
@@ -127,8 +136,10 @@ public sealed class EntryDialogs(
             return false;
         }
         // The window has closed, so the bar is shown on the page, not under the modal (AD-10). The form's model holds the
-        // saved values.
-        if (result.GetValue<EntryChange>() is EntryChange.Done done)
+        // saved values. The host reads its data again first, so the bar comes after the new list.
+        var change = result.GetValue<EntryChange>();
+        await AfterAsync(afterChange);
+        if (change is EntryChange.Done done)
         {
             await messages.ShowSuccessAsync(EntryMessages.Saved(input.Date!.Value, input.Project!.Code, done.Minutes));
         }

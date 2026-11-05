@@ -465,6 +465,22 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         Assert.Null(await EntryAsync(ids["Koniec września"]));
     }
 
+    [Fact]
+    public async Task Delete_Confirmed_BarAppearsOnlyAfterListReloaded()
+    {
+        await SeedAsync();
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(3, Descriptions(cut).Count));
+
+        _ = OpenWindow(cut, "Koniec września", "Usuń", ".eod-confirm-primary");
+        await cut.Find(".eod-confirm-primary").ClickAsync(new MouseEventArgs());
+
+        WaitForMessage(cut, "success", "Usunięto Wpis: 30.09.2026, OLD, 24h.");
+        // No further wait: when the bar is there, the list is already the new one (afterChange, AD-10).
+        Assert.Equal(["Drugi 1 września", "Pierwszy 1 września"], Descriptions(cut));
+        Assert.Equal("2 pozycje · Wpisy: 2, suma Czasu: 1h 30m", Summary(cut));
+    }
+
     [Theory]
     [InlineData("Edytuj")]
     [InlineData("Kopiuj")]

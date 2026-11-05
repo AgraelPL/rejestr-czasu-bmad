@@ -75,3 +75,7 @@
 - source_plan: `plan-7-9-eksport-i-paginacja-wpisow.md`
   summary: Ekran „Eksport” z pozycją w menu (epic-miesiac-i-zestawienie, R12/FR-12, NFR-6) odpada, a R17 „brak eksportu CSV” wymaga przepisania (initiative R17 i decyzja 02.11.2026, PRD FR-16 i „Poza zakresem”, epic-wzorzec-ui R1 i Done when).
   evidence: Decyzja Autora 2026-11-04: eksport tylko przyciskiem „Eksportuj” na Liście wpisów i liście Nowego wpisu, Zestawienie xlsx zostaje w Widoku miesiąca; tickety i PRD do aktualizacji przez PO.
+
+## Rozstrzygnięte (3.4, Widok miesiąca, 05.11.2026)
+
+- „Pasek komunikatu pojawia się przed ponownym wczytaniem Listy wpisów (przegląd 7.5 #3)…” — rozstrzygnięte w 3.4: `EntryDialogs` przyjmuje opcjonalny `afterChange` (ponowne wczytanie danych ekranu) i pokazuje pasek dopiero po nim; tak robią Lista wpisów, Nowy wpis i Widok miesiąca (AD-10).

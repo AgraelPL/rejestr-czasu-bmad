@@ -1,19 +1,36 @@
 @page "/miesiac"
+@page "/miesiac/{Miesiac}"
+@using System.Globalization
 @using RejestrCzasu.Domain
 @using RejestrCzasu.Features.Pomoc
+@using RejestrCzasu.Features.Wpisy
 @using RejestrCzasu.Features.Zestawienie
 @using RejestrCzasu.Reporting
 @inject MonthEntriesQuery Query
 @inject TimeProvider TimeProvider
-@* Widok miesiąca (R2, R17, AD-9): the Wpisy of the current Miesiąc in Poland on EodPage with EodReport, grouped
-   Tydzień → Dzień in a locked layout. One row is one Wpis (never a Wiersz zestawienia), in the order of
+@inject EntryDialogs Dialogs
+@inject NavigationManager Navigation
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@* Widok miesiąca (R2, R17, AD-9): the Wpisy of the Miesiąc from the address (/miesiac/RRRR-MM, a bookmark; /miesiac
+   is always the current Miesiąc in Poland) on EodPage with EodReport, grouped Tydzień → Dzień in a locked layout. A
+   wrong address (not RRRR-MM or outside 0001-01–9999-12) is the „nie znaleziono” page, without a query. Poprzedni,
+   Bieżący and Następny go to /miesiac/RRRR-MM. One row is one Wpis (never a Wiersz zestawienia), in the order of
    MonthReport.Entries. Every sum (week, day, Miesiąc) comes from MonthReport (AD-5), built from the Wpisy of
    MonthEntriesQuery (AD-16); the column filters only hide rows and never change a sum. The Zestawienie of the Miesiąc
-   is downloaded by the DownloadLink "Pobierz Zestawienie" from SummaryEndpoint (AD-14); no export of the report, paging
-   or row actions here (story 4). *@
+   is downloaded by the DownloadLink "Pobierz Zestawienie" from SummaryEndpoint (AD-14); no export of the report or
+   paging. The row icons edit, copy and delete the Wpis through EntryDialogs by its Id (AD-10), one action at a time;
+   after a change the MonthReport is built again from the database before EntryDialogs shows its bar. *@
+
+@if (_invalid)
+{
+    return;
+}
 
 <EodPage Title="Widok miesiąca" Description="@($"{_month.Name}: Twoje Wpisy dzień po dniu, z Sumą dnia, tygodnia i Miesiąca.")" Fill="true">
     <Actions>
+        <FluentButton Class="month-previous" OnClick="@(() => Go(_month.Previous))" Disabled="@(_month == Min)">Poprzedni</FluentButton>
+        <FluentButton Class="month-current" OnClick="@(() => Go(Current))" Disabled="@(_month == Current)">Bieżący</FluentButton>
+        <FluentButton Class="month-next" OnClick="@(() => Go(_month.Next))" Disabled="@(_month == Max)">Następny</FluentButton>
         @if (_report is { Entries.Count: > 0 })
         {
             <DownloadLink Href="@SummaryEndpoint.Path(_month)">@DownloadText</DownloadLink>
@@ -26,9 +43,18 @@
     <ChildContent>
         <PageHelp Topic="@HelpTopics.Miesiac" />
         <EodCard NoPadding="true" Fill="true">
-            <EodReport Definition="Report" Rows="_rows" LayoutKey="@LayoutKey(_month)" ShowExport="false" LockedLayout="true"
+            <EodReport @key="_month" Definition="Report" Rows="_rows" LayoutKey="@LayoutKey(_month)" ShowExport="false" LockedLayout="true"
                        PreserveRowOrder="true" Loading="_report is null" GroupSummary="GroupText"
                        FooterSummary="@(_report is null ? null : Footer(_report))">
+                <RowActions Context="row">
+                    @{ var id = (int)row[IdKey]!; }
+                    <FluentButton IconStart="@(new Icons.Regular.Size20.Edit())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                  Title="Edytuj" aria-label="Edytuj" OnClick="@(() => ChangeAfterAsync(a => Dialogs.EditAsync(id, a)))" />
+                    <FluentButton IconStart="@(new Icons.Regular.Size20.Copy())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                  Title="Kopiuj" aria-label="Kopiuj" OnClick="@(() => ChangeAfterAsync(a => Dialogs.CopyAsync(id, a)))" />
+                    <FluentButton IconStart="@(new Icons.Regular.Size20.Delete())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                  Title="Usuń" aria-label="Usuń" OnClick="@(() => ChangeAfterAsync(a => Dialogs.DeleteAsync(id, a)))" />
+                </RowActions>
                 <EmptyContent>
                     <EodEmptyState Compact="true" Title="@EmptyText" />
                 </EmptyContent>
@@ -66,7 +92,7 @@
     {
         Key = HelpTopics.Miesiac,
         Title = "Widok miesiąca",
-        Description = "Twoje Wpisy bieżącego Miesiąca w tygodniach i dniach, z sumami.",
+        Description = "Twoje Wpisy wybranego Miesiąca w tygodniach i dniach, z sumami.",
         FileName = HelpTopics.Miesiac,
         Columns =
         [
@@ -90,9 +116,46 @@
         Grouping = [WeekKey, DayKey],
     };
 
+    /// <summary>The first Miesiąc: Poprzedni is disabled on it.</summary>
+    internal static readonly YearMonth Min = new(1, 1);
+
+    /// <summary>The last Miesiąc: Następny is disabled on it.</summary>
+    internal static readonly YearMonth Max = new(9999, 12);
+
     private YearMonth _month;
+    private YearMonth? _shown;
+    private bool _invalid;
+    private bool _busy;
+    private int _version;
     private MonthReport? _report;
     private IReadOnlyList<IReadOnlyDictionary<string, object?>> _rows = [];
+
+    /// <summary>The Miesiąc from the address, RRRR-MM (e.g. <c>2026-09</c>); without it the current Miesiąc in Poland.</summary>
+    [Parameter] public string? Miesiac { get; set; }
+
+    private YearMonth Current => YearMonth.From(PolishCalendar.Today(TimeProvider));
+
+    /// <summary>
+    /// The Miesiąc of an address segment: exactly four ASCII digits, a hyphen and two digits, within 0001-01–9999-12.
+    /// </summary>
+    internal static bool TryParse(string text, out YearMonth month)
+    {
+        month = default;
+        if (text.Length != 7 || text[4] != '-'
+            || !text.Remove(4, 1).All(char.IsAsciiDigit))
+        {
+            return false;
+        }
+        try
+        {
+            month = new YearMonth(int.Parse(text[..4], CultureInfo.InvariantCulture), int.Parse(text[5..], CultureInfo.InvariantCulture));
+            return true;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>The key of the User's layout (AD-9): the help topic with the Miesiąc, e.g. <c>miesiac@2026-09</c>.</summary>
     internal static string LayoutKey(YearMonth month) => $"{HelpTopics.Miesiac}@{month}";
@@ -118,12 +181,66 @@
     /// <summary>Text of the footer after the counter: the sum of the whole Miesiąc (AD-5).</summary>
     internal static string Footer(MonthReport report) => $"Suma Miesiąca: {Czas.Format(report.Minutes)}";
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        _month = YearMonth.From(PolishCalendar.Today(TimeProvider));
-        var report = MonthReport.Build(_month, await Query.LoadAsync(_month));
-        _rows = report.Entries.Select(ToRow).ToList();
-        _report = report;
+        YearMonth month;
+        if (string.IsNullOrEmpty(Miesiac))
+        {
+            month = Current;
+        }
+        else if (!TryParse(Miesiac, out month))
+        {
+            _invalid = true;
+            // A wrong address: the Polish "nie znaleziono" page of the Router (404 on a full page load), no query.
+            Navigation.NotFound();
+            return;
+        }
+        _invalid = false;
+        if (_shown == month)
+        {
+            return;
+        }
+        _shown = month;
+        _month = month;
+        // A new Miesiąc starts with skeleton rows; the reload after a row action keeps the old rows until the new ones.
+        _report = null;
+        _rows = [];
+        await ReloadAsync();
+    }
+
+    private void Go(YearMonth month) => Navigation.NavigateTo($"/miesiac/{month}");
+
+    // Only the newest load is shown: a load for an earlier Miesiąc that ends later is dropped.
+    private async Task ReloadAsync()
+    {
+        var version = ++_version;
+        var month = _month;
+        var report = MonthReport.Build(month, await Query.LoadAsync(month));
+        if (version == _version)
+        {
+            _rows = report.Entries.Select(ToRow).ToList();
+            _report = report;
+            StateHasChanged();
+        }
+    }
+
+    // A row action while another one is still running (e.g. a second click while its window is open) is ignored.
+    // EntryDialogs reads the Miesiąc again (afterChange) before its bar.
+    private async Task ChangeAfterAsync(Func<Func<Task>, Task<bool>> action)
+    {
+        if (_busy)
+        {
+            return;
+        }
+        _busy = true;
+        try
+        {
+            await action(ReloadAsync);
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     // Level 0 is the week, level 1 the day; the key is the raw value of the group (a DateOnly).

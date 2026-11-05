@@ -235,6 +235,25 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
     }
 
     [Fact(Timeout = TestTimeoutMs)]
+    public async Task RowDelete_Confirmed_BarAppearsOnlyAfterListReloaded()
+    {
+        var (projects, workTypes) = await SeedAsync(Xunit.TestContext.Current.CancellationToken);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 9, 1), "Pierwszy", 30);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 9, 2), "Drugi", 60);
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(["Drugi", "Pierwszy"], Descriptions(cut)));
+
+        _ = RowAction(cut, "Drugi", "Usuń").ClickAsync(new MouseEventArgs());
+        cut.WaitForElement(".eod-confirm-primary", TimeSpan.FromSeconds(5));
+        await cut.Find(".eod-confirm-primary").ClickAsync(new MouseEventArgs());
+
+        WaitForMessage(cut, "success", "Usunięto Wpis: 02.09.2026, RDZ, 1h.");
+        // No further wait: when the bar is there, the list is already the new one (afterChange, AD-10).
+        Assert.Equal(["Pierwszy"], Descriptions(cut));
+        Assert.Equal("1 pozycja · Wpisy: 1, suma Czasu: 30m", Summary(cut));
+    }
+
+    [Fact(Timeout = TestTimeoutMs)]
     public async Task RowEdit_Saved_ReloadsList()
     {
         var (projects, workTypes) = await SeedAsync(Xunit.TestContext.Current.CancellationToken);

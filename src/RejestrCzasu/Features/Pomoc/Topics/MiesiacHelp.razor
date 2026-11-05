@@ -1,7 +1,17 @@
 @* Help topic "miesiac" (AD-22, R26): the Widok miesiąca screen (menu Widok miesiąca). *@
 <p>
-    Ekran <strong>Widok miesiąca</strong> pokazuje Twoje Wpisy z bieżącego Miesiąca (według czasu polskiego), dzień po
-    dniu, z Sumą dnia, Sumą tygodnia i sumą Miesiąca. Wpisy widzisz tylko Ty.
+    Ekran <strong>Widok miesiąca</strong> pokazuje Twoje Wpisy z wybranego Miesiąca, dzień po dniu, z Sumą dnia, Sumą
+    tygodnia i sumą Miesiąca. Po otwarciu z menu to bieżący Miesiąc (według czasu polskiego). Wpisy widzisz tylko Ty.
+</p>
+
+<h2>Wybór Miesiąca</h2>
+<p>
+    Przyciski <strong>Poprzedni</strong> i <strong>Następny</strong> nad listą przechodzą do Miesiąca wcześniej
+    i później, także przez przełom roku (np. z „Styczeń 2026” do „Grudzień 2025”), a <strong>Bieżący</strong> wraca do
+    bieżącego Miesiąca - na bieżącym Miesiącu jest wyłączony. Wybrany Miesiąc jest w nagłówku ekranu i w adresie
+    strony, np. <strong>/miesiac/2026-09</strong> dla września 2026, więc taki adres możesz zapisać jako zakładkę
+    i otworzyć ten Miesiąc od razu. Adres <strong>/miesiac</strong> zawsze otwiera bieżący Miesiąc. Adres z błędnym
+    Miesiącem (np. /miesiac/2026-13 albo /miesiac/2026-9 zamiast /miesiac/2026-09) pokazuje stronę „nie znaleziono”.
 </p>
 
 <h2>Grupy: tydzień i dzień</h2>
@@ -17,6 +27,17 @@
     <strong>Opis</strong> i <strong>Czas</strong> (jak w Jirze, np. 1h 30m). W dniu Wpisy są uporządkowane według kodu
     Projektu, potem nazwy Typu pracy, a przy remisie w kolejności dodania. Grupę zwijasz i rozwijasz strzałką przy jej
     nagłówku. Układu (grupowania, sortowania i kolejności kolumn) nie da się tu zmienić.
+</p>
+
+<h2>Edycja, kopia i usunięcie Wpisu</h2>
+<p>
+    Na końcu każdego wiersza są ikony <strong>Edytuj</strong>, <strong>Kopiuj</strong> i <strong>Usuń</strong>, takie
+    same jak na Liście wpisów. Edytuj otwiera okno „Edycja Wpisu” z zapisanymi wartościami, Kopiuj okno „Kopia Wpisu”
+    z Projektem, Typem pracy, opisem i Czasem oryginału oraz datą ostatnio ustawioną na ekranie Nowy wpis (bez niej -
+    dzisiejszą), a Usuń pyta o potwierdzenie. Po zapisie lub usunięciu lista i wszystkie sumy (dnia, tygodnia
+    i Miesiąca) są od razu przeliczone, a potem pojawia się komunikat, np. „Zapisano Wpis…” albo „Usunięto Wpis…”.
+    Wpis przeniesiony edycją na inny Miesiąc znika z listy; dzień lub tydzień bez Wpisów znika razem z nim. Anuluj
+    niczego nie zmienia.
 </p>
 
 <h2>Sumy</h2>
