@@ -3,7 +3,7 @@ title: 'Dopasowanie komunikatów, szkieletu i EodHead w kopii wzorca'
 type: 'feature'
 ticket: '2'
 created: '2026-11-02'
-status: 'built'
+status: done
 baseline_revision: 'acbb28941fe0830b43224a46fb2d10df836bf38b'
 route: 'full'
 route_source: 'auto'
