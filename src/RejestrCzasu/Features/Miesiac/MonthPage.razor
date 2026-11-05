@@ -1,31 +1,51 @@
 @page "/miesiac"
 @using RejestrCzasu.Domain
 @using RejestrCzasu.Features.Pomoc
+@using RejestrCzasu.Features.Zestawienie
 @using RejestrCzasu.Reporting
 @inject MonthEntriesQuery Query
 @inject TimeProvider TimeProvider
 @* Widok miesiąca (R2, R17, AD-9): the Wpisy of the current Miesiąc in Poland on EodPage with EodReport, grouped
    Tydzień → Dzień in a locked layout. One row is one Wpis (never a Wiersz zestawienia), in the order of
    MonthReport.Entries. Every sum (week, day, Miesiąc) comes from MonthReport (AD-5), built from the Wpisy of
-   MonthEntriesQuery (AD-16); the column filters only hide rows and never change a sum. No export, paging or row
-   actions here (stories 3 and 4). *@
+   MonthEntriesQuery (AD-16); the column filters only hide rows and never change a sum. The Zestawienie of the Miesiąc
+   is downloaded by the DownloadLink "Pobierz Zestawienie" from SummaryEndpoint (AD-14); no export of the report, paging
+   or row actions here (story 4). *@
 
 <EodPage Title="Widok miesiąca" Description="@($"{_month.Name}: Twoje Wpisy dzień po dniu, z Sumą dnia, tygodnia i Miesiąca.")" Fill="true">
-    <PageHelp Topic="@HelpTopics.Miesiac" />
-    <EodCard NoPadding="true" Fill="true">
-        <EodReport Definition="Report" Rows="_rows" LayoutKey="@LayoutKey(_month)" ShowExport="false" LockedLayout="true"
-                   PreserveRowOrder="true" Loading="_report is null" GroupSummary="GroupText"
-                   FooterSummary="@(_report is null ? null : Footer(_report))">
-            <EmptyContent>
-                <EodEmptyState Compact="true" Title="@EmptyText" />
-            </EmptyContent>
-        </EodReport>
-    </EodCard>
+    <Actions>
+        @if (_report is { Entries.Count: > 0 })
+        {
+            <DownloadLink Href="@SummaryEndpoint.Path(_month)">@DownloadText</DownloadLink>
+        }
+        else if (_report is not null)
+        {
+            <span class="eod-caption">@NoSummaryText</span>
+        }
+    </Actions>
+    <ChildContent>
+        <PageHelp Topic="@HelpTopics.Miesiac" />
+        <EodCard NoPadding="true" Fill="true">
+            <EodReport Definition="Report" Rows="_rows" LayoutKey="@LayoutKey(_month)" ShowExport="false" LockedLayout="true"
+                       PreserveRowOrder="true" Loading="_report is null" GroupSummary="GroupText"
+                       FooterSummary="@(_report is null ? null : Footer(_report))">
+                <EmptyContent>
+                    <EodEmptyState Compact="true" Title="@EmptyText" />
+                </EmptyContent>
+            </EodReport>
+        </EodCard>
+    </ChildContent>
 </EodPage>
 
 @code {
     /// <summary>Text of the report without Wpisy.</summary>
     internal const string EmptyText = "Brak Wpisów w tym Miesiącu.";
+
+    /// <summary>Text of the link to the Zestawienie of the Miesiąc.</summary>
+    internal const string DownloadText = "Pobierz Zestawienie";
+
+    /// <summary>Text in place of the link when the Miesiąc has no Wpisy.</summary>
+    internal const string NoSummaryText = "Brak Wpisów - nie ma Zestawienia do pobrania.";
 
     /// <summary>Key of the Wpis id in a report row, outside the columns (AD-9).</summary>
     internal const string IdKey = nameof(MonthEntry.Id);

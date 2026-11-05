@@ -54,10 +54,13 @@ public sealed class LayoutTests : BunitContext
         var cut = RenderLayout(_ => { });
 
         var menu = cut.Find(".eod-nav-menu");
-        foreach (var href in new[] { "/miesiac", "/wpisy", "/eksport", "/projekty", "/typy-pracy" })
+        foreach (var href in new[] { "/miesiac", "/wpisy", "/projekty", "/typy-pracy" })
         {
             Assert.NotNull(menu.QuerySelector($"[href='{href}']"));
         }
+        // No Eksport screen (decision 05.11.2026): the Zestawienie is downloaded from the Widok miesiąca.
+        Assert.Null(menu.QuerySelector("[href='/eksport']"));
+        Assert.DoesNotContain("Eksport", menu.TextContent);
         Assert.Contains("Rejestr", menu.TextContent);
         Assert.Contains("Słowniki", menu.TextContent);
         Assert.Empty(cut.FindAll("[href='/uzytkownicy']"));

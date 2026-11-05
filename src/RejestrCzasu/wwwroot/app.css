@@ -369,3 +369,33 @@ h1:focus {
     font-size: var(--fontSizeBase200);
     line-height: var(--lineHeightBase200);
 }
+
+/* DownloadLink (AD-14): an <a download> that looks like a Primary button. */
+.app-download-link {
+    align-items: center;
+    background: var(--colorBrandBackground);
+    border: var(--strokeWidthThin) solid transparent;
+    border-radius: var(--borderRadiusMedium);
+    color: var(--colorNeutralForegroundOnBrand);
+    display: inline-flex;
+    font: inherit;
+    font-weight: var(--fontWeightSemibold);
+    gap: var(--spacingHorizontalSNudge);
+    min-height: 32px;
+    padding: 0 var(--spacingHorizontalM);
+    text-decoration: none;
+}
+
+    .app-download-link:hover {
+        background: var(--colorBrandBackgroundHover);
+        color: var(--colorNeutralForegroundOnBrand);
+    }
+
+    .app-download-link:active {
+        background: var(--colorBrandBackgroundPressed);
+    }
+
+    .app-download-link:focus-visible {
+        outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+        outline-offset: 1px;
+    }

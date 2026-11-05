@@ -129,6 +129,31 @@ public sealed class MonthPageTests : BunitContext, IAsyncLifetime
     }
 
     [Fact]
+    public async Task September_DownloadLink_ToSummaryEndpoint_WithDownloadAttribute()
+    {
+        await SeedSeptemberAsync();
+
+        var cut = RenderScreen();
+
+        var link = cut.Find(".eod-page a[download]");
+        Assert.Equal("/zestawienie/2026/9", link.GetAttribute("href"));
+        Assert.Equal(MonthPage.DownloadText, link.TextContent.Trim());
+        Assert.Contains("app-download-link", link.ClassList);
+        Assert.DoesNotContain(MonthPage.NoSummaryText, cut.Markup);
+    }
+
+    [Fact]
+    public async Task EmptyMonth_NoDownloadLink_Text()
+    {
+        await SeedOtherUserAsync();
+
+        var cut = RenderScreen();
+
+        Assert.Empty(cut.FindAll("a[download]"));
+        Assert.Contains(MonthPage.NoSummaryText, cut.Find(".eod-page").TextContent);
+    }
+
+    [Fact]
     public void Definition_LayoutKey_HelpTopic()
     {
         Assert.Equal(HelpTopics.Miesiac, MonthPage.Report.Key);
@@ -177,28 +202,7 @@ public sealed class MonthPageTests : BunitContext, IAsyncLifetime
         await cut.InvokeAsync(() => button.Click());
     }
 
-    /// <summary>The <see cref="SeptemberShape"/> Wpisy of the User, one save each in Id order, so the ids match.</summary>
-    private async Task SeedSeptemberAsync()
-    {
-        await using var db = await _postgres.CreateUserContextAsync(_user);
-        var projects = SeptemberShape.Projects.Select(c => new Project { Code = c, Name = c }).ToList();
-        var workTypes = SeptemberShape.WorkTypes.Select(n => new WorkType { Name = n }).ToList();
-        db.Projects.AddRange(projects);
-        db.WorkTypes.AddRange(workTypes);
-        await db.SaveChangesAsync(Ct);
-        foreach (var e in SeptemberShape.Raw.OrderBy(r => r.Id))
-        {
-            db.TimeEntries.Add(new TimeEntry
-            {
-                Date = new DateOnly(2026, 9, e.Day),
-                ProjectId = projects.Single(p => p.Code == e.Project).Id,
-                WorkTypeId = workTypes.Single(w => w.Name == e.WorkType).Id,
-                Description = SeptemberShape.Description(e.Id),
-                Minutes = e.Minutes,
-            });
-            await db.SaveChangesAsync(Ct);
-        }
-    }
+    private Task SeedSeptemberAsync() => SeptemberShape.SeedAsync(_postgres, _user, Ct);
 
     private async Task SeedOtherUserAsync()
     {

@@ -1,3 +1,4 @@
+using RejestrCzasu.Data;
 using RejestrCzasu.Reporting;
 
 namespace RejestrCzasu.Tests.Reporting;
@@ -58,4 +59,27 @@ internal static class SeptemberShape
     }
 
     public static string Description(int id) => $"Zadanie {id}";
+
+    /// <summary>The Wpisy of <paramref name="userId"/> in the database, one save each in Id order, so the ids match.</summary>
+    public static async Task SeedAsync(PostgresFixture postgres, int userId, CancellationToken cancellationToken)
+    {
+        await using var db = await postgres.CreateUserContextAsync(userId);
+        var projects = Projects.Select(c => new Project { Code = c, Name = c }).ToList();
+        var workTypes = WorkTypes.Select(n => new WorkType { Name = n }).ToList();
+        db.Projects.AddRange(projects);
+        db.WorkTypes.AddRange(workTypes);
+        await db.SaveChangesAsync(cancellationToken);
+        foreach (var e in Raw.OrderBy(r => r.Id))
+        {
+            db.TimeEntries.Add(new TimeEntry
+            {
+                Date = new DateOnly(2026, 9, e.Day),
+                ProjectId = projects.Single(p => p.Code == e.Project).Id,
+                WorkTypeId = workTypes.Single(w => w.Name == e.WorkType).Id,
+                Description = Description(e.Id),
+                Minutes = e.Minutes,
+            });
+            await db.SaveChangesAsync(cancellationToken);
+        }
+    }
 }
