@@ -37,6 +37,18 @@ public sealed class HelpTests : BunitContext
     }
 
     [Fact]
+    public void Index_LoggedIn_WidokMiesiacaRightAfterStart()
+    {
+        _auth.SetAuthorized("zalogowany");
+
+        var cut = Render<HelpPage>();
+
+        var links = cut.FindAll(".help-index a");
+        Assert.Equal("/pomoc/miesiac", links[1].GetAttribute("href"));
+        Assert.Equal("Widok miesiąca", links[1].TextContent.Trim());
+    }
+
+    [Fact]
     public void Index_Anonymous_HasNoNonPublicTopics()
     {
         var cut = Render<HelpPage>();

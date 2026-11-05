@@ -406,7 +406,7 @@
 </div>
 
 @code {
-    // Wiersze grup (wielopoziomowe) i wiersze danych. Grupa: „Kolumna: wartość” + liczba pozycji i suma; wcięcie 28 px na poziom.
+    // Wiersze grup (wielopoziomowe) i wiersze danych. Grupa: „Kolumna: wartość” (bez „Kolumna: ” przy GroupLabel=false, AD-23 poz. 15) + liczba pozycji i suma; wcięcie 28 px na poziom.
     private RenderFragment RenderLevel(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows, int level, string path) => __builder =>
     {
         if (level >= Layout.Grouping.Count)
@@ -429,7 +429,7 @@
                                       aria-expanded="@(expanded ? "true" : "false")"
                                       Title="@($"{(expanded ? "Zwiń" : "Rozwiń")} grupę: {g.Value}")"
                                       OnClick="@(() => ToggleGroup(g.Id))" />
-                        <span>@g.Column.Label: @g.Value</span>
+                        <span>@(g.Column.GroupLabel ? $"{g.Column.Label}: {g.Value}" : g.Value)</span>
                         <span class="eod-caption eod-num">@GroupText(g)</span>
                     </div>
                 </td>

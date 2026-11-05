@@ -146,7 +146,7 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         // The list has its own layout key, not the one of Lista wpisów.
         Assert.Equal(HelpTopics.WpisyNowy, cut.FindComponent<EodReport>().Instance.LayoutKey);
         Assert.Equal("Wpisy bieżącego Miesiąca", cut.Find("table.fluent-data-grid").GetAttribute("aria-label"));
-        Assert.Equal(EntriesReport.Report.Columns, EntriesReport.MonthReport.Columns);
+        Assert.Equal(EntriesReport.Report.Columns, EntriesReport.CurrentMonth.Columns);
         Assert.NotNull(cut.Find(".eod-page.eod-page-fill > .eod-card.eod-card-fill .eod-report"));
     }
 

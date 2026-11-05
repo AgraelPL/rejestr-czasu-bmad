@@ -43,10 +43,12 @@ public static class HelpTopics
     public const string TypyPracy = "typy-pracy";
     public const string WpisyNowy = "wpisy-nowy";
     public const string Wpisy = "wpisy";
+    public const string Miesiac = "miesiac";
 
     public static IReadOnlyList<HelpTopic> All { get; } =
     [
         new(Start, "Strona startowa i menu", typeof(StartHelp), HelpAccess.LoggedIn),
+        new(Miesiac, "Widok miesiąca", typeof(MiesiacHelp), HelpAccess.LoggedIn),
         new(Projekty, "Projekty", typeof(ProjektyHelp), HelpAccess.LoggedIn),
         new(TypyPracy, "Typy pracy", typeof(TypyPracyHelp), HelpAccess.LoggedIn),
         new(WpisyNowy, "Nowy wpis", typeof(WpisyNowyHelp), HelpAccess.LoggedIn),

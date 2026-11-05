@@ -65,7 +65,7 @@
     /// The report of the current Month under the form on Nowy wpis: the same columns as <see cref="Report"/>, its own
     /// title (the table's <c>aria-label</c>) and key; the export file is named like the one of Lista wpisów.
     /// </summary>
-    internal static readonly ReportDefinition MonthReport = Report with
+    internal static readonly ReportDefinition CurrentMonth = Report with
     {
         Key = HelpTopics.WpisyNowy,
         Title = "Wpisy bieżącego Miesiąca",
@@ -80,7 +80,7 @@
     /// <summary>The Entries from <c>EntryStore.ListAsync</c>, in its order; <c>null</c> until the first load (skeleton rows).</summary>
     [Parameter] public IReadOnlyList<EntryRow>? Entries { get; set; }
 
-    /// <summary>The report definition: <see cref="Report"/> (Lista wpisów, default) or <see cref="MonthReport"/> (Nowy wpis).</summary>
+    /// <summary>The report definition: <see cref="Report"/> (Lista wpisów, default) or <see cref="CurrentMonth"/> (Nowy wpis).</summary>
     [Parameter] public ReportDefinition Definition { get; set; } = Report;
 
     /// <summary>The key of the User's layout (AD-9): the help topic of the host screen.</summary>

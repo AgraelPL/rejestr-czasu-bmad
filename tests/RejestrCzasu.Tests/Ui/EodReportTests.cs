@@ -6,7 +6,7 @@ using RejestrCzasu.Ui;
 
 namespace RejestrCzasu.Tests.Ui;
 
-/// <summary>EodReport of the eod-ui copy: Rejestr adjustments AD-23 items 1–5 and 11–14, one test per I/O matrix row.</summary>
+/// <summary>EodReport of the eod-ui copy: Rejestr adjustments AD-23 items 1–5 and 11–15, one test per I/O matrix row.</summary>
 public sealed class EodReportTests : BunitContext
 {
     private static readonly ReportColumn Kod = new("kod", "Kod") { IsKey = true };
@@ -293,6 +293,21 @@ public sealed class EodReportTests : BunitContext
     }
 
     [Fact]
+    public void GroupLabelFalse_GroupRowShowsOnlyTheValue_DefaultWithColumnLabel()
+    {
+        var withLabel = RenderReport(GroupedByProjekt);
+        Assert.Equal(["Projekt: P1", "Projekt: P2"], GroupLabels(withLabel).Order());
+
+        var definition = GroupedByProjekt with
+        {
+            Columns = [Kod, Projekt with { GroupLabel = false, Format = v => $"Grupa {v}" }, CzasColumn],
+        };
+        var cut = RenderReport(definition);
+
+        Assert.Equal(["Grupa P1", "Grupa P2"], GroupLabels(cut).Order());
+    }
+
+    [Fact]
     public void GroupSummaryOmitted_UsesDefinitionTotal()
     {
         var cut = RenderReport(GroupedByProjekt);
@@ -379,6 +394,9 @@ public sealed class EodReportTests : BunitContext
     // K01…Kn in input order, Projekt P1 for odd and P2 for even numbers, Czas 15m × number (each value once).
     private static IReadOnlyDictionary<string, object?>[] Numbered(int count) =>
         [.. Enumerable.Range(1, count).Select(i => Row($"K{i:00}", i % 2 == 1 ? "P1" : "P2", 15 * i))];
+
+    private static List<string> GroupLabels(IRenderedComponent<EodReport> cut) =>
+        cut.FindAll("tr.eod-group-row .eod-group > span:not(.eod-caption)").Select(e => e.TextContent.Trim()).ToList();
 
     private static AngleSharp.Dom.IElement ExportButton(IRenderedComponent<EodReport> cut) =>
         cut.FindAll(".eod-formbar fluent-button").Single(b => b.TextContent.Trim().StartsWith("Eksport", StringComparison.Ordinal));

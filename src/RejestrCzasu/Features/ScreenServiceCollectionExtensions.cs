@@ -1,6 +1,7 @@
 using RejestrCzasu.Features.Projekty;
 using RejestrCzasu.Features.TypyPracy;
 using RejestrCzasu.Features.Wpisy;
+using RejestrCzasu.Reporting;
 using RejestrCzasu.Shared;
 
 namespace RejestrCzasu.Features;
@@ -13,7 +14,8 @@ public static class ScreenServiceCollectionExtensions
 {
     /// <summary>
     /// Registers the data of the Dictionary screens (<see cref="ProjectStore"/>, <see cref="WorkTypeStore"/>) and of the
-    /// Entries (<see cref="EntryStore"/>, with the row actions of <see cref="EntryDialogs"/>), which sit on top of the scoped <c>Data/UserDbContextFactory</c> (AD-4, AD-16),
+    /// Entries (<see cref="EntryStore"/>, with the row actions of <see cref="EntryDialogs"/>) and of the Widok miesiąca
+    /// (<see cref="MonthEntriesQuery"/>), which sit on top of the scoped <c>Data/UserDbContextFactory</c> (AD-4, AD-16),
     /// and the one, application-wide <see cref="EntryDateMemory"/> (AD-10). Needs <c>AddEodPlatformUI</c> of the eod-ui copy (Fluent UI and <c>UiMessages</c>, AD-11).
     /// </summary>
     public static IServiceCollection AddAppScreens(this IServiceCollection services)
@@ -22,6 +24,7 @@ public static class ScreenServiceCollectionExtensions
         services.AddScoped<WorkTypeStore>();
         services.AddScoped<EntryStore>();
         services.AddScoped<EntryDialogs>();
+        services.AddScoped<MonthEntriesQuery>();
         services.AddSingleton<EntryDateMemory>();
         return services;
     }

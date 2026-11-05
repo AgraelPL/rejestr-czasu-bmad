@@ -1,0 +1,36 @@
+@* Help topic "miesiac" (AD-22, R26): the Widok miesiąca screen (menu Widok miesiąca). *@
+<p>
+    Ekran <strong>Widok miesiąca</strong> pokazuje Twoje Wpisy z bieżącego Miesiąca (według czasu polskiego), dzień po
+    dniu, z Sumą dnia, Sumą tygodnia i sumą Miesiąca. Wpisy widzisz tylko Ty.
+</p>
+
+<h2>Grupy: tydzień i dzień</h2>
+<p>
+    Wpisy są pogrupowane w tygodnie, a w tygodniu w dni. Nagłówek tygodnia ma jego numer w Miesiącu i zakres dat,
+    np. „Tydzień 1 (01.09–06.09)”: tydzień trwa od poniedziałku do niedzieli, ale jego zakres i suma obejmują tylko dni
+    tego Miesiąca, więc pierwszy i ostatni tydzień mogą być krótsze. Tydzień z dniem 1 to zawsze „Tydzień 1”; tydzień
+    bez Wpisów nie ma grupy, więc numery mogą przeskoczyć (np. „Tydzień 1”, „Tydzień 3”). Nagłówek dnia to dzień
+    tygodnia i data, np. „Wtorek, 01.09.2026”; dni bez Wpisów się nie pojawiają.
+</p>
+<p>
+    Każdy wiersz to jeden Wpis z kolumnami <strong>Projekt</strong> (kod), <strong>Typ pracy</strong>,
+    <strong>Opis</strong> i <strong>Czas</strong> (jak w Jirze, np. 1h 30m). W dniu Wpisy są uporządkowane według kodu
+    Projektu, potem nazwy Typu pracy, a przy remisie w kolejności dodania. Grupę zwijasz i rozwijasz strzałką przy jej
+    nagłówku. Układu (grupowania, sortowania i kolejności kolumn) nie da się tu zmienić.
+</p>
+
+<h2>Sumy</h2>
+<p>
+    W nagłówku tygodnia jest liczba widocznych pozycji i Suma tygodnia, np. „5 pozycji · Suma tygodnia: 30h”, a
+    w nagłówku dnia - Suma dnia, np. „2 pozycje · Suma dnia: 8h”. W stopce jest licznik pozycji i suma Miesiąca, np.
+    „31 pozycji · Suma Miesiąca: 103h”. Bez Wpisów lista pokazuje „Brak Wpisów w tym Miesiącu.”, a stopka
+    „0 pozycji · Suma Miesiąca: 0h”.
+</p>
+
+<h2>Filtr nie zmienia sum</h2>
+<p>
+    W okienku kolumny (przycisk w nagłówku) możesz odznaczyć wartości, których nie chcesz widzieć, a pole
+    <strong>Szukaj we wszystkich kolumnach</strong> zawęża listę do wierszy z wpisanym tekstem. Filtr i wyszukiwanie
+    tylko ukrywają wiersze: liczniki pozycji maleją (w stopce z dopiskiem „po filtrach, z …”), a dzień bez widocznych
+    Wpisów znika, ale Suma dnia, Suma tygodnia i suma Miesiąca zawsze dotyczą wszystkich Wpisów Miesiąca.
+</p>
