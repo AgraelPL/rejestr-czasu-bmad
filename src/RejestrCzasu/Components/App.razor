@@ -6,9 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
-    <link rel="stylesheet" href="@Assets["_content/Microsoft.FluentUI.AspNetCore.Components/Microsoft.FluentUI.AspNetCore.Components.bundle.scp.css"]" />
+    @* The eod-ui copy (AD-11, AD-12): Fluent UI styles, reboot, ui/eod.css and the local scripts, once for every page. *@
+    <EodHead />
     <link rel="stylesheet" href="@Assets["app.css"]" />
-    <link rel="stylesheet" href="@Assets["RejestrCzasu.styles.css"]" />
+    @* No RejestrCzasu.styles.css: the application has no CSS isolation (.razor.css), so that bundle only repeated the
+       Fluent UI stylesheet after ui/eod.css and undid its rules (e.g. the full width of every EodReport table). With
+       the first .razor.css the link comes back before <EodHead />, so the cascade of the pattern stays (AD-11). *@
     @* No <ImportMap />: it renders an inline script blocked by CSP script-src 'self' (AD-12). *@
     <HeadOutlet @rendermode="PageRenderMode" />
 </head>

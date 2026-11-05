@@ -1,0 +1,76 @@
+@namespace RejestrCzasu.Ui
+@*
+    EodEmptyState – stan pusty (specyfikacja UI, sekcje 5, 9.14 i 12): ikona, tytuł mówiący, co tu będzie, zdanie, dlaczego pusto
+    albo co zrobić, i opcjonalnie akcje (najwyżej dwie, pierwsza może być Primary tylko na stronie bez innej akcji głównej).
+    Dwie wielkości:
+    – pełny (domyślnie) – karta lub strona bez treści: ikona 32, tytuł H2, odstęp 48 px (strony „Nie znaleziono”, „Brak dostępu”,
+      karta „Sprawy do wykonania” bez spraw);
+    – zwarty (Compact="true") – wiersz pustej tabeli, pusta kategoria załączników, pusta lista komentarzy: ikona 24, tytuł
+      bez nagłówka (H3 wizualnie), odstęp 24 px.
+    Nie zastępuje komunikatu walidacji ani paska – to stan treści, nie wynik operacji.
+    Przykład:
+        <EodEmptyState Icon="@(new Icons.Regular.Size32.ClipboardTask())"
+                       Title="Nie masz zadań do wykonania"
+                       Description="Nowe zadania pojawią się tutaj, gdy ktoś przekaże Ci sprawę." />
+        <EodEmptyState Compact="true" Title="Brak pozycji spełniających filtry.">
+            <Actions><FluentButton Size="ButtonSize.Small" OnClick="@ClearFilters">Wyczyść filtry</FluentButton></Actions>
+        </EodEmptyState>
+*@
+
+<div class="eod-empty" data-compact="@Compact">
+    @if (Icon is not null)
+    {
+        <EodIcon Value="@Icon" Class="@($"{(Compact ? "ic-24" : "ic-32")} {IconClass}")" />
+    }
+    @if (Compact)
+    {
+        <p class="eod-h3">@Title</p>
+    }
+    else
+    {
+        <h2 class="eod-h2">@Title</h2>
+    }
+    @if (Description is not null || ChildContent is not null)
+    {
+        <p class="eod-caption">@Description@ChildContent</p>
+    }
+    @if (Actions is not null)
+    {
+        <div class="eod-row">@Actions</div>
+    }
+</div>
+
+@code {
+    /// <summary>Ikona stanu – Regular 32 (stan pełny) albo Regular 24 (stan zwarty), np. <c>new Icons.Regular.Size32.ClipboardTask()</c>.</summary>
+    /// <value>Domyślnie <see langword="null"/> – bez ikony (np. w wierszu tabeli).</value>
+    /// <remarks>Rozmiar ikony musi odpowiadać wielkości stanu – klasa <c>ic-32</c> / <c>ic-24</c> ustawia tylko wymiary (specyfikacja UI, sekcja 13).</remarks>
+    [Parameter]
+    public Icon? Icon { get; set; }
+
+    /// <summary>Klasa koloru ikony: <c>c-muted</c> (domyślnie), <c>c-danger</c> (błąd aplikacji), <c>c-brand</c>.</summary>
+    /// <value>Domyślnie „c-muted”.</value>
+    [Parameter]
+    public string IconClass { get; set; } = "c-muted";
+
+    /// <summary>Tytuł – co tu będzie albo co się stało, np. „Nie masz zadań do wykonania”, „Brak pozycji spełniających filtry.”.</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Jedno–dwa zdania pod tytułem: dlaczego pusto i co zrobić (caption).</summary>
+    [Parameter]
+    public string? Description { get; set; }
+
+    /// <summary>Opis z formatowaniem (np. link) – wyświetlany po <see cref="Description"/> w tym samym akapicie.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Akcje pod opisem: najwyżej dwie, nazwane czasownikiem („Wyczyść filtry”, „Przejdź na stronę startową”).</summary>
+    /// <remarks>Primary tylko wtedy, gdy na widoku nie ma innej akcji głównej (specyfikacja UI, sekcja 4 pkt 1); w stanie zwartym – przyciski Small.</remarks>
+    [Parameter]
+    public RenderFragment? Actions { get; set; }
+
+    /// <summary>Stan zwarty – do wiersza pustej tabeli, pustej kategorii załączników i pustej listy.</summary>
+    /// <value>Domyślnie <see langword="false"/> – stan pełny (karta lub strona).</value>
+    [Parameter]
+    public bool Compact { get; set; }
+}

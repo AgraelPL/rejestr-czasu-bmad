@@ -8,29 +8,33 @@
 @inject AccountSignIn AccountSignIn
 @inject NavigationManager Navigation
 
-<PageTitle>Logowanie — Rejestr czasu pracy</PageTitle>
+<PageTitle>Logowanie · Rejestr czasu</PageTitle>
 <AccountHelp Topic="logowanie" />
 
-<h1>Logowanie</h1>
+<section class="eod-page">
+    <h1 class="eod-h1">Logowanie</h1>
 
-<AccountMessages Messages="@_messages" Intent="@_intent" />
+    <EodCard>
+        <AccountMessages Messages="@_messages" Intent="@_intent" />
 
-<EditForm Model="Input" FormName="logowanie" OnValidSubmit="LoginAsync" method="post" class="account-form">
-    <DataAnnotationsValidator />
-    <div class="account-field">
-        <label for="login-user-name">Login</label>
-        <InputText id="login-user-name" @bind-Value="Input.UserName" autocomplete="username" maxlength="@IdentitySetup.MaxUserNameLength" autofocus />
-        <ValidationMessage For="() => Input.UserName" />
-    </div>
-    <div class="account-field">
-        <label for="login-password">Hasło</label>
-        <InputText id="login-password" type="password" @bind-Value="Input.Password" autocomplete="current-password" />
-        <ValidationMessage For="() => Input.Password" />
-    </div>
-    <button type="submit" class="account-submit">Zaloguj</button>
-</EditForm>
+        <EditForm Model="Input" FormName="logowanie" OnValidSubmit="LoginAsync" method="post" class="account-form">
+            <DataAnnotationsValidator />
+            <div class="account-field">
+                <label for="login-user-name">Login</label>
+                <InputText id="login-user-name" @bind-Value="Input.UserName" autocomplete="username" maxlength="@IdentitySetup.MaxUserNameLength" autofocus />
+                <ValidationMessage For="() => Input.UserName" />
+            </div>
+            <div class="account-field">
+                <label for="login-password">Hasło</label>
+                <InputText id="login-password" type="password" @bind-Value="Input.Password" autocomplete="current-password" />
+                <ValidationMessage For="() => Input.Password" />
+            </div>
+            <button type="submit" class="account-submit">Zaloguj</button>
+        </EditForm>
+    </EodCard>
 
-<p>Nie masz Konta? <a href="/konto/rejestracja">Zarejestruj się</a></p>
+    <p class="account-links">Nie masz Konta? <a href="/konto/rejestracja">Zarejestruj się</a></p>
+</section>
 
 @code {
     public const string InvalidCredentialsMessage = "Nieprawidłowy login lub hasło.";

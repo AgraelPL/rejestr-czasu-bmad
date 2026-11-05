@@ -52,6 +52,18 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Register_WhiteSpaceAroundLogin_IsDropped()
+    {
+        await using var app = new AppClient(postgres);
+
+        using var response = await app.RegisterAsync("  nowy.user\t", Password);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        await using var db = postgres.CreateContext();
+        Assert.Equal("nowy.user", await NonAdministrators(db).Select(u => u.UserName).SingleAsync(Ct));
+    }
+
+    [Fact]
     public async Task Register_Form_SaysThatAdministratorSeesAllData()
     {
         await using var app = new AppClient(postgres);
@@ -177,6 +189,18 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Login_WhiteSpaceAroundLogin_IsIgnored()
+    {
+        await using var app = new AppClient(postgres);
+        await app.CreateAccountAsync("adam", Password, AccountStatus.Active);
+
+        using var response = await app.LoginAsync(" \tAdam  ", Password);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.True(HasLoginCookie(response));
+    }
+
+    [Fact]
     public async Task Login_ActiveAccount_SignsIn_SavesLastLogin_AndRedirectsToLocalReturnUrl()
     {
         await using var app = new AppClient(postgres);
@@ -196,7 +220,13 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
 
         using var home = await app.Http.GetAsync("/", Ct);
         Assert.Equal(HttpStatusCode.OK, home.StatusCode);
-        Assert.Contains("Rejestr czasu pracy", await TextAsync(home));
+        var homeHtml = await TextAsync(home);
+        Assert.Contains("Rejestr czasu pracy", homeHtml);
+        // EodHead of the eod-ui copy: only scripts from files of the application (CSP script-src 'self', AD-12).
+        Assert.Contains("<script src=\"ui/eod-scale.js\"></script>", homeHtml);
+        Assert.All(System.Text.RegularExpressions.Regex.Matches(homeHtml, "<script[^>]*>").Select(m => m.Value),
+            tag => Assert.Contains(" src=\"", tag));
+        Assert.DoesNotContain("https://", homeHtml);
     }
 
     [Theory]
@@ -334,6 +364,9 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.DoesNotContain("\"type\":\"server\"", html);
         Assert.DoesNotContain("https://", html);
         Assert.Contains("href=\"/pomoc", html);
+        // The eod-ui copy classes in AccountLayout, without EodShell (AD-11).
+        Assert.Contains("class=\"eod-h1\"", html);
+        Assert.DoesNotContain("eod-shell", html);
     }
 
     [Fact]

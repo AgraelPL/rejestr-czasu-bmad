@@ -2,21 +2,21 @@ using Bunit;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.FluentUI.AspNetCore.Components;
-using RejestrCzasu.Localization;
 using RejestrCzasu.Shared;
+using RejestrCzasu.Ui;
 
 namespace RejestrCzasu.Tests.Shared;
 
-/// <summary>The services of the application UI in bUnit: Fluent UI with Polish texts, Notify, Confirm, antiforgery.</summary>
+/// <summary>
+/// The services of the application UI in bUnit, as in <c>Program.cs</c>: <c>AddEodPlatformUI</c> of the eod-ui copy
+/// (Fluent UI with Polish texts, UiMessages, AppearanceSettings) and antiforgery.
+/// </summary>
 internal static class UiTestServices
 {
     public static void AddAppUi(this BunitContext context)
     {
         context.JSInterop.Mode = JSRuntimeMode.Loose;
-        context.Services.AddFluentUIComponents(options => options.Localizer = new FluentLocalizer());
-        context.Services.AddScoped<Notify>();
-        context.Services.AddScoped<Confirm>();
+        context.Services.AddEodPlatformUI();
         context.Services.AddSingleton<AntiforgeryStateProvider>(new FakeAntiforgery());
     }
 

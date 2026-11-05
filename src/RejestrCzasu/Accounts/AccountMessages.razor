@@ -1,7 +1,9 @@
-@* Error and state messages of the static /konto forms (AD-11): a Fluent UI message bar, no circuit needed. *@
+@* Error and state messages of the static /konto forms (AD-11): a Fluent UI message bar in the page content
+   (the bar of the eod-ui copy, UI_SPEC 11), no circuit needed; an error is an alert, any other state a status. *@
 @if (Messages.Count > 0)
 {
-    <FluentMessageBar Intent="@Intent" AllowDismiss="false" class="account-message">
+    <FluentMessageBar Intent="@Intent" AllowDismiss="false" class="account-message"
+                      role="@(Intent == MessageBarIntent.Error ? "alert" : "status")">
         @if (Messages.Count == 1)
         {
             @Messages[0]

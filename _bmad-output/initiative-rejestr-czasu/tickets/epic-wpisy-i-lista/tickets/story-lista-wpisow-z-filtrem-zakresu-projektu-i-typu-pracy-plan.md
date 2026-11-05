@@ -3,7 +3,7 @@ title: 'Lista wpisów z filtrem zakresu, Projektu i Typu pracy'
 type: 'feature'
 ticket: '2'
 created: '2026-11-01'
-status: 'built'
+status: done
 baseline_revision: '0ff6fc0158197b0f3e9d86eff2d6003e828d6c02'
 route: 'full'
 route_source: 'auto'

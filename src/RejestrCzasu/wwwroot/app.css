@@ -1,210 +1,166 @@
-/* System font only (AD-12): no external fonts. */
-html, body {
-    font-family: "Segoe UI", system-ui, sans-serif;
-    margin: 0;
-}
+/* Application styles on top of ui/eod.css of the eod-ui copy (AD-11): the layout, the font, the scale and the
+   colours come from eod.css (EodShell, EodPage); only rules of the Rejestr screens are here. */
 
-/* Scale 90/100/110/125% by window width (AD-11), CSS only. The layout height is divided by the zoom, so the
-   zoomed layout still fills exactly one window. */
-:root {
-    --app-zoom: 1;
-    --app-layout-height: calc(100dvh / var(--app-zoom));
-}
-
-@media (max-width: 1279.98px) {
-    :root { --app-zoom: 0.9; }
-}
-
-@media (min-width: 1920px) {
-    :root { --app-zoom: 1.1; }
-}
-
-@media (min-width: 2560px) {
-    :root { --app-zoom: 1.25; }
-}
-
-body {
-    background: var(--colorNeutralBackground1, #fff);
-    color: var(--colorNeutralForeground1, #242424);
-    zoom: var(--app-zoom);
-}
-
-/* Top bar of MainLayout (AD-11). */
-.app-header {
-    align-items: center;
-    background: var(--colorBrandBackground, #0f6cbd);
-    color: var(--colorNeutralForegroundOnBrand, #fff);
-    display: flex;
-    gap: 0.5rem;
-    padding: 0 0.75rem;
-}
-
-    .app-header fluent-button,
-    .app-header fluent-anchor-button {
-        color: var(--colorNeutralForegroundOnBrand, #fff);
-    }
-
-.app-name {
-    color: inherit;
-    font-size: 1.05rem;
-    font-weight: 600;
-    text-decoration: none;
-    white-space: nowrap;
-}
-
-.app-header-actions {
-    align-items: center;
-    display: flex;
-    gap: 0.25rem;
-    margin-left: auto;
-}
-
+/* Wyloguj in the EodShell top bar: a plain form POST (AD-15), laid out like the other buttons. */
 .app-logout {
     display: inline-flex;
     margin: 0;
 }
 
-/* Side menu. */
-.app-nav {
-    border-right: 1px solid var(--colorNeutralStroke2, #e0e0e0);
-}
-
-.app-menu {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.75rem 0.5rem;
-}
-
+/* Nowy wpis at the top of the side menu: the full width, like "Nowa sprawa" of the pattern. */
 .app-new-entry {
-    margin: 0 0.25rem;
+    width: 100%;
 }
 
-/* Screen area: messages (Notify) under the top bar, then the screen. */
-.app-content {
-    padding: 1rem 1.5rem;
+/* Treść w EodShell bez EodPage (/Error, Sprawdzanie uprawnień) dostaje odstęp strony z eod.css. */
+.eod-content:not(:has(> .eod-page)) {
+    padding: 20px var(--eod-gutter, 24px) 24px;
 }
 
-/* Notify messages (AD-11): a floating panel in the top right corner, under the top bar, above the screen. */
-.app-messages:not(:empty) {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    position: fixed;
-    right: 1rem;
-    top: 3.75rem;
-    width: min(26rem, calc(100vw - 2rem));
-    z-index: 1000;
-}
-
-    .app-messages fluent-message-bar {
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-    }
-
+/* The screen failing on every render (AppErrorBoundary), shown without the shell. */
 .app-error {
-    margin: 1rem 0;
+    gap: 8px;
 }
 
-/* PageHeader with own breadcrumbs (Fluent UI 5.0.1 has no breadcrumb). */
-.page-header {
-    margin-bottom: 1rem;
-}
-
-.page-header-row {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-    .page-header-row h1 {
-        font-size: 1.6rem;
-        margin: 0;
-    }
-
-.page-subtitle {
-    color: var(--colorNeutralForeground3, #616161);
-    margin: 0.25rem 0 0;
-}
-
-.page-breadcrumbs ol {
-    display: flex;
-    flex-wrap: wrap;
-    font-size: 0.875rem;
-    list-style: none;
-    margin: 0 0 0.5rem;
-    padding: 0;
-}
-
-.page-breadcrumbs li + li::before {
-    color: var(--colorNeutralForeground3, #616161);
-    content: "›";
-    padding: 0 0.4rem;
-}
-
-.page-breadcrumbs a {
-    color: var(--colorBrandForegroundLink, #115ea3);
-}
-
+/* Help topics in an EodCard: eod.css resets the margins and list markers. */
 .help-content h2 {
-    font-size: 1.2rem;
+    font-size: var(--fontSizeBase400);
+    font-weight: var(--fontWeightSemibold);
     margin: 1.25rem 0 0.5rem;
 }
 
-/* Projekty and Typy pracy: add button and the add/edit form above the grid. */
-.projects-add,
-.work-types-add {
-    margin-bottom: 1rem;
+.help-content p {
+    margin: 0 0 0.75rem;
 }
 
-.project-form,
-.work-type-form {
-    border: 1px solid var(--colorNeutralStroke2, #e0e0e0);
-    border-radius: 4px;
+.help-content ul,
+.help-index {
+    list-style: disc;
+    margin: 0 0 0.75rem;
+    padding-left: 1.5rem;
+}
+
+.help-content li,
+.help-index li {
+    margin: 0.25rem 0;
+}
+
+/* Every window (fluent-dialog, not a drawer): width and height from its content, never wider than the screen. Overrides
+   the fixed width of the library's sizes (DialogSize.Medium = 592px), so the Entry window no longer scrolls sideways. */
+fluent-dialog:not([position=start]):not([position=end])::part(dialog) {
+    height: auto;
+    max-width: min(48rem, calc(100vw - 2rem));
+    width: auto;
+}
+
+/* Projekty and Typy pracy: the add/edit window (ProjectDialog, WorkTypeDialog); Zapisz first, then Anuluj. The form
+   sets the width of the window. */
+.dictionary-dialog-form {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    margin-bottom: 1rem;
-    max-width: 32rem;
-    padding: 1rem;
+    width: min(28rem, calc(100vw - 5rem));
 }
 
-.project-form-title,
-.work-type-form-title {
-    font-size: 1.2rem;
-    margin: 0;
-}
-
-.project-form-buttons,
-.work-type-form-buttons {
+.dictionary-dialog-buttons {
     display: flex;
     gap: 0.5rem;
+    margin-top: 0.25rem;
 }
 
-/* Entry window (EntryDialog): Anuluj in its own row right under the Zapisz row of EntryForm. */
-.entry-dialog-buttons {
+/* EntryForm (Nowy wpis, Entry window): a grid by the width of its host, the fields in the order of the markup (R16:
+   focus order Data → Projekt → Typ pracy → Opis → Czas), never placed against it. A container query cannot style the
+   container itself, so the element holding the form is the container (the card body, the dialog body). */
+:has(> .entry-form) {
+    container: entry-form / inline-size;
+}
+
+.entry-form {
+    align-items: start;
+    display: grid;
+    gap: 0.75rem 1rem;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+    .entry-form > * {
+        min-width: 0;
+    }
+
+    .entry-form fluent-field,
+    .entry-form fluent-text-input,
+    .entry-form fluent-combobox {
+        max-width: none;
+        min-width: 0;
+        width: 100%;
+    }
+
+.entry-form-date {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+/* Medium (a narrow card): Data fixed, Projekt wider than Typ pracy / Opis over two columns, Czas.
+   From 480px (30rem): the column minimums (8.5rem) and the two gaps (2rem) fit. */
+@container entry-form (min-width: 480px) {
+    .entry-form {
+        grid-template-columns: 8.5rem minmax(0, 3fr) minmax(0, 2fr);
+    }
+
+        .entry-form > :is(.entry-description, :has(.entry-description)) {
+            grid-column: span 2;
+        }
+}
+
+/* Wide (Nowy wpis on a wide screen): one row, Data and Czas fixed and narrow, Projekt wider than Typ pracy (the full
+   "KOD - nazwa" of a Project), Opis the widest as the card grows; Zapisz below. From 61rem only: the column minimums
+   (8.5 + 18 + 12 + 12 + 6.5 = 57rem) and the four gaps (4rem) fit. */
+@container entry-form (min-width: 61rem) {
+    .entry-form {
+        grid-template-columns: 8.5rem minmax(18rem, 3fr) minmax(12rem, 2fr) minmax(12rem, 4fr) 6.5rem;
+    }
+
+        .entry-form > :is(.entry-description, :has(.entry-description)) {
+            grid-column: auto;
+        }
+}
+
+/* The Entry window (EntryDialog) takes its width from the form, so its body is no size container (an inline-size
+   container cannot get its width from its content): fixed columns as the medium grid, Opis over two columns; one
+   column on a narrow screen. 8.5 + 18 + 12rem and two gaps = 40.5rem, within the window's 48rem. */
+fluent-dialog :has(> .entry-form) {
+    container-type: normal;
+}
+
+fluent-dialog .entry-form {
+    grid-template-columns: 8.5rem 18rem 12rem;
+}
+
+    fluent-dialog .entry-form > :is(.entry-description, :has(.entry-description)) {
+        grid-column: span 2;
+    }
+
+@media (max-width: 44rem) {
+    fluent-dialog .entry-form {
+        grid-template-columns: minmax(0, 1fr);
+        width: calc(100vw - 5rem);
+    }
+
+        fluent-dialog .entry-form > :is(.entry-description, :has(.entry-description)) {
+            grid-column: auto;
+        }
+}
+
+/* Zapisz and, in the Entry window (EntryDialog), Anuluj next to it; always the full width of the form, below the fields. */
+.entry-form-buttons {
     display: flex;
     gap: 0.5rem;
-    margin-top: 0.75rem;
+    grid-column: 1 / -1;
 }
 
-/* Lista wpisów: screen filters above the grid, summary under it. */
-.entries-filters {
-    align-items: flex-end;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-bottom: 0.5rem;
-}
-
+/* Lista wpisów: the message of a date range Od > Do in the filter bar above the report. */
 .entries-filter-error {
-    color: var(--colorPaletteRedForeground1, #b10e1c);
-    margin: 0 0 0.5rem;
-}
-
-.entries-summary {
-    font-weight: 600;
-    margin: 0.5rem 0 0;
+    color: var(--colorStatusDangerForeground1, #b10e1c);
 }
 
 /* Lost connection (R31): hidden until blazor.web.js sets one of its classes on the element; no JS of our own. */
@@ -227,22 +183,15 @@ body {
         z-index: 2000;
     }
 
+/* The box: eod-card of the eod-ui copy, here only its width and elevation. */
 .reconnect-box {
-    background: var(--colorNeutralBackground1, #fff);
-    border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    color: var(--colorNeutralForeground1, #242424);
+    box-shadow: var(--shadow16, 0 4px 16px rgba(0, 0, 0, 0.3));
+    margin: 0 16px;
     max-width: 26rem;
-    padding: 1.25rem 1.5rem;
-}
-
-.reconnect-title {
-    font-weight: 600;
-    margin-top: 0;
 }
 
 .reconnect-reload {
-    font-weight: 600;
+    font-weight: var(--fontWeightSemibold, 600);
 }
 
 h1:focus {
@@ -279,53 +228,144 @@ h1:focus {
         content: "Wystąpił błąd.";
     }
 
-/* Static /konto pages (AccountLayout, AD-11): no menu, a narrow centred form. */
-.account-header {
-    align-items: center;
-    border-bottom: 1px solid #d1d1d1;
+/* Static /konto pages (AccountLayout, AD-11): the brand top bar of EodShell without a menu, a centred column of
+   eod-page; native form fields (SSR, no circuit) look like Fluent 2 inputs and buttons, tokens only. */
+.account-layout {
     display: flex;
-    justify-content: space-between;
-    padding: 0.75rem 1.5rem;
+    flex-direction: column;
+    min-height: 100%;
 }
 
-.account-app-name {
-    font-weight: 600;
+.account-header {
+    align-items: center;
+    background: var(--colorBrandBackground);
+    color: var(--colorNeutralForegroundOnBrand);
+    display: flex;
+    flex: none;
+    gap: 4px;
+    height: var(--eod-header-height);
+    min-width: 0;
+    padding: 0 12px;
+}
+
+/* Phone width: the same top bar as EodShell (eod.css "Wąskie ekrany"; .eod-appname is narrowed there too). */
+@media (max-width: 900px) {
+    .account-header {
+        padding: 0 8px;
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+}
+
+.account-help {
+    border-radius: var(--borderRadiusMedium);
+    font-weight: var(--fontWeightSemibold);
+    padding: 4px 8px;
+    text-decoration: none;
 }
 
 .account-content {
-    margin: 0 auto;
-    max-width: 26rem;
-    padding: 1.5rem;
+    flex: 1 0 auto;
+    margin-inline: auto;
+    max-width: 32rem;
+    width: 100%;
 }
+
+    /* Help topics on EodPage (HelpLayout, AD-22): a wider reading column. */
+    .account-content:has(.eod-page-head) {
+        max-width: 60rem;
+    }
 
 .account-form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: var(--spacingVerticalL);
 }
 
 .account-field {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: var(--spacingVerticalXS);
 }
 
     .account-field input {
+        background: var(--colorNeutralBackground1);
+        border: var(--strokeWidthThin) solid var(--colorNeutralStroke1);
+        border-bottom-color: var(--colorNeutralStrokeAccessible);
+        border-radius: var(--borderRadiusMedium);
+        color: var(--colorNeutralForeground1);
         font: inherit;
-        padding: 0.4rem 0.5rem;
+        min-height: 32px;
+        padding: 0 var(--spacingHorizontalM);
     }
+
+        .account-field input:hover {
+            border-color: var(--colorNeutralStroke1Hover);
+            border-bottom-color: var(--colorNeutralStrokeAccessibleHover);
+        }
+
+        .account-field input:focus,
+        .account-field input:focus-visible {
+            outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+            outline-offset: 1px;
+        }
+
+        .account-field input.invalid {
+            border-color: var(--colorPaletteRedBorder2);
+        }
 
 .account-submit {
     align-self: flex-start;
+    background: var(--colorBrandBackground);
+    border: var(--strokeWidthThin) solid transparent;
+    border-radius: var(--borderRadiusMedium);
+    color: var(--colorNeutralForegroundOnBrand);
+    cursor: pointer;
     font: inherit;
-    padding: 0.4rem 1.25rem;
+    font-weight: var(--fontWeightSemibold);
+    min-height: 32px;
+    min-width: 96px;
+    padding: 0 var(--spacingHorizontalM);
 }
 
+    .account-submit:hover {
+        background: var(--colorBrandBackgroundHover);
+    }
+
+    .account-submit:active {
+        background: var(--colorBrandBackgroundPressed);
+    }
+
+/* Wyloguj during a required password change: a Secondary button. */
+.account-logout {
+    margin: 0;
+}
+
+.account-secondary {
+    background: var(--colorNeutralBackground1);
+    border-color: var(--colorNeutralStroke1);
+    color: var(--colorNeutralForeground1);
+}
+
+    .account-secondary:hover {
+        background: var(--colorNeutralBackground1Hover);
+        border-color: var(--colorNeutralStroke1Hover);
+    }
+
+    .account-secondary:active {
+        background: var(--colorNeutralBackground1Pressed);
+        border-color: var(--colorNeutralStroke1Pressed);
+    }
+
 .account-message {
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacingVerticalL);
+}
+
+.eod-card-body > p + .account-links {
+    margin-top: var(--spacingVerticalM);
 }
 
 .validation-message {
-    color: #b10e1c;
+    color: var(--colorStatusDangerForeground1);
+    font-size: var(--fontSizeBase200);
+    line-height: var(--lineHeightBase200);
 }

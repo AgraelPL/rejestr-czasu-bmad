@@ -58,7 +58,7 @@ public sealed class EntryFormValidatorTests
         var error = Assert.Single(_validator.Validate(Valid(czas)).Errors);
 
         Assert.Equal(
-            (nameof(EntryInput.Czas), "Podaj Czas, np. 1h 30m, 45m albo 1:30 — od 15m do 24h, w krokach co 15 minut."),
+            (nameof(EntryInput.Czas), "Podaj Czas, np. 1h 30m, 45m albo 1:30 - od 15m do 24h, w krokach co 15 minut."),
             (error.PropertyName, error.ErrorMessage));
     }
 

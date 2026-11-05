@@ -12,14 +12,13 @@ public sealed class HomePageTests : BunitContext
     public HomePageTests() => this.AddAppUi();
 
     [Fact]
-    public void HomePage_RendersTitle_ThroughPageHeader_WithStartTopic()
+    public void HomePage_IsEodPage_WithStartTopic()
     {
         var page = Render<Home>();
 
-        Assert.Equal("Rejestr czasu pracy", page.Find("h1").TextContent);
-        var header = page.FindComponent<PageHeader>();
-        Assert.Equal("start", header.Instance.Topic);
-        Assert.NotEmpty(page.FindComponents<FluentLabel>());
+        Assert.Equal("Rejestr czasu pracy", page.Find(".eod-page h1.eod-h1").TextContent);
+        Assert.Equal("start", page.FindComponent<PageHelp>().Instance.Topic);
+        Assert.NotNull(page.Find(".eod-page .eod-card"));
     }
 
     [Fact]

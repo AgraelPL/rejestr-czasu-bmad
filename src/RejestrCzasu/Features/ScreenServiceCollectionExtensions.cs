@@ -12,15 +12,12 @@ namespace RejestrCzasu.Features;
 public static class ScreenServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers screen messages and confirmations of every screen (<see cref="Notify"/>, <see cref="Confirm"/>,
-    /// AD-11), the data of the Dictionary screens (<see cref="ProjectStore"/>, <see cref="WorkTypeStore"/>) and of the
+    /// Registers the data of the Dictionary screens (<see cref="ProjectStore"/>, <see cref="WorkTypeStore"/>) and of the
     /// Entries (<see cref="EntryStore"/>, with the row actions of <see cref="EntryDialogs"/>), which sit on top of the scoped <c>Data/UserDbContextFactory</c> (AD-4, AD-16),
-    /// and the one, application-wide <see cref="EntryDateMemory"/> (AD-10). Needs <c>AddFluentUIComponents</c>.
+    /// and the one, application-wide <see cref="EntryDateMemory"/> (AD-10). Needs <c>AddEodPlatformUI</c> of the eod-ui copy (Fluent UI and <c>UiMessages</c>, AD-11).
     /// </summary>
     public static IServiceCollection AddAppScreens(this IServiceCollection services)
     {
-        services.AddScoped<Notify>();
-        services.AddScoped<Confirm>();
         services.AddScoped<ProjectStore>();
         services.AddScoped<WorkTypeStore>();
         services.AddScoped<EntryStore>();

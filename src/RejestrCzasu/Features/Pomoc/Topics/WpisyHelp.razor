@@ -5,13 +5,14 @@
 </p>
 
 <h2>Filtry</h2>
+<p>Filtry ekranu są w pasku nad listą:</p>
 <ul>
-    <li><strong>Od</strong> i <strong>Do</strong> — zakres dat, oba dni włącznie. Po otwarciu ekranu to pierwszy
+    <li><strong>Od</strong> i <strong>Do</strong> - zakres dat, oba dni włącznie. Po otwarciu ekranu to pierwszy
         i ostatni dzień bieżącego Miesiąca (według czasu polskiego). Puste pole oznacza brak tej granicy, np. puste
         <strong>Od</strong> pokazuje wszystkie Wpisy do daty <strong>Do</strong>. Gdy data <strong>Od</strong> jest
-        późniejsza niż <strong>Do</strong>, lista jest pusta, a przy filtrach pojawia się komunikat
+        późniejsza niż <strong>Do</strong>, lista jest pusta, a w pasku filtrów pojawia się komunikat
         „Data „Od” jest późniejsza niż „Do”.”.</li>
-    <li><strong>Projekt</strong> i <strong>Typ pracy</strong> — <strong>Wszystkie</strong> albo jedna pozycja Twojego
+    <li><strong>Projekt</strong> i <strong>Typ pracy</strong> - <strong>Wszystkie</strong> albo jedna pozycja Twojego
         Słownika. Na liście są także nieaktywne Projekty i Typy pracy, z dopiskiem „(nieaktywny)”, więc odnajdziesz
         ich Wpisy.</li>
 </ul>
@@ -23,33 +24,71 @@
     <strong>Typ pracy</strong>, <strong>Opis</strong> i <strong>Czas</strong> (jak w Jirze, np. 1h 30m). Wpisy są
     uporządkowane od najnowszej daty, a w obrębie jednego dnia ostatnio zapisany Wpis jest wyżej.
 </p>
+<p>
+    Kliknięcie nagłówka kolumny sortuje listę (Shift + kliknięcie dodaje kolejną kolumnę), a Czas sortuje się według
+    długości, np. 45m przed 2h i 10h. W okienku kolumny (przycisk w nagłówku) możesz też pogrupować Wpisy, np. według
+    Projektu, a nagłówki kolumn przeciągać, żeby zmienić ich kolejność. Menu <strong>Kolumny</strong> ukrywa i pokazuje
+    kolumny, a <strong>Przywróć układ domyślny</strong> wraca do układu początkowego. Twój układ (sortowanie,
+    grupowanie, kolejność kolumn) obowiązuje do odświeżenia strony. Pole <strong>Szukaj we wszystkich kolumnach</strong> nad listą zawęża ją do
+    wierszy z wpisanym tekstem.
+</p>
 
 <h2>Edycja, kopia i usuwanie Wpisu</h2>
-<p>Na końcu każdego wiersza są trzy ikony:</p>
+<p>Na końcu każdego wiersza, w kolumnie <strong>Akcje</strong>, są trzy ikony:</p>
 <ul>
-    <li><strong>Edytuj</strong> — otwiera okno „Edycja Wpisu” z datą, Projektem, Typem pracy, opisem i Czasem Wpisu.
+    <li><strong>Edytuj</strong> - otwiera okno „Edycja Wpisu” z datą, Projektem, Typem pracy, opisem i Czasem Wpisu.
         Możesz zmienić każde pole, także we Wpisach z poprzednich Miesięcy. Nieaktywny Projekt lub Typ pracy tego Wpisu
         zostaje na liście wyboru.</li>
-    <li><strong>Kopiuj</strong> — otwiera okno „Kopia Wpisu” z Projektem, Typem pracy, opisem i Czasem kopiowanego Wpisu.
+    <li><strong>Kopiuj</strong> - otwiera okno „Kopia Wpisu” z Projektem, Typem pracy, opisem i Czasem kopiowanego Wpisu.
         Data to ta, którą ostatnio ustawiłeś na ekranie <strong>Nowy wpis</strong>; jeśli nie otwierałeś go od
-        zalogowania — dzisiejsza (według czasu polskiego). Gdy Projekt lub Typ pracy oryginału jest nieaktywny, to pole
+        zalogowania - dzisiejsza (według czasu polskiego). Gdy Projekt lub Typ pracy oryginału jest nieaktywny, to pole
         jest puste i trzeba je wybrać. Kopia zapisuje się jako nowy Wpis dopiero po <strong>Zapisz</strong>.</li>
-    <li><strong>Usuń</strong> — usuwa Wpis po potwierdzeniu w oknie z jego datą, Projektem, Czasem i opisem.</li>
+    <li><strong>Usuń</strong> - usuwa Wpis po potwierdzeniu w oknie z jego datą, Projektem, Czasem i opisem.</li>
 </ul>
 <p>
     W oknie Edycji i Kopii <strong>Zapisz</strong> lub Enter (w polach Data, Opis i Czas) zapisuje Wpis i zamyka okno;
-    <strong>Anuluj</strong> lub Escape zamyka okno bez zapisu. Po każdej zmianie lista jest wczytywana ponownie. Gdy Wpis
-    został w międzyczasie usunięty (np. w innym oknie), zobaczysz komunikat, a lista wczyta się ponownie.
+    <strong>Anuluj</strong> (obok <strong>Zapisz</strong>) lub Escape zamyka okno bez zapisu. Po zapisie lista jest
+    wczytywana ponownie, a pod nagłówkiem strony pojawia się komunikat, np. „Zapisano Wpis: 03.09.2026, RDZ, 1h 30m.”.
+    Jeśli wybrany Projekt lub Typ pracy został w międzyczasie usunięty, okno zostaje otwarte z wpisanymi wartościami
+    i komunikatem w swojej treści, a listy wyboru wczytują się ponownie. Gdy Wpis został w międzyczasie usunięty (np.
+    w innym oknie), okno się zamyka, zobaczysz komunikat, a lista wczyta się ponownie.
+</p>
+<p>
+    W oknie potwierdzenia usunięcia klawisz Enter nie usuwa Wpisu: usuwa go dopiero kliknięcie <strong>Usuń</strong>,
+    a <strong>Anuluj</strong> i Escape zamykają okno bez zmian.
 </p>
 
 <h2>Liczba i suma Czasu</h2>
 <p>
-    Pod listą widać „Wpisy: …, suma Czasu: …” dla filtrów Od, Do, Projekt i Typ pracy. Suma może przekroczyć 24 godziny
-    (np. 48h); bez Wpisów to „Wpisy: 0, suma Czasu: 0h”.
+    W stopce listy jest licznik widocznych pozycji, a po nim „Wpisy: …, suma Czasu: …” dla filtrów Od, Do, Projekt
+    i Typ pracy, np. „3 pozycje · Wpisy: 3, suma Czasu: 5h”. Suma może przekroczyć 24 godziny (np. 48h); bez Wpisów to
+    „Wpisy: 0, suma Czasu: 0h”.
 </p>
 
 <h2>Filtr wartości w kolumnach</h2>
 <p>
-    W nagłówku każdej kolumny możesz odznaczyć wartości, których nie chcesz widzieć; licznik pozycji pod siatką pokazuje,
-    ile wierszy widać. Ten filtr tylko ukrywa wiersze — liczba Wpisów i suma Czasu pod listą zostają dla filtrów ekranu.
+    W okienku kolumny (przycisk w nagłówku) możesz odznaczyć wartości, których nie chcesz widzieć; licznik pozycji
+    w stopce pokazuje, ile wierszy widać, z dopiskiem „po filtrach, z …” (liczba wszystkich), np. „1 pozycja · Wpisy: 3,
+    suma Czasu: 5h · po filtrach, z 3”. Ten filtr tylko ukrywa wiersze - liczba Wpisów i suma Czasu zostają dla
+    filtrów ekranu. To samo dotyczy pola <strong>Szukaj we wszystkich kolumnach</strong>.
+</p>
+
+<h2>Strony</h2>
+<p>
+    Lista pokazuje po 30 Wpisów na stronie. Gdy Wpisów jest więcej, pod listą widać zakres, np. „Pozycje 1–30 z 95”,
+    numer strony („Strona 1 z 4”) i przyciski przejścia na pierwszą, poprzednią, następną i ostatnią stronę. Licznik
+    i suma Czasu w stopce dotyczą wszystkich stron. Zmiana filtra ekranu, filtra kolumny, wyszukiwania, sortowania lub
+    grupowania oraz <strong>Przywróć układ domyślny</strong> wracają na pierwszą stronę; po edycji, kopii lub usunięciu Wpisu zostajesz na tej samej stronie. Gdy Wpisy są
+    pogrupowane, lista nie dzieli się na strony - widać całe grupy.
+</p>
+
+<h2>Eksportuj</h2>
+<p>
+    Przycisk <strong>Eksportuj</strong> nad listą zapisuje plik Excela (xlsx), np. <strong>wpisy-2026-09-03.xlsx</strong>
+    (data eksportu według czasu polskiego). Plik zawiera wszystkie Wpisy spełniające wszystko, co zawęża listę - filtry
+    Od, Do, Projekt i Typ pracy, filtry kolumn i wyszukiwanie - ze wszystkich stron, w kolejności z ekranu, oraz
+    widoczne kolumny (bez Akcji). Data jest datą Excela w postaci 03.09.2026 (filtruje się i sortuje jak daty), a Czas
+    jest w kolumnie <strong>Godziny</strong> liczbą godzin dziesiętnych, np. 1,5 zamiast 1h 30m i 0,75 zamiast 45m,
+    więc w Excelu da się go zsumować; pod Wpisami jest wiersz <strong>Suma</strong> z sumą Godzin. Pod nagłówkiem strony pojawia się komunikat z nazwą pliku oraz liczbą wierszy
+    i kolumn.
 </p>

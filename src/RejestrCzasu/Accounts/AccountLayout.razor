@@ -1,9 +1,11 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Sections
-@* Layout of the static /konto pages (AD-11): no menu, a Pomoc link to the page's topic. *@
+@* Layout of the static /konto pages (AD-11): the brand top bar of the eod-ui copy with the app name and a Pomoc link
+   to the page's topic, a centred content column; no EodShell, menu or UiMessages. *@
 <div class="account-layout">
     <header class="account-header">
-        <span class="account-app-name">Rejestr czasu pracy</span>
+        <span class="eod-appname">Rejestr czasu</span>
+        <span class="eod-header-spacer"></span>
         <SectionOutlet SectionName="@HelpSection" />
     </header>
     <main class="account-content">

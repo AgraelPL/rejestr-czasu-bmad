@@ -24,6 +24,14 @@ covers = ["R2", "R4", "R5", "R6", "R7", "R8", "R16", "R17", "R26"]
 after = [{ epic = 1, needs = "Domain/Czas, PolishCalendar, YearMonth, DictionaryOptions, ReportGrid (pełny zakres AD-9), MainLayout, mechanizm pomocy, Notify i Confirm" }]
 
 [[epic]]
+id = 7
+slug = "epic-wzorzec-ui"
+title = "Przejęcie wzorca UI eod-ui"
+description = "Lokalnie każdy istniejący ekran (Projekty, Typy pracy, Nowy wpis, Lista wpisów, pomoc, nie znaleziono, układ stron /konto/...) działa w szkielecie i komponentach wzorca eod-ui (EodShell, EodPage, EodCard, EodReport, UiMessages), dołączonego jako podmoduł git z ProjectReference do Eod.Platform.UI, bez części EOD i Syncfusion; zachowanie ekranów bez zmian. Daje epikom 3 i 5 szkielet, stronę, EodReport przyjmujący sumy od ekranu i UiMessages. R17 tu: listy na EodReport z filtrem wartości i licznikiem, eksport CSV wyłączony parametrem wzorca. R26 tu: strony pomocy po zmianie ekranów. R31 tu: komunikat o zerwanym połączeniu w nowym szkielecie. Touch point: repozytorium eod-ui (wyłączenie eksportu, potwierdzenie bez Enter, sumy od ekranu, Fluent UI 5.0.1)."
+covers = ["R17", "R26", "R31"]
+after = [{ epic = 2, needs = "ekrany Nowy wpis i Lista wpisów oraz okno Wpisu do przeniesienia na wzorzec" }]
+
+[[epic]]
 id = 3
 slug = "epic-miesiac-i-zestawienie"
 title = "Widok miesiąca i Zestawienie"
@@ -33,15 +41,19 @@ after = [
   { epic = 1, needs = "ReportGrid ze stałym grupowaniem, Domain/Czas, PolishCalendar, YearMonth, mechanizm pomocy, link Ustawienia konta w belce, Notify i Confirm" },
   { epic = 2, needs = "EntryForm w oknie dialogowym i DeleteEntry dla ikon w wierszach" },
   { epic = 4, needs = "strona /konto/zmiana-hasla" },
+  { epic = 7, needs = "EodShell, EodPage, EodReport z sumami od ekranu (MonthReport) i UiMessages ze wzorca eod-ui" },
 ]
 
 [[epic]]
 id = 5
 slug = "epic-administracja-kont-i-pomoc"
 title = "Administracja Kont i pomoc"
-description = "Administrator na ekranie Użytkownicy zatwierdza, odrzuca, blokuje, odblokowuje i usuwa Konta (kaskada w jednej operacji) oraz ustawia hasło z wymuszoną zmianą przy pierwszym logowaniu; epik tylko zmienia stan Konta, a jego sprawdzanie przy każdej akcji daje epik 4. Sprawdzane lokalnie; próba oddzielenia danych (SM-5) i ćwiczenie odtworzenia Kopii serwera przeszły do epiku 6. Może iść równolegle z epikami 1–3; pozycja Użytkownicy w menu z epiku 1 zaczyna prowadzić do tego ekranu. R26 tu: strona pomocy o administracji oraz strony ekranów logowania, rejestracji i wymuszonej zmiany hasła."
+description = "Administrator na ekranie Użytkownicy zatwierdza, odrzuca, blokuje, odblokowuje i usuwa Konta (kaskada w jednej operacji) oraz ustawia hasło z wymuszoną zmianą przy pierwszym logowaniu; epik tylko zmienia stan Konta, a jego sprawdzanie przy każdej akcji daje epik 4. Sprawdzane lokalnie; próba oddzielenia danych (SM-5) i ćwiczenie odtworzenia Kopii serwera przeszły do epiku 6. Może iść równolegle z epikiem 3, po epiku 7 (wzorzec UI); pozycja Użytkownicy w menu z epiku 1 zaczyna prowadzić do tego ekranu. R26 tu: strona pomocy o administracji oraz strony ekranów logowania, rejestracji i wymuszonej zmiany hasła."
 covers = ["R21", "R22", "R23", "R26"]
-after = [{ epic = 4, needs = "Konta z danymi (stan, data rejestracji, ostatnie logowanie), role, logowanie i sprawdzanie stanu Konta przy każdej akcji" }]
+after = [
+  { epic = 4, needs = "Konta z danymi (stan, data rejestracji, ostatnie logowanie), role, logowanie i sprawdzanie stanu Konta przy każdej akcji" },
+  { epic = 7, needs = "EodShell, EodPage, lista administracyjna i okno edycji ze wzorca eod-ui (UI_SPEC 9.13), UiMessages" },
+]
 
 [[epic]]
 id = 6

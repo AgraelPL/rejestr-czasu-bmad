@@ -42,3 +42,5 @@ Administrator prowadzi Konta na ekranie Użytkownicy bez poleceń SQL, więc prz
 
 - Waits on epic-konta-i-wdrozenie because: Konta z danymi (stan, data rejestracji, ostatnie logowanie), role, logowanie i sprawdzanie stanu Konta przy każdej akcji.
 - Decision (01.11.2026): Autor odkłada wdrożenie na Droplet na koniec, po dostarczeniu funkcji z epików 1–3 i 5: migracja `Initial` zostaje otwarta do pierwszego wdrożenia (NFR-9), bez kosztów i obsługi serwera, zanim aplikacja jest użyteczna. Wdrożenie, rollback i sprawdzenia na serwerze przeszły do nowego epic-wdrozenie-na-serwer (epik 6), przed Miesiącem „na serio”. R24 (próba na serwerze) i R27 (odtworzenie z Kopii serwera) przeszły do epiku 6.
+- Waits on epic-wzorzec-ui because: ekran Użytkownicy powstaje od razu we wzorcu eod-ui (lista administracyjna z oknem edycji, UI_SPEC 9.13; `UiMessages`).
+- Decision (02.11.2026): epik po epiku 7 (wzorzec UI eod-ui), równolegle z epikiem 3.

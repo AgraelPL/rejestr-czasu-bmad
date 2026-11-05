@@ -4,13 +4,15 @@
 @using Microsoft.JSInterop
 @inject IJSRuntime JS
 @* The one Entry form (AD-10): presentation only. It gets the model, the options of DictionaryOptions and the save
-   call from its host (the /wpisy/nowy page; the dialog of story 2.3); it never creates a database context.
+   call from its host (the /wpisy/nowy page; EntryDialog); it never creates a database context.
    Focus order follows the markup: Data → Projekt → Typ pracy → Opis → Czas (no tabindex > 0).
    Enter: in Data, Opis and Czas it saves the form without a confirmation; in a combobox it only picks the option.
    Opis and Czas send their current text with the Enter key (ChangeAfterKeyPress), so the save never sees a value the
    browser has not reported yet; the native date input reports every complete date as it is typed. Data saves on the
    key-up of an Enter whose key-down also happened in Data, so the Enter that opened the screen (menu button, then
-   Data autofocused) never submits an empty form. The save button is
+   the focus in Data) never submits an empty form. The first focus in Data: in the Entry window the autofocus of the
+   native dialog (AutofocusDate); on /wpisy/nowy the page calls FocusDateAsync after the form's first render, because
+   FocusOnNavigate (h1) has already focused the page when the form appears and blocks autofocus. The save button is
    not a submit button: otherwise Enter in any Fluent text field would submit the form (implicit submission) before
    its text reaches the server. *@
 
@@ -18,7 +20,7 @@
     <FluentValidator Validator="_validator" />
     <div class="entry-form-date" @onkeydown="OnDateKeyDown" @onkeyup="OnDateKeyUpAsync">
         <FluentDatePicker TValue="DateOnly?" Value="Model.Date" ValueChanged="OnDateValueChangedAsync" ValueExpression="() => Model.Date"
-                          RenderStyle="DatePickerRenderStyle.Native" Label="Data" Autofocus="true" class="entry-date" />
+                          RenderStyle="DatePickerRenderStyle.Native" Label="Data" Autofocus="AutofocusDate" class="entry-date" />
         <span class="entry-day-name">@DayName</span>
     </div>
     <FluentCombobox @ref="_project" Items="Projects" @bind-Value="Model.Project" OptionText="ProjectText"
@@ -31,6 +33,7 @@
                      OnChangeAfterKeyPress="OnEnterAsync" class="entry-czas" />
     <div class="entry-form-buttons">
         <FluentButton Appearance="ButtonAppearance.Primary" OnClick="SubmitAsync" class="entry-save">Zapisz</FluentButton>
+        @Buttons
     </div>
 </EditForm>
 
@@ -39,6 +42,9 @@
 
     private readonly EntryFormValidator _validator = new();
     private EditContext _editContext = default!;
+    /// <summary>The field of Data: FluentDatePicker 5.0.1 has no element reference, so it is focused by its selector.</summary>
+    internal const string DateFieldSelector = "form.entry-form .entry-form-date fluent-text-input";
+
     private FluentCombobox<ProjectOption, ProjectOption?>? _project;
     private FluentCombobox<WorkTypeOption, WorkTypeOption?>? _workType;
     private bool _saving;
@@ -59,8 +65,20 @@
     /// <summary>Called after every change of the date field (also to <c>null</c> when it is cleared).</summary>
     [Parameter] public EventCallback<DateOnly?> OnDateChanged { get; set; }
 
-    /// <summary>Text of a Project option: "KOD — nazwa".</summary>
-    internal static string ProjectText(ProjectOption? project) => project is null ? "" : $"{project.Code} — {project.Name}";
+    /// <summary>Further buttons after Zapisz in the same row (the Entry window: Anuluj); none on Nowy wpis.</summary>
+    [Parameter] public RenderFragment? Buttons { get; set; }
+
+    /// <summary>
+    /// Autofocus of Data (the Entry window: the native dialog focuses it when it opens). <c>false</c> on Nowy wpis,
+    /// which calls <see cref="FocusDateAsync"/> itself.
+    /// </summary>
+    [Parameter] public bool AutofocusDate { get; set; } = true;
+
+    /// <summary>Called when a save is asked for but the model does not pass <see cref="EntryFormValidator"/>.</summary>
+    [Parameter] public EventCallback OnInvalid { get; set; }
+
+    /// <summary>Text of a Project option: "KOD - nazwa".</summary>
+    internal static string ProjectText(ProjectOption? project) => project is null ? "" : $"{project.Code} - {project.Name}";
 
     private static string WorkTypeText(WorkTypeOption? workType) => workType?.Name ?? "";
 
@@ -81,16 +99,21 @@
         {
             return;
         }
-        await using var module = await JS.InvokeAsync<IJSObjectReference>("import", "./Shared/EntryForm.razor.js");
+        // The workaround of Fluent UI 5.0.1 lives in eod.js of the eod-ui copy (AD-1, AD-23 item 9).
         if (Model.Project is not null && _project is not null)
         {
-            await module.InvokeVoidAsync("showSelectedText", _project.Element, ProjectText(Model.Project));
+            await JS.InvokeVoidAsync("EodUI.showSelectedText", _project.Element, ProjectText(Model.Project));
         }
         if (Model.WorkType is not null && _workType is not null)
         {
-            await module.InvokeVoidAsync("showSelectedText", _workType.Element, WorkTypeText(Model.WorkType));
+            await JS.InvokeVoidAsync("EodUI.showSelectedText", _workType.Element, WorkTypeText(Model.WorkType));
         }
     }
+
+    /// <summary>Moves the focus to the Data field (the start of the Sesja wpisywania on Nowy wpis, R16).</summary>
+    public Task FocusDateAsync() =>
+        // The helper of the eod-ui copy (eod.js, AD-1): the first form on the page is the one of Nowy wpis.
+        JS.InvokeVoidAsync("EodUI.focusElement", DateFieldSelector).AsTask();
 
     /// <summary>Moves the focus to the Projekt field (after a save in the Sesja wpisywania, R5).</summary>
     public async Task FocusProjectAsync()
@@ -127,8 +150,13 @@
 
     private async Task SubmitAsync()
     {
-        if (_saving || !_editContext.Validate())
+        if (_saving)
         {
+            return;
+        }
+        if (!_editContext.Validate())
+        {
+            await OnInvalid.InvokeAsync();
             return;
         }
         _saving = true;

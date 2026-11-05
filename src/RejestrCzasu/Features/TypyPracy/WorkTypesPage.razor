@@ -1,52 +1,79 @@
 @page "/typy-pracy"
-@using Blazilla
+@using System.Net
 @using RejestrCzasu.Features.Pomoc
 @using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
 @inject WorkTypeStore Store
-@inject Notify Notify
-@inject Confirm Confirm
-@* Typy pracy (R1–R3, R17): the User's Work type Dictionary, the same pattern as Projekty. Data only through
-   WorkTypeStore (AD-4, AD-16); after every change the list is read again from the database. *@
+@inject UiMessages Messages
+@inject IDialogService Dialogs
+@* Typy pracy (R1–R3, R17): the User's Work type Dictionary, the same pattern as Projekty: EodPage with EodReport
+   (AD-9, AD-11), adding and editing in WorkTypeDialog (UI_SPEC 9.13 A), deleting after UiMessages.ConfirmAsync; every
+   change is saved at once. Data only through WorkTypeStore (AD-4, AD-16); after every change the list is read again
+   from the database, then the bar shows. *@
 
-<PageHeader Title="Typy pracy" Subtitle="Nazwy Typów pracy, które wybierasz we Wpisach." Topic="@HelpTopics.TypyPracy" />
-
-@if (_form is null)
-{
-    <FluentButton Appearance="ButtonAppearance.Primary" IconStart="@(new Icons.Regular.Size20.Add())" OnClick="OpenAdd"
-                  class="work-types-add">Dodaj Typ pracy</FluentButton>
-}
-else
-{
-    @* novalidate: the browser's own check of Required would block submit before WorkTypeFormValidator shows its messages. *@
-    <EditForm @key="_form" Model="_form" OnValidSubmit="SaveAsync" class="work-type-form" novalidate>
-        <FluentValidator Validator="_validator" />
-        <h2 class="work-type-form-title">@(_form.Id is null ? "Nowy Typ pracy" : $"Edycja Typu pracy {_editedName}")</h2>
-        <FluentTextInput @bind-Value="_form.Name" Label="Nazwa" Required="true" AutoFocus="true" class="work-type-name" />
-        <div class="work-type-form-buttons">
-            <FluentButton Type="ButtonType.Submit" Appearance="ButtonAppearance.Primary" class="work-type-save">Zapisz</FluentButton>
-            <FluentButton OnClick="CloseForm" class="work-type-cancel">Anuluj</FluentButton>
-        </div>
-    </EditForm>
-}
-
-@if (_rows is not null)
-{
-    <ReportGrid T="WorkTypeRow" Items="_rows" Columns="Columns" Actions="_actions" />
-}
+<EodPage Title="Typy pracy" Description="Nazwy Typów pracy, które wybierasz we Wpisach." Fill="true">
+    <Actions>
+        <FluentButton Appearance="ButtonAppearance.Primary" IconStart="@(new Icons.Regular.Size20.Add())" OnClick="OpenAddAsync"
+                      class="work-types-add">Dodaj Typ pracy</FluentButton>
+    </Actions>
+    <ChildContent>
+        <PageHelp Topic="@HelpTopics.TypyPracy" />
+        <EodCard NoPadding="true" Fill="true">
+            <EodReport Definition="Report" Rows="_rows" LayoutKey="@HelpTopics.TypyPracy" ShowExport="false"
+                       PreserveRowOrder="true" Loading="_loading">
+                <RowActions Context="row">
+                    @if (_byId.TryGetValue((int)row[IdKey]!, out var workType))
+                    {
+                        <FluentButton IconStart="@(new Icons.Regular.Size20.Edit())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                      Title="Edytuj" aria-label="Edytuj" OnClick="@(() => OpenEditAsync(workType))" />
+                        @if (workType.IsActive)
+                        {
+                            <FluentButton IconStart="@(new Icons.Regular.Size20.Archive())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                          Title="Dezaktywuj" aria-label="Dezaktywuj" OnClick="@(() => SetActiveAsync(workType, false))" />
+                        }
+                        else
+                        {
+                            <FluentButton IconStart="@(new Icons.Regular.Size20.ArrowUndo())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                          Title="Przywróć" aria-label="Przywróć" OnClick="@(() => SetActiveAsync(workType, true))" />
+                        }
+                        <FluentButton IconStart="@(new Icons.Regular.Size20.Delete())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+                                      Title="Usuń" aria-label="Usuń" OnClick="@(() => DeleteAsync(workType))" />
+                    }
+                </RowActions>
+            </EodReport>
+        </EodCard>
+    </ChildContent>
+</EodPage>
 
 @code {
-    private static readonly IReadOnlyList<ReportColumn<WorkTypeRow>> Columns =
-    [
-        new("Nazwa", w => w.Name),
-        new("Stan", w => w.State),
-    ];
+    /// <summary>Key of the entity id in a report row, outside the columns; only the row actions use it (AD-9).</summary>
+    private const string IdKey = nameof(WorkTypeRow.Id);
 
-    private readonly WorkTypeFormValidator _validator = new();
-    private IReadOnlyList<ReportAction<WorkTypeRow>> _actions = [];
-    private IReadOnlyList<WorkTypeRow>? _rows;
-    private WorkTypeForm? _form;
-    private string _editedName = "";
+    /// <summary>The report of the screen (AD-9): value filter in every column, counter in the footer, no export.</summary>
+    internal static readonly ReportDefinition Report = new()
+    {
+        Key = HelpTopics.TypyPracy,
+        Title = "Typy pracy",
+        Description = "Nazwy Typów pracy, które wybierasz we Wpisach.",
+        FileName = HelpTopics.TypyPracy,
+        Columns =
+        [
+            new(nameof(WorkTypeRow.Name), "Nazwa", ColumnType.List) { IsKey = true },
+            new(nameof(WorkTypeRow.State), "Stan", ColumnType.List),
+        ],
+    };
+
+    private IReadOnlyList<IReadOnlyDictionary<string, object?>> _rows = [];
+    private IReadOnlyDictionary<int, WorkTypeRow> _byId = new Dictionary<int, WorkTypeRow>();
+    private bool _loading = true;
     private bool _busy;
+
+    /// <summary>The report row of a Work type: the columns plus <c>Id</c> for the row actions (AD-9).</summary>
+    internal static IReadOnlyDictionary<string, object?> ToRow(WorkTypeRow workType) => new Dictionary<string, object?>
+    {
+        [IdKey] = workType.Id,
+        [nameof(WorkTypeRow.Name)] = workType.Name,
+        [nameof(WorkTypeRow.State)] = workType.State,
+    };
 
     /// <summary>Warning shown when a Work type used by Entries is to be deleted (R3).</summary>
     internal static string InUseMessage(string name, int entryCount) =>
@@ -54,59 +81,49 @@ else
 
     internal static string DuplicateMessage(string name) => $"Typ pracy o nazwie {name} już istnieje.";
 
+    internal const string NotFoundMessage = "Ten Typ pracy już nie istnieje. Lista została wczytana ponownie.";
+
     protected override async Task OnInitializedAsync()
     {
-        _actions =
-        [
-            new(new Icons.Regular.Size20.Edit(), "Edytuj", OpenEdit),
-            new(new Icons.Regular.Size20.Archive(), "Dezaktywuj", w => SetActiveAsync(w, false)) { Visible = w => w.IsActive },
-            new(new Icons.Regular.Size20.ArrowUndo(), "Przywróć", w => SetActiveAsync(w, true)) { Visible = w => !w.IsActive },
-            new(new Icons.Regular.Size20.Delete(), "Usuń", DeleteAsync),
-        ];
         await ReloadAsync();
+        _loading = false;
     }
 
-    private async Task ReloadAsync() => _rows = await Store.ListAsync();
-
-    private void OpenAdd() => _form = new WorkTypeForm();
-
-    private Task OpenEdit(WorkTypeRow row)
+    private async Task ReloadAsync()
     {
-        _form = new WorkTypeForm { Id = row.Id, Name = row.Name };
-        _editedName = row.Name;
-        return Task.CompletedTask;
+        var workTypes = await Store.ListAsync();
+        _byId = workTypes.ToDictionary(w => w.Id);
+        _rows = workTypes.Select(ToRow).ToList();
     }
 
-    private void CloseForm() => _form = null;
+    private Task OpenAddAsync() => RunDialogAsync(new WorkTypeForm(), null);
 
-    private async Task SaveAsync()
+    private Task OpenEditAsync(WorkTypeRow row) =>
+        RunDialogAsync(new WorkTypeForm { Id = row.Id, Name = row.Name }, row.Name);
+
+    private async Task RunDialogAsync(WorkTypeForm form, string? editedName)
     {
-        if (_form is not { } form || _busy)
+        if (_busy)
         {
             return;
         }
         _busy = true;
         try
         {
-            var change = form.Id is { } id
-                ? await Store.UpdateAsync(id, form.Name)
-                : await Store.AddAsync(form.Name);
-            switch (change)
+            var result = await WorkTypeDialog.ShowAsync(Dialogs, form, editedName);
+            if (result.Cancelled)
             {
-                case WorkTypeChange.Done done:
-                    _form = null;
-                    await ReloadAsync();
-                    await Notify.Success(form.Id is null ? $"Dodano Typ pracy {done.Name}." : $"Zapisano Typ pracy {done.Name}.");
-                    break;
-                case WorkTypeChange.DuplicateName duplicate:
-                    // The form stays open with the value the User typed.
-                    await Notify.Error(DuplicateMessage(duplicate.Name));
-                    break;
-                case WorkTypeChange.NotFound:
-                    _form = null;
-                    await ReloadAsync();
-                    await Notify.Warning(NotFoundMessage);
-                    break;
+                return;
+            }
+            var change = result.GetValue<WorkTypeChange>();
+            await ReloadAsync();
+            if (change is WorkTypeChange.Done done)
+            {
+                await Messages.ShowSuccessAsync(form.Id is null ? $"Dodano Typ pracy {done.Name}." : $"Zapisano Typ pracy {done.Name}.");
+            }
+            else
+            {
+                await Messages.ShowWarningAsync(NotFoundMessage);
             }
         }
         finally
@@ -121,39 +138,33 @@ else
         await ReloadAsync();
         if (change is WorkTypeChange.Done done)
         {
-            await Notify.Success(isActive ? $"Przywrócono Typ pracy {done.Name}." : $"Dezaktywowano Typ pracy {done.Name}.");
+            await Messages.ShowSuccessAsync(isActive ? $"Przywrócono Typ pracy {done.Name}." : $"Dezaktywowano Typ pracy {done.Name}.");
         }
         else
         {
-            await Notify.Warning(NotFoundMessage);
+            await Messages.ShowWarningAsync(NotFoundMessage);
         }
     }
 
     private async Task DeleteAsync(WorkTypeRow row)
     {
-        if (!await Confirm.AskAsync("Usuń Typ pracy", $"Usunąć Typ pracy {row.Name}?", "Usuń"))
+        if (!await Messages.ConfirmAsync("Usunąć Typ pracy?", $"<p>Usunąć Typ pracy <strong>{WebUtility.HtmlEncode(row.Name)}</strong>?</p>", "Usuń"))
         {
             return;
         }
         var change = await Store.DeleteAsync(row.Id);
-        if (change is WorkTypeChange.Done or WorkTypeChange.NotFound && _form?.Id == row.Id)
-        {
-            _form = null;
-        }
         await ReloadAsync();
         switch (change)
         {
             case WorkTypeChange.Done done:
-                await Notify.Success($"Usunięto Typ pracy {done.Name}.");
+                await Messages.ShowSuccessAsync($"Usunięto Typ pracy {done.Name}.");
                 break;
             case WorkTypeChange.InUse inUse:
-                await Notify.Warning(InUseMessage(inUse.Name, inUse.EntryCount));
+                await Messages.ShowWarningAsync(InUseMessage(inUse.Name, inUse.EntryCount));
                 break;
             default:
-                await Notify.Warning(NotFoundMessage);
+                await Messages.ShowWarningAsync(NotFoundMessage);
                 break;
         }
     }
-
-    private const string NotFoundMessage = "Ten Typ pracy już nie istnieje. Lista została wczytana ponownie.";
 }

@@ -13,7 +13,7 @@ public sealed class EntryFormValidator : AbstractValidator<EntryInput>
     public const string ProjectMessage = "Wybierz Projekt.";
     public const string WorkTypeMessage = "Wybierz Typ pracy.";
     public const string DescriptionMessage = "Podaj opis.";
-    public const string CzasMessage = "Podaj Czas, np. 1h 30m, 45m albo 1:30 — od 15m do 24h, w krokach co 15 minut.";
+    public const string CzasMessage = "Podaj Czas, np. 1h 30m, 45m albo 1:30 - od 15m do 24h, w krokach co 15 minut.";
 
     public EntryFormValidator()
     {

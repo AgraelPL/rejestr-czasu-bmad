@@ -1,4 +1,5 @@
 using Bunit;
+using AngleSharp.Dom;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.EntityFrameworkCore;
@@ -6,15 +7,18 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FluentUI.AspNetCore.Components;
 using RejestrCzasu.Accounts;
 using RejestrCzasu.Data;
+using RejestrCzasu.Features.Pomoc;
 using RejestrCzasu.Features.Wpisy;
 using RejestrCzasu.Shared;
 using RejestrCzasu.Tests.Shared;
+using RejestrCzasu.Ui;
 
 namespace RejestrCzasu.Tests.Features;
 
 /// <summary>
 /// The Nowy wpis screen (R4, R5, R16, AD-8, AD-10) in bUnit with the real <see cref="EntryStore"/> and
-/// <see cref="DictionaryOptions"/> on the test database and a fixed clock.
+/// <see cref="DictionaryOptions"/> on the test database and a clock set by the test; under the form the Entries of the
+/// current Month (EntriesReport, AD-9).
 /// </summary>
 public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
 {
@@ -28,6 +32,7 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
     private readonly PostgresFixture _postgres;
     private readonly CapturingLogger<AppErrorBoundary> _errors = new();
     private readonly EntryDateMemory _dateMemory = new();
+    private readonly SettableTimeProvider _clock = new(Now);
     private int _user;
 
     public NewEntryPageTests(PostgresFixture postgres)
@@ -35,12 +40,13 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         _postgres = postgres;
         this.AddAppUi();
         Services.AddSingleton<Microsoft.Extensions.Logging.ILogger<AppErrorBoundary>>(_errors);
-        Services.AddSingleton<TimeProvider>(new FixedTimeProvider(Now));
+        Services.AddSingleton<TimeProvider>(_clock);
         Services.AddSingleton(_dateMemory);
         // Created on first use, after InitializeAsync has created the User.
         Services.AddScoped(_ => _postgres.CreateLoggedInCurrentUser(_user));
         Services.AddScoped(_ => new EntryStore(_postgres.CreateLoggedInUserDbContextFactory(_user)));
         Services.AddScoped(_ => new DictionaryOptions(_postgres.CreateLoggedInUserDbContextFactory(_user)));
+        Services.AddScoped<EntryDialogs>();
         AddAuthorization().SetAuthorized("ekran-nowy-wpis");
         // The application renders its screens in an Interactive Server circuit.
         SetRendererInfo(new RendererInfo("Server", isInteractive: true));
@@ -55,16 +61,22 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
     }
 
     [Fact]
-    public void Open_TodayInPoland_EmptyFields_HeaderAndHelpTopic()
+    public void Open_TodayInPoland_EmptyFields_EodPageWithCard_HelpTopic()
     {
         var cut = RenderScreen();
 
-        Assert.Equal("Nowy wpis", cut.Find("h1").TextContent);
-        Assert.Equal("/pomoc/wpisy-nowy", cut.Find(".app-header .app-help").GetAttribute("href"));
+        Assert.Equal("Nowy wpis", cut.Find(".eod-page h1").TextContent);
+        Assert.Equal("Kolejne Wpisy samą klawiaturą: data, Projekt, Typ pracy, opis, Czas i Enter.",
+            cut.Find(".eod-page-head .eod-caption").TextContent);
+        Assert.NotNull(cut.Find(".eod-page .eod-card form.entry-form"));
+        Assert.Equal(["Zapisz"], cut.FindAll(".entry-form-buttons fluent-button").Select(b => b.TextContent.Trim()));
+        Assert.Equal("/pomoc/wpisy-nowy", cut.Find(".app-help").GetAttribute("href"));
         var date = DatePicker(cut).Instance;
         Assert.Equal(Today, date.Value);
         Assert.Equal(DatePickerRenderStyle.Native, date.RenderStyle);
-        Assert.True(date.Autofocus);
+        // No autofocus (blocked after FocusOnNavigate): the page focuses Data itself after the form's first render.
+        Assert.False(date.Autofocus);
+        cut.WaitForAssertion(() => Assert.Equal([EntryForm.DateFieldSelector], FocusedFields(cut)));
         Assert.Equal("Czwartek", cut.Find(".entry-day-name").TextContent);
         Assert.Null(ProjectList(cut).Instance.Value);
         Assert.Null(WorkTypeList(cut).Instance.Value);
@@ -99,6 +111,8 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         await EnterAsync(cut, Czas(cut), "1h 30m");
 
         WaitForMessage(cut, "success", "Zapisano Wpis: 03.09.2026, RDZ, 1h 30m.");
+        // The bar lies in the message section of EodPage, under the header.
+        Assert.Contains("Zapisano Wpis", cut.Find(".eod-page .eod-messages").TextContent);
         var entry = Assert.Single(await EntriesAsync());
         Assert.Equal(
             (_user, Today, projects["RDZ"].Id, workTypes["Development"].Id, "Spotkanie", 90),
@@ -107,8 +121,136 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         Assert.Null(ProjectList(cut).Instance.Value);
         Assert.Null(WorkTypeList(cut).Instance.Value);
         Assert.Equal(("", ""), (Description(cut).Instance.Value, Czas(cut).Instance.Value));
-        var focus = JSInterop.VerifyFocusAsyncInvoke();
-        Assert.Equal(ProjectList(cut).Instance.Element.Id, focus.Arguments[0] is ElementReference e ? e.Id : null);
+        // Data at the start, Projekt after the save; the reload of the list does not move the focus.
+        cut.WaitForAssertion(() => Assert.Equal(["Spotkanie"], Descriptions(cut)));
+        Assert.Equal([EntryForm.DateFieldSelector, ProjectList(cut).Instance.Element.Id], FocusedFields(cut));
+    }
+
+    [Fact(Timeout = TestTimeoutMs)]
+    public async Task MonthList_EntriesOfCurrentMonthOnly_NewestFirst_FooterSum_IconsAndOwnLayout()
+    {
+        var (projects, workTypes) = await SeedAsync(Xunit.TestContext.Current.CancellationToken);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 8, 31), "Sierpień", 120);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 9, 1), "Pierwszy", 30);
+        await AddEntryAsync(projects["ABC"], workTypes["Development"], new DateOnly(2026, 9, 30), "Koniec", 1440);
+
+        var cut = RenderScreen();
+
+        cut.WaitForAssertion(() => Assert.Equal(["Koniec", "Pierwszy"], Descriptions(cut)));
+        Assert.Equal(["30.09.2026", "01.09.2026"], Column(cut, 0));
+        Assert.Equal(["24h", "30m"], Column(cut, 5));
+        Assert.Equal("2 pozycje · Wpisy: 2, suma Czasu: 24h 30m", Summary(cut));
+        Assert.All(Rows(cut), row => Assert.Equal(["Edytuj", "Kopiuj", "Usuń"],
+            row.QuerySelectorAll("fluent-button[aria-label]").Select(b => b.GetAttribute("aria-label"))));
+        Assert.Contains("Eksportuj", cut.Markup);
+        // The list has its own layout key, not the one of Lista wpisów.
+        Assert.Equal(HelpTopics.WpisyNowy, cut.FindComponent<EodReport>().Instance.LayoutKey);
+        Assert.Equal("Wpisy bieżącego Miesiąca", cut.Find("table.fluent-data-grid").GetAttribute("aria-label"));
+        Assert.Equal(EntriesReport.Report.Columns, EntriesReport.MonthReport.Columns);
+        Assert.NotNull(cut.Find(".eod-page.eod-page-fill > .eod-card.eod-card-fill .eod-report"));
+    }
+
+    [Fact(Timeout = TestTimeoutMs)]
+    public async Task Eksportuj_CurrentMonthOnly_PolishDateInFileName_DecimalHours_PageSize30()
+    {
+        var (projects, workTypes) = await SeedAsync(Xunit.TestContext.Current.CancellationToken);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 8, 31), "Sierpień", 120);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 9, 1), "Pierwszy; \"cytat\"", 90);
+        await AddEntryAsync(projects["ABC"], workTypes["Development"], new DateOnly(2026, 9, 30), "Koniec", 45);
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(2, Descriptions(cut).Count));
+        Assert.Equal(EntriesReport.PageSize, cut.FindComponent<EodReport>().Instance.PageSize);
+
+        var export = cut.FindAll(".eod-report .eod-formbar fluent-button").Single(b => b.TextContent.Trim() == "Eksportuj");
+        await cut.InvokeAsync(() => export.Click());
+
+        var download = Assert.Single(JSInterop.Invocations, i => i.Identifier == "EodUI.downloadStream");
+        Assert.Equal("wpisy-2026-09-03.xlsx", download.Arguments[0]);
+        using var workbook = XlsxDownload.Open(download);
+        var sheet = workbook.Worksheet(EntriesXlsx.SheetName);
+        Assert.Equal(["Data", "Dzień", "Projekt", "Typ pracy", "Opis", "Godziny"], sheet.Row(1).CellsUsed().Select(c => c.GetText()));
+        Assert.Equal(4, sheet.LastRowUsed()!.RowNumber());
+        Assert.Equal(new DateTime(2026, 9, 30), sheet.Cell(2, 1).GetDateTime());
+        Assert.Equal(["Środa", "ABC", "Development", "Koniec"], new[] { 2, 3, 4, 5 }.Select(c => sheet.Cell(2, c).GetText()));
+        Assert.Equal(0.75, sheet.Cell(2, 6).GetDouble());
+        Assert.Equal(new DateTime(2026, 9, 1), sheet.Cell(3, 1).GetDateTime());
+        Assert.Equal("Pierwszy; \"cytat\"", sheet.Cell(3, 5).GetText());
+        Assert.Equal(1.5, sheet.Cell(3, 6).GetDouble());
+    }
+
+    [Fact(Timeout = TestTimeoutMs)]
+    public async Task SaveWithDateOfPreviousMonth_IsSaved_ButNotOnTheList()
+    {
+        var (projects, workTypes) = await SeedAsync(Xunit.TestContext.Current.CancellationToken);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 9, 2), "Wrzesień", 60);
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(["Wrzesień"], Descriptions(cut)));
+
+        await cut.InvokeAsync(() => DatePicker(cut).Instance.ValueChanged.InvokeAsync(new DateOnly(2026, 8, 31)));
+        await FillAsync(cut, projects["RDZ"], workTypes["Development"], "Sierpniowy");
+        await EnterAsync(cut, Czas(cut), "1h");
+
+        WaitForMessage(cut, "success", "Zapisano Wpis: 31.08.2026, RDZ, 1h.");
+        Assert.Equal(2, (await EntriesAsync()).Count);
+        Assert.Equal(["Wrzesień"], Descriptions(cut));
+        Assert.Equal("1 pozycja · Wpisy: 1, suma Czasu: 1h", Summary(cut));
+    }
+
+    [Fact(Timeout = TestTimeoutMs)]
+    public async Task MonthChangesWhileOpen_ListIsReadForTheMonthOfEveryLoad()
+    {
+        // 21:59 UTC on 30 September is 23:59 in Poland; two minutes later it is 1 October.
+        _clock.UtcNow = new DateTimeOffset(2026, 9, 30, 21, 59, 0, TimeSpan.Zero);
+        var (projects, workTypes) = await SeedAsync(Xunit.TestContext.Current.CancellationToken);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 9, 30), "Wrzesień", 60);
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(["Wrzesień"], Descriptions(cut)));
+
+        _clock.UtcNow = new DateTimeOffset(2026, 9, 30, 22, 1, 0, TimeSpan.Zero);
+        await cut.InvokeAsync(() => DatePicker(cut).Instance.ValueChanged.InvokeAsync(new DateOnly(2026, 10, 1)));
+        await FillAsync(cut, projects["RDZ"], workTypes["Development"], "Październik");
+        await EnterAsync(cut, Czas(cut), "2h");
+
+        WaitForMessage(cut, "success", "Zapisano Wpis: 01.10.2026, RDZ, 2h.");
+        cut.WaitForAssertion(() => Assert.Equal(["Październik"], Descriptions(cut)));
+        Assert.Equal("1 pozycja · Wpisy: 1, suma Czasu: 2h", Summary(cut));
+    }
+
+    [Fact(Timeout = TestTimeoutMs)]
+    public async Task RowDelete_Confirmed_ReloadsList()
+    {
+        var (projects, workTypes) = await SeedAsync(Xunit.TestContext.Current.CancellationToken);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 9, 1), "Pierwszy", 30);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 9, 2), "Drugi", 60);
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(["Drugi", "Pierwszy"], Descriptions(cut)));
+
+        _ = RowAction(cut, "Drugi", "Usuń").ClickAsync(new MouseEventArgs());
+        cut.WaitForElement(".eod-confirm-primary", TimeSpan.FromSeconds(5));
+        await cut.Find(".eod-confirm-primary").ClickAsync(new MouseEventArgs());
+
+        WaitForMessage(cut, "success", "Usunięto Wpis: 02.09.2026, RDZ, 1h.");
+        cut.WaitForAssertion(() => Assert.Equal(["Pierwszy"], Descriptions(cut)));
+        Assert.Equal("1 pozycja · Wpisy: 1, suma Czasu: 30m", Summary(cut));
+    }
+
+    [Fact(Timeout = TestTimeoutMs)]
+    public async Task RowEdit_Saved_ReloadsList()
+    {
+        var (projects, workTypes) = await SeedAsync(Xunit.TestContext.Current.CancellationToken);
+        await AddEntryAsync(projects["RDZ"], workTypes["Development"], new DateOnly(2026, 9, 1), "Przed edycją", 30);
+        var cut = RenderScreen();
+        cut.WaitForAssertion(() => Assert.Equal(["Przed edycją"], Descriptions(cut)));
+
+        _ = RowAction(cut, "Przed edycją", "Edytuj").ClickAsync(new MouseEventArgs());
+        cut.WaitForElement(".entry-dialog-cancel", TimeSpan.FromSeconds(5));
+        var dialogCzas = cut.FindComponents<FluentTextInput>().Last(i => i.Instance.Class == "entry-czas");
+        await cut.InvokeAsync(() => dialogCzas.Instance.ValueChanged.InvokeAsync("45m"));
+        await cut.Find("fluent-dialog .entry-save").ClickAsync(new MouseEventArgs());
+
+        WaitForMessage(cut, "success", "Zapisano Wpis: 01.09.2026, RDZ, 45m.");
+        cut.WaitForAssertion(() => Assert.Equal(["45m"], Column(cut, 5)));
+        Assert.Equal("1 pozycja · Wpisy: 1, suma Czasu: 45m", Summary(cut));
     }
 
     [Fact(Timeout = TestTimeoutMs)]
@@ -232,7 +374,7 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
 
         var projects = ProjectList(cut).Instance;
         Assert.Equal(["ABC", "RDZ"], projects.Items!.Select(p => p.Code));
-        Assert.Equal("RDZ — Rozwój", EntryForm.ProjectText(projects.Items!.Last()));
+        Assert.Equal("RDZ - Rozwój", EntryForm.ProjectText(projects.Items!.Last()));
         Assert.Equal(["Development"], WorkTypeList(cut).Instance.Items!.Select(w => w.Name));
         Assert.DoesNotContain("NIE", cut.Markup);
         Assert.DoesNotContain("Archiwalny", cut.Markup);
@@ -253,6 +395,7 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         await EnterAsync(cut, Czas(cut), "1:30");
 
         WaitForMessage(cut, "error", "Wybrany Projekt lub Typ pracy już nie istnieje.");
+        Assert.Contains("już nie istnieje", cut.Find(".eod-page .eod-messages").TextContent);
         Assert.Empty(await EntriesAsync());
         cut.WaitForAssertion(() => Assert.Equal(["ABC"], ProjectList(cut).Instance.Items!.Select(p => p.Code)));
         Assert.Equal(projects["RDZ"], ProjectList(cut).Instance.Value);
@@ -337,6 +480,37 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
     private static IRenderedComponent<FluentCombobox<WorkTypeOption, WorkTypeOption?>> WorkTypeList(IRenderedComponent<MainLayout> cut) =>
         cut.FindComponent<FluentCombobox<WorkTypeOption, WorkTypeOption?>>();
 
+    /// <summary>Every focus in order: Data by its selector (EodUI.focusElement), the other fields by their element id.</summary>
+    private List<string?> FocusedFields(IRenderedComponent<MainLayout> cut) =>
+        JSInterop.Invocations
+            .Where(i => i.Identifier is "Blazor._internal.domWrapper.focus" or "EodUI.focusElement")
+            .Select(i => i.Arguments[0] switch { ElementReference e => e.Id, string selector => selector, _ => null })
+            .ToList();
+
+    private static IReadOnlyList<IElement> Rows(IRenderedComponent<MainLayout> cut) => cut.FindAll("tbody tr[hover]");
+
+    private static List<string> Column(IRenderedComponent<MainLayout> cut, int index) =>
+        Rows(cut).Select(tr => tr.QuerySelectorAll("td")[index].TextContent.Trim()).ToList();
+
+    private static List<string> Descriptions(IRenderedComponent<MainLayout> cut) => Column(cut, 4);
+
+    private static IElement RowAction(IRenderedComponent<MainLayout> cut, string description, string label) =>
+        Rows(cut).Single(tr => tr.QuerySelectorAll("td")[4].TextContent.Trim() == description)
+            .QuerySelector($"fluent-button[aria-label='{label}']")!;
+
+    /// <summary>The report footer: the counter of visible rows, then the screen's text of count and sum (AD-5).</summary>
+    private static string Summary(IRenderedComponent<MainLayout> cut) => cut.Find(".eod-card-foot .eod-num").TextContent.Trim();
+
+    private async Task AddEntryAsync(ProjectOption project, WorkTypeOption workType, DateOnly date, string description, int minutes)
+    {
+        await using var db = await _postgres.CreateUserContextAsync(_user);
+        db.TimeEntries.Add(new TimeEntry
+        {
+            Date = date, ProjectId = project.Id, WorkTypeId = workType.Id, Description = description, Minutes = minutes,
+        });
+        await db.SaveChangesAsync(Ct);
+    }
+
     private static IRenderedComponent<FluentTextInput> Description(IRenderedComponent<MainLayout> cut) => TextInput(cut, "entry-description");
 
     private static IRenderedComponent<FluentTextInput> Czas(IRenderedComponent<MainLayout> cut) => TextInput(cut, "entry-czas");
@@ -377,4 +551,12 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
             .Select(w => new WorkTypeOption(w.Id, w.Name, w.IsActive)).ToListAsync(cancellationToken);
         return (projects.ToDictionary(p => p.Code), workTypes.ToDictionary(w => w.Name));
     }
+}
+
+/// <summary>A clock the test moves (e.g. over midnight at the end of a Month), for "today" in Poland.</summary>
+internal sealed class SettableTimeProvider(DateTimeOffset utcNow) : TimeProvider
+{
+    public DateTimeOffset UtcNow { get; set; } = utcNow;
+
+    public override DateTimeOffset GetUtcNow() => UtcNow;
 }

@@ -1,6 +1,9 @@
 @page "/"
 @using RejestrCzasu.Features.Pomoc
 
-<PageHeader Title="@PageHeader.AppName" Subtitle="Rejestrowanie czasu pracy i miesięczne Zestawienie." Topic="@HelpTopics.Start" />
-
-<FluentLabel>Wybierz ekran z menu. Kolejne Wpisy dodasz przyciskiem Nowy wpis.</FluentLabel>
+<EodPage Title="Rejestr czasu pracy" BrowserTitle="Rejestr czasu" Description="Rejestrowanie czasu pracy i miesięczne Zestawienie.">
+    <PageHelp Topic="@HelpTopics.Start" />
+    <EodCard>
+        <p>Wybierz ekran z menu. Kolejne Wpisy dodasz przyciskiem Nowy wpis.</p>
+    </EodCard>
+</EodPage>

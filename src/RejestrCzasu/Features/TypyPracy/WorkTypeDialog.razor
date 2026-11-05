@@ -1,0 +1,84 @@
+@using System.Net
+@using Blazilla
+@inject WorkTypeStore Store
+@* The Work type window (R1, UI_SPEC 9.13 A): one modal window for adding (Model.Id null) and editing a Work type. The
+   window saves through WorkTypeStore itself; a duplicate name keeps it open with the typed value and the error in its
+   own content (the page's message bars lie under the modal, AD-10). Done and NotFound close it with the change as the
+   result, so the screen reloads the list and shows the bar. Anuluj and Escape close it without saving. *@
+<FluentDialogBody>
+    <ChildContent>
+        @if (_error is not null)
+        {
+            <FluentMessageBar Intent="MessageBarIntent.Error" AllowDismiss="false" role="alert" class="work-type-dialog-error">@_error</FluentMessageBar>
+        }
+        @* novalidate: the browser's own check of Required would block submit before WorkTypeFormValidator shows its messages. *@
+        <EditForm Model="Model" OnValidSubmit="SaveAsync" OnInvalidSubmit="ClearError" class="work-type-form dictionary-dialog-form" novalidate>
+            <FluentValidator Validator="_validator" />
+            <FluentTextInput @bind-Value="Model.Name" Label="Nazwa" Required="true" Autofocus="true" class="work-type-name" />
+            <div class="dictionary-dialog-buttons">
+                <FluentButton Type="ButtonType.Submit" Appearance="ButtonAppearance.Primary" class="work-type-save">Zapisz</FluentButton>
+                <FluentButton OnClick="CancelAsync" class="work-type-cancel">Anuluj</FluentButton>
+            </div>
+        </EditForm>
+    </ChildContent>
+</FluentDialogBody>
+
+@code {
+    private readonly WorkTypeFormValidator _validator = new();
+    private string? _error;
+    private bool _busy;
+
+    /// <summary>The window instance cascaded by the library's dialog provider.</summary>
+    [CascadingParameter] public required IDialogInstance Dialog { get; set; }
+
+    /// <summary>The value shown when the window opens; <see cref="WorkTypeForm.Id"/> <c>null</c> adds a Work type.</summary>
+    [Parameter, EditorRequired] public WorkTypeForm Model { get; set; } = default!;
+
+    /// <summary>
+    /// Opens the window: „Dodaj Typ pracy” for a new Work type, „Edytuj Typ pracy {nazwa}” for <paramref name="form"/>
+    /// with an Id. Not cancelled: the result value is the <see cref="WorkTypeChange"/> (<c>Done</c> or <c>NotFound</c>).
+    /// </summary>
+    public static Task<DialogResult> ShowAsync(IDialogService dialogs, WorkTypeForm form, string? editedName = null) =>
+        dialogs.ShowDialogAsync<WorkTypeDialog>(dialog =>
+        {
+            dialog.Modal = true;
+            // The library renders the title as (sanitized) HTML; the title is plain text with the User's name.
+            dialog.Header.Title = WebUtility.HtmlEncode(form.Id is null ? "Dodaj Typ pracy" : $"Edytuj Typ pracy {editedName}");
+            // The library footer stays hidden and without shortcuts: Zapisz and Anuluj are in the window's form.
+            // Escape closes the native dialog, which the library reports as Cancel.
+            DialogFooter.HideLibraryFooter(dialog);
+            dialog.Parameters.Add(nameof(Model), form);
+        });
+
+    private async Task SaveAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+        _busy = true;
+        try
+        {
+            _error = null;
+            var change = Model.Id is { } id
+                ? await Store.UpdateAsync(id, Model.Name)
+                : await Store.AddAsync(Model.Name);
+            if (change is WorkTypeChange.DuplicateName duplicate)
+            {
+                // The window stays open with the value the User typed.
+                _error = WorkTypesPage.DuplicateMessage(duplicate.Name);
+                return;
+            }
+            await Dialog.CloseAsync(change);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // A submit that fails validation shows the field messages only; an earlier duplicate error no longer applies.
+    private void ClearError() => _error = null;
+
+    private Task CancelAsync() => Dialog.CancelAsync();
+}

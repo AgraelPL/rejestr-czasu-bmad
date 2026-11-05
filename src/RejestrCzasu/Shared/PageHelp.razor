@@ -1,0 +1,12 @@
+@using Microsoft.AspNetCore.Components.Sections
+@* The help topic of a screen (AD-22): placed in the content of the screen's EodPage, it puts the "?" with the topic
+   into the SectionOutlet of the EodShell top bar (MainLayout.HelpSection), without a state service. Without a topic
+   the "?" opens the help index (the default rendered by MainLayout). *@
+<SectionContent SectionName="@MainLayout.HelpSection">
+    <HelpButton Topic="@Topic" />
+</SectionContent>
+
+@code {
+    /// <summary>Help topic key (AD-22), e.g. <c>projekty</c>; without it the "?" opens the help index.</summary>
+    [Parameter] public string? Topic { get; set; }
+}

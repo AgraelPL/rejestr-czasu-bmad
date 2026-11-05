@@ -37,3 +37,41 @@
   - AD-11 zaktualizowane: `Confirm` na `ShowDialogAsync` z `ConfirmDialog`; komunikaty `Notify` znikają po 5 s, w pływającym panelu w prawym górnym rogu.
   - Pakiet ikon: `Microsoft.FluentUI.AspNetCore.Components.Icons` ma własną numerację i deklaruje zależność minimalną od rdzenia 4.14.x (także najnowsza 5.0.1), więc z Components 5.0.1 jest zgodny; podniesiony do 5.0.1, ikony renderują się w testach i w przeglądarce.
 
+
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-dopasowanie-komunikatow-szkieletu-i-eodhead-w-kopii-wzorca-plan.md`
+  summary: W kopii wzorca `wwwroot/ui/eod.css` zostały reguły pominiętych komponentów (`.eod-placeholder*`, `.eod-edit-*`, `.eod-row-added/modified`, `.eod-due`, `.eod-list`, `.eod-roles`, `.eod-kind`) bez użytkowników w `Ui/`.
+  evidence: Przegląd 7.2 sprawdził każdą klasę `.eod-*` z eod.css wobec `src/RejestrCzasu/Ui`; kandydat do Refactor sweep 7.7.
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-dopasowanie-komunikatow-szkieletu-i-eodhead-w-kopii-wzorca-plan.md`
+  summary: `EodUI.showSelectedText` (i `eod-scale.js`) mają tylko testy tekstu źródła, bez testu zachowania w przeglądarce.
+  evidence: Repo nie ma środowiska testów JS; zachowanie (tekst po pojawieniu się pola, koniec po 30 klatkach) sprawdzono ręcznie w node w 7.2.
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-szkielet-aplikacji-na-eodshell-z-kopii-wzorca-plan.md`
+  summary: Pasek sukcesu i ostrzeżenia po zamknięciu okna Wpisu wysyła sam `EntryDialog` po `Dialog.CloseAsync()`, a AD-10 każe robić to `EntryDialogs` po zamknięciu okna.
+  evidence: Przegląd 7.3; tak było już z `Notify`, działa dzięki usłudze scoped; do uporządkowania w 7.5 (okno Wpisu na wzorcu).
+
+## Rozstrzygnięte (7.7, Refactor sweep, 03.11.2026)
+
+- „W kopii wzorca `wwwroot/ui/eod.css` zostały reguły pominiętych komponentów…” — rozstrzygnięte w 7.7: reguły `.eod-placeholder*`, `.eod-edit-*`, `.eod-row-added/modified`, `.eod-due`, `.eod-list`, `.eod-roles`, `.eod-kind`, `.eod-cell-line`, `.eod-cell-center`, `.eod-order-no` usunięte, linia w poz. 10 `docs/ui/DOPASOWANIA.md` (decyzja Autora 03.11.2026).
+- „Pasek sukcesu i ostrzeżenia po zamknięciu okna Wpisu wysyła sam `EntryDialog`…” — rozstrzygnięte w 7.5: `EntryDialogs.ShowAsync` pokazuje pasek z wyniku `EntryChange` po zamknięciu okna.
+
+## Przeniesione (7.7, Refactor sweep, 03.11.2026)
+
+- „`EodUI.showSelectedText` (i `eod-scale.js`) mają tylko testy tekstu źródła…” — nowa historia techniczna „testy E2E w przeglądarce (Playwright)”, propozycja po epiku 3, gdy powstanie Widok miesiąca; wymaga nowego narzędzia.
+
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-refactor-sweep-plan.md`
+  summary: Reguła przejściowa `.eod-content:not(:has(> .eod-page))` w `app.css` zostaje, bo daje odstęp strony `/Error` i „Sprawdzanie uprawnień...” w `EodShell` bez `EodPage`.
+  evidence: Przeniesione: drobna historia w epiku 3 — przeniesienie `/Error` i „Sprawdzanie uprawnień...” na `EodPage` (zmienia wygląd), potem usunięcie reguły.
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-refactor-sweep-plan.md`
+  summary: Pasek komunikatu pojawia się przed ponownym wczytaniem Listy wpisów (przegląd 7.5 #3, odrzucone w 7.5).
+  evidence: Przeniesione do rozważenia w historii Widoku miesiąca (epik 3), bo poprawka przebudowuje `EntryDialogs` i zmienia zachowanie.
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-refactor-sweep-plan.md`
+  summary: Po usunięciu `FluentLocalizer` (7.7) żaden test nie pilnuje, że każdy klucz Fluent UI ma polski tekst; `PolishLocalizer` nie ma m.in. `FluentInputBase_RequiredMessage`, `PresenceStatus_*`.
+  evidence: Przeniesione: nowa historia w epiku 3 — uzupełnienie kluczy `PolishLocalizer` z testem pokrycia zasobu `LanguageResource.resources` (decyzja Autora 03.11.2026).
+- source_plan: `tickets/epic-wzorzec-ui/tickets/story-refactor-sweep-plan.md`
+  summary: Kontrola ręczna z 7.5 (Sesja 10 Wpisów ≤ 10 s, konsola bez naruszeń CSP) niewykonana.
+  evidence: Nie kod — kontrola ręczna Autora przed PR epiku 7 (`dotnet run`: okna Projektu i Wpisu bez stopki biblioteki, Enter nie potwierdza usunięcia, Sesja 10 Wpisów ≤ 10 s, konsola bez naruszeń CSP).
+- source_plan: `plan-7-8-dopracowanie-wpisow-po-tescie.md`
+  summary: Eksport „Eksportuj” i paginacja po 30 wierszy na listach Wpisów wydzielone z planu 7.8 do planu `plan-7-9-eksport-i-paginacja-wpisow.md`.
+  evidence: Decyzja Autora 2026-11-04 (podział): zmiany w kopii `EodReport` (AD-23 poz. 11–13) i odejście od R17 to inne ryzyko niż poprawki układu z 7.8; 7.9 zależy od `EntriesReport` z 7.8.
+- source_plan: `plan-7-9-eksport-i-paginacja-wpisow.md`
+  summary: Ekran „Eksport” z pozycją w menu (epic-miesiac-i-zestawienie, R12/FR-12, NFR-6) odpada, a R17 „brak eksportu CSV” wymaga przepisania (initiative R17 i decyzja 02.11.2026, PRD FR-16 i „Poza zakresem”, epic-wzorzec-ui R1 i Done when).
+  evidence: Decyzja Autora 2026-11-04: eksport tylko przyciskiem „Eksportuj” na Liście wpisów i liście Nowego wpisu, Zestawienie xlsx zostaje w Widoku miesiąca; tickety i PRD do aktualizacji przez PO.

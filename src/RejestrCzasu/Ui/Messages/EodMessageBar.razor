@@ -1,0 +1,47 @@
+@namespace RejestrCzasu.Ui
+@*
+    EodMessageBar – pasek komunikatu wyświetlany przez UiMessages (INotificationService.ShowMessageBarAsync<EodMessageBar>),
+    specyfikacja UI, sekcja 11.
+    Budowa wg wzorca: pogrubiony tytuł – co się stało; zdanie – co z tego wynika; najwyżej jedna akcja.
+    Ekrany nie renderują go same – pasek pokazuje usługa, np.:
+        await Messages.ShowErrorAsync("Formularz zawiera 1 pole do poprawy.", null,
+            new MessageBarAction("Przejdź do pola", () => GoToFieldAsync()));
+*@
+
+<FluentMessageBar Intent="@MessageBar.Options.Intent"
+                  Title="@MessageBar.Options.Title"
+                  AriaLive="@MessageBar.Options.AriaLive"
+                  AllowDismiss="true"
+                  ChildContent="@MessageContent"
+                  ActionsTemplate="@ActionsContent"
+                  role="@(MessageBar.Options.Intent == MessageBarIntent.Error ? "alert" : "status")" />
+
+@code {
+    /// <summary>Instancja paska przekazywana przez FluentMessageBarProvider – źródło rodzaju, tytułu i treści komunikatu.</summary>
+    [CascadingParameter]
+    public required IMessageBarInstance MessageBar { get; set; }
+
+    /// <summary>Opcjonalna akcja paska. Po jej wykonaniu pasek się zamyka.</summary>
+    /// <remarks>Ustawia ją <see cref="UiMessages"/> (parametr <c>action</c> metod paska); <c>null</c> – pasek bez przycisku.</remarks>
+    [Parameter]
+    public MessageBarAction? BarAction { get; set; }
+
+    private RenderFragment? MessageContent => string.IsNullOrEmpty(MessageBar.Options.Message)
+        ? null
+        : @<text>@MessageBar.Options.Message</text>;
+
+    private RenderFragment? ActionsContent => BarAction is null
+        ? null
+        : @<FluentButton Size="ButtonSize.Small" OnClick="@ExecuteAsync">@BarAction.Label</FluentButton>;
+
+    private async Task ExecuteAsync()
+    {
+        if (BarAction is null)
+        {
+            return;
+        }
+
+        await BarAction.Execute();
+        await MessageBar.CloseAsync();
+    }
+}

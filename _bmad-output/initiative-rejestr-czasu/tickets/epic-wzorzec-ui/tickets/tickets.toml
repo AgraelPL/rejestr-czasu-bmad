@@ -1,0 +1,85 @@
+# Historie epiku Przejęcie wzorca UI eod-ui, w kolejności budowy.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Kopia wzorca eod-ui w Rejestrze z dopasowaniem EodReport"
+description = "Skopiowanie z eod-ui @ 8e66aea (klon do czytania C:\\Users\\kamil\\Documents\\eod-ui; eod-ui nie jest zmieniane) potrzebnych komponentów Eod.Platform.UI do src/RejestrCzasu/Ui/ (przestrzeń RejestrCzasu.Ui, nazwy i API jak we wzorcu) i zasobów (eod.css, eod.js, lokalne IMask i SortableJS) do wwwroot/ui/, bez części EOD i Syncfusion; migawka docs/UI_SPEC.md do docs/ui/UI_SPEC.md i docs/ui/DOPASOWANIA.md. Dopasowania EodReport z AD-23 poz. 1–5: ShowExport, ReportColumn.Format (sortowanie po surowej wartości), PreserveRowOrder, GroupSummary i FooterSummary zamiast Definition.Total, LockedLayout; każde jedną linią w DOPASOWANIA.md. Kopia kompiluje się z aplikacją; ekrany jeszcze z niej nie korzystają."
+verify = "dotnet build bez ostrzeżeń; testy bUnit kopii EodReport: ukryty eksport, kolumna z Format sortowana liczbowo, zachowana kolejność wejścia, sumy grup i stopki od ekranu, zablokowany układ; DOPASOWANIA.md wymienia każdą zmianę względem wzorca; repozytorium eod-ui bez zmian."
+covers = ["R17"]
+after = []
+hitl = false
+risk = "medium" # kopia silnika raportu i jego dopasowania
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-23", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-1", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-9"]
+
+[[entry]]
+id = 2
+type = "story"
+title = "Dopasowanie komunikatów, szkieletu i EodHead w kopii wzorca"
+description = "W kopii w Ui/ dopasowania z AD-23 poz. 6–10: UiMessages.ConfirmAsync bez skrótu przycisku głównego i z fokusem na drugim przycisku; nazwa aplikacji „Rejestr czasu” w EodShell i tytule karty; skrypt skali EodHead z pliku zamiast inline (CSP script-src 'self'); obejście błędu Fluent UI 5.0.1 w eod.js — combobox z wartością ustawioną przy pierwszym renderze pokazuje jej tekst (przeniesione z EntryForm.razor.js); usunięcie nieużywanych komponentów. Każde dopasowanie jedną linią w docs/ui/DOPASOWANIA.md."
+verify = "dotnet build bez ostrzeżeń; testy bUnit: potwierdzenie nie reaguje na Enter, fokus na Anuluj; nazwa aplikacji w belce i tytule; EodHead bez inline skryptu; DOPASOWANIA.md kompletne."
+covers = ["R16", "R26"]
+after = [1]
+hitl = false
+risk = "medium"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-23", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-12"]
+
+[[entry]]
+id = 3
+type = "story"
+title = "Szkielet aplikacji na EodShell z kopii wzorca"
+description = "Tracer bullet. AddEodPlatformUI i UseEodPolishCulture z kopii zamiast AddFluentUIComponents i własnego lokalizatora, EodHead raz w App.razor. Shared/MainLayout renderuje EodShell: nazwa „Rejestr czasu”, przycisk Primary Nowy wpis, menu z NFR-6 (Administracja tylko dla Administratora), w belce ? (Shared/PageHelp przez SectionContent), Ustawienia konta, Wyloguj; granica błędów obejmuje FluentProviders (AD-17). UiMessages zastępuje Notify i Confirm we wszystkich ekranach (potwierdzenia bez skrótu Enter). Pomoc, spis pomocy i „nie znaleziono” na EodPage; komunikat zerwanego połączenia z klasami wzorca. EntryForm.razor.js usunięty (obejście w eod.js kopii). Dockerfile i CI bez zmian poza nowymi plikami w src/."
+verify = "Lokalnie: dotnet run pokazuje szkielet EodShell z menu, ? otwiera temat ekranu, „nie znaleziono” na EodPage; usunięcie Projektu pyta w oknie, Enter nie potwierdza; CSP bez błędów w konsoli; edycja i kopia Wpisu pokazują Projekt i Typ pracy; workflow PR zielony; wszystkie testy (dopasowane do UiMessages) zielone."
+covers = ["R17", "R19", "R26", "R31"]
+after = [1, 2]
+hitl = false
+risk = "high" # wymiana szkieletu i komunikatów pod wszystkimi ekranami
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-1", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-22", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-6"]
+
+[[entry]]
+id = 4
+type = "story"
+title = "Projekty i Typy pracy na wzorcu"
+description = "Ekrany /projekty i /typy-pracy na EodPage z EodCard i EodReport (ShowExport false, kolumny List z filtrem wartości, licznik, PreserveRowOrder, definicje static readonly, wiersze przez ToRow z kluczem Id): akcje wiersza Edytuj, Dezaktywuj, Przywróć, Usuń przez RowActions; dodawanie i edycja w oknie jak UI_SPEC 9.13 (Dodaj w nagłówku strony); usunięcie z potwierdzeniem UiMessages, komunikat R3 z liczbą Wpisów; zachowanie R1–R3 bez zmian, każda zmiana zapisuje się od razu (bez EodEditableTable). Strony pomocy projekty i typy-pracy zgodne z nowym wyglądem."
+verify = "Lokalnie: dodanie, edycja, dezaktywacja, przywrócenie i usunięcie Projektu i Typu pracy działają jak przed zmianą, filtr wartości i licznik w kolumnach, brak przycisku eksportu; testy Testcontainers bez zmian zielone, bUnit przepisane na EodReport i okno."
+covers = ["R1", "R2", "R3", "R17", "R26"]
+after = [3]
+hitl = false
+risk = "medium"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-9", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-23"]
+
+[[entry]]
+id = 5
+type = "story"
+title = "Nowy wpis, Lista wpisów i okno Wpisu na wzorcu"
+description = "/wpisy/nowy na EodPage (EntryForm bez zmian zachowania, Sesja wpisywania samą klawiaturą); /wpisy na EodPage: filtry ekranu (zakres dat, Projekt, Typ pracy) nad EodReport, kolumna Czas z int minut i ReportColumn.Format = Czas.Format, PreserveRowOrder (od najnowszej daty), FooterSummary z liczbą i sumą Czasu dla filtrów ekranu (filtr kolumny jej nie zmienia), ShowExport false; akcje wiersza tylko przez EntryDialogs po Id (EntryDialog na wzorcu, błędy zapisu w treści okna, pasek sukcesu na stronie po zamknięciu). Strony pomocy wpisy-nowy i wpisy zgodne z nowym wyglądem."
+verify = "Lokalnie: Sesja wpisywania 10 Wpisów samą klawiaturą, każdy w nie więcej niż 10 s; edycja i kopia pokazują Projekt i Typ pracy w polach; Lista wpisów od najnowszych z sumą dla filtrów ekranu; usunięcie z potwierdzeniem bez Enter; testy Testcontainers zielone, bUnit przepisane."
+covers = ["R4", "R5", "R6", "R7", "R8", "R16", "R17", "R26"]
+after = [3, "2.4"]
+hitl = false
+risk = "high" # R16 10 s w nowym szkielecie; suma od ekranu w EodReport
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-10", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-9", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-5", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-23"]
+
+[[entry]]
+id = 6
+type = "story"
+title = "Strony /konto na wzorcu"
+description = "Statyczne strony /konto/logowanie, /konto/rejestracja, /konto/zmiana-hasla, /konto/brak-dostepu w Accounts/AccountLayout z klasami eod-* (bez EodShell, menu i UiMessages; błędy formularza w treści strony), z linkiem Pomoc do tematu strony; anonimowe tematy pomocy w AccountLayout. Zachowanie logowania, rejestracji, blokady i zmiany hasła bez zmian (AD-15); CSP script-src 'self' bez wyjątków."
+verify = "Lokalnie: rejestracja, logowanie (także komunikaty o stanie Konta i blokada po 5 próbach), wylogowanie i zmiana hasła działają jak przed zmianą, w wyglądzie wzorca; brak błędów CSP w konsoli; testy Konta zielone."
+covers = ["R18", "R19", "R25", "R26"]
+after = [3]
+hitl = false
+risk = "low"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-15", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-12"]
+
+[[entry]]
+id = 7
+type = "story"
+title = "Refactor sweep"
+description = "Porządki odłożone w planach i przeglądach historii 1–6; usunięcie wycofanych elementów, które zostały: Shared/ReportGrid, Notify, Confirm, ConfirmDialog, PageHeader, własny FluentLocalizer i ich testy; zakres ustalany na starcie tej historii, wyłącznie sprzątanie."
+verify = "dotnet build bez ostrzeżeń i dotnet test przechodzą; w src/ nie ma odwołań do wycofanych komponentów; lista odłożonych uwag z planów historii 1–6 jest zamknięta albo przeniesiona do nowych historii."
+covers = []
+after = [1, 2, 3, 4, 5, 6]
+hitl = false
+risk = "low"
+references = []

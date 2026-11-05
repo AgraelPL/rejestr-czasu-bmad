@@ -3,66 +3,53 @@
 @using RejestrCzasu.Features.Pomoc
 @using RejestrCzasu.Features.Projekty
 @using RejestrCzasu.Features.TypyPracy
-@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
 @inject EntryStore Store
-@inject EntryDialogs Dialogs
 @inject ProjectStore Projects
 @inject WorkTypeStore WorkTypes
 @inject TimeProvider TimeProvider
-@* Lista wpisów (R8, R17, R2): the User's Entries with the screen filters (date range, Projekt, Typ pracy) above the
-   grid. The count and the sum of Czas come from the query result, i.e. from the screen filters only; the grid's value
-   filter never changes them (AD-9). Data only through the stores (AD-4, AD-16). The row icons edit, copy and delete
-   the Entry through EntryDialogs (R6, R7); after a change the list is read again from the database. *@
+@* Lista wpisów (R8, R17, R2): the User's Entries on EodPage with EntriesReport (AD-9, AD-11). The screen filters
+   (date range, Projekt, Typ pracy) sit in the filter bar above the report; the sum of Czas in the footer comes from the
+   list EntryStore returns for them (AD-5), so the report's column filters only hide rows and never change it. Data only
+   through the stores (AD-4, AD-16). The row icons of EntriesReport go through EntryDialogs (R6, R7, AD-10); after a
+   change the list is read again from the database. A change of a screen filter starts the report again on page 1
+   (@key: a new report keeps the User's layout from ReportLayoutStore); a reload after a row action keeps the page. *@
 
-<PageHeader Title="Lista wpisów" Subtitle="Twoje Wpisy z zakresu dat, Projektu i Typu pracy, od najnowszych."
-            Topic="@HelpTopics.Wpisy" />
-
-<div class="entries-filters">
-    <FluentDatePicker TValue="DateOnly?" Value="_from" ValueChanged="OnFromChangedAsync" ValueExpression="() => _from"
-                      RenderStyle="DatePickerRenderStyle.Native" Label="Od" class="entries-from" />
-    <FluentDatePicker TValue="DateOnly?" Value="_to" ValueChanged="OnToChangedAsync" ValueExpression="() => _to"
-                      RenderStyle="DatePickerRenderStyle.Native" Label="Do" class="entries-to" />
-    <FluentSelect TOption="FilterOption" TValue="FilterOption" Items="_projectOptions" Value="_project"
-                  ValueChanged="OnProjectChangedAsync" ValueExpression="() => _project" OptionText="OptionText"
-                  Label="Projekt" class="entries-project" />
-    <FluentSelect TOption="FilterOption" TValue="FilterOption" Items="_workTypeOptions" Value="_workType"
-                  ValueChanged="OnWorkTypeChangedAsync" ValueExpression="() => _workType" OptionText="OptionText"
-                  Label="Typ pracy" class="entries-work-type" />
-</div>
-@if (_rangeError)
-{
-    <p class="entries-filter-error" role="alert">@RangeErrorMessage</p>
-}
-
-@if (_rows is not null)
-{
-    <ReportGrid T="EntryRow" Items="_rows" Columns="Columns" Actions="_actions" />
-    <p class="entries-summary">@Summary(_rows)</p>
-}
+<EodPage Title="Lista wpisów" Description="Twoje Wpisy z zakresu dat, Projektu i Typu pracy, od najnowszych." Fill="true">
+    <PageHelp Topic="@HelpTopics.Wpisy" />
+    <EodCard NoPadding="true" Fill="true">
+        <div class="eod-formbar eod-filterbar">
+            <FluentDatePicker TValue="DateOnly?" Value="_from" ValueChanged="OnFromChangedAsync" ValueExpression="() => _from"
+                              RenderStyle="DatePickerRenderStyle.Native" Label="Od" class="entries-from" />
+            <FluentDatePicker TValue="DateOnly?" Value="_to" ValueChanged="OnToChangedAsync" ValueExpression="() => _to"
+                              RenderStyle="DatePickerRenderStyle.Native" Label="Do" class="entries-to" />
+            <FluentSelect TOption="FilterOption" TValue="FilterOption" Items="_projectOptions" Value="_project"
+                          ValueChanged="OnProjectChangedAsync" ValueExpression="() => _project" OptionText="OptionText"
+                          Label="Projekt" class="entries-project" />
+            <FluentSelect TOption="FilterOption" TValue="FilterOption" Items="_workTypeOptions" Value="_workType"
+                          ValueChanged="OnWorkTypeChangedAsync" ValueExpression="() => _workType" OptionText="OptionText"
+                          Label="Typ pracy" class="entries-work-type" />
+            @if (_rangeError)
+            {
+                <span class="entries-filter-error" role="alert">@RangeErrorMessage</span>
+            }
+        </div>
+        <EntriesReport @key="ScreenFilter" Entries="_entries" LayoutKey="@HelpTopics.Wpisy" OnChanged="ReloadAsync" />
+    </EodCard>
+</EodPage>
 
 @code {
     internal const string RangeErrorMessage = "Data „Od” jest późniejsza niż „Do”.";
 
     private static readonly FilterOption All = new(null, "Wszystkie");
 
-    private static readonly IReadOnlyList<ReportColumn<EntryRow>> Columns =
-    [
-        new("Data", e => e.DateText),
-        new("Dzień", e => e.DayName),
-        new("Projekt", e => e.ProjectCode),
-        new("Typ pracy", e => e.WorkTypeName),
-        new("Opis", e => e.Description),
-        new("Czas", e => e.CzasText),
-    ];
-
-    private IReadOnlyList<ReportAction<EntryRow>> _actions = [];
     private DateOnly? _from;
     private DateOnly? _to;
     private FilterOption _project = All;
     private FilterOption _workType = All;
     private IReadOnlyList<FilterOption> _projectOptions = [All];
     private IReadOnlyList<FilterOption> _workTypeOptions = [All];
-    private IReadOnlyList<EntryRow>? _rows;
+    // The list of the screen filters (source of the footer sum, AD-5); null until the first load.
+    private IReadOnlyList<EntryRow>? _entries;
     private bool _rangeError;
     // Every reload takes the next version; an older query finishing later never overwrites a newer result.
     private int _version;
@@ -70,9 +57,8 @@
     /// <summary>An option of the Projekt or Typ pracy filter; <c>Id</c> <c>null</c> is „Wszystkie”.</summary>
     public sealed record FilterOption(int? Id, string Text);
 
-    /// <summary>The summary under the list: count and sum of Czas of the query result.</summary>
-    internal static string Summary(IReadOnlyList<EntryRow> rows) =>
-        $"Wpisy: {rows.Count}, suma Czasu: {Czas.Format(rows.Sum(r => r.Minutes))}";
+    // The screen filters as one value: its change gives the report a new key, so it starts on page 1 (plan 7.9).
+    private (DateOnly? From, DateOnly? To, int? Project, int? WorkType) ScreenFilter => (_from, _to, _project.Id, _workType.Id);
 
     private static string OptionText(FilterOption? option) => option?.Text ?? "";
 
@@ -80,29 +66,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _actions =
-        [
-            new(new Icons.Regular.Size20.Edit(), "Edytuj", e => ReloadAfterAsync(Dialogs.EditAsync(e.Id))),
-            new(new Icons.Regular.Size20.Copy(), "Kopiuj", e => ReloadAfterAsync(Dialogs.CopyAsync(e.Id))),
-            new(new Icons.Regular.Size20.Delete(), "Usuń", e => ReloadAfterAsync(Dialogs.DeleteAsync(e.Id))),
-        ];
         var month = YearMonth.From(PolishCalendar.Today(TimeProvider));
         _from = month.FirstDay;
         _to = month.LastDay;
 
         var projects = await Projects.ListAsync();
         var workTypes = await WorkTypes.ListAsync();
-        _projectOptions = [All, .. projects.Select(p => new FilterOption(p.Id, $"{p.Code} — {p.Name}{Inactive(p.IsActive)}"))];
+        _projectOptions = [All, .. projects.Select(p => new FilterOption(p.Id, $"{p.Code} - {p.Name}{Inactive(p.IsActive)}"))];
         _workTypeOptions = [All, .. workTypes.Select(w => new FilterOption(w.Id, $"{w.Name}{Inactive(w.IsActive)}"))];
         await ReloadAsync();
-    }
-
-    private async Task ReloadAfterAsync(Task<bool> action)
-    {
-        if (await action)
-        {
-            await ReloadAsync();
-        }
     }
 
     private async Task ReloadAsync()
@@ -111,7 +83,7 @@
         if (_from is { } from && _to is { } to && from > to)
         {
             _rangeError = true;
-            _rows = [];
+            Show([]);
             return;
         }
 
@@ -119,31 +91,41 @@
         var rows = await Store.ListAsync(new EntryFilter(_from, _to, _project.Id, _workType.Id));
         if (version == _version)
         {
-            _rows = rows;
+            Show(rows);
         }
     }
+
+    private void Show(IReadOnlyList<EntryRow> entries) => _entries = entries;
 
     private Task OnFromChangedAsync(DateOnly? value)
     {
         _from = value;
-        return ReloadAsync();
+        return ReloadForScreenFilterAsync();
     }
 
     private Task OnToChangedAsync(DateOnly? value)
     {
         _to = value;
-        return ReloadAsync();
+        return ReloadForScreenFilterAsync();
     }
 
     private Task OnProjectChangedAsync(FilterOption? value)
     {
         _project = value ?? All;
-        return ReloadAsync();
+        return ReloadForScreenFilterAsync();
     }
 
     private Task OnWorkTypeChangedAsync(FilterOption? value)
     {
         _workType = value ?? All;
+        return ReloadForScreenFilterAsync();
+    }
+
+    // A new screen filter: the report (new @key, page 1) shows the skeleton until the query returns, so its footer and
+    // Eksportuj never use the rows of the previous filter. A reload after a row action keeps the list and the page.
+    private Task ReloadForScreenFilterAsync()
+    {
+        _entries = null;
         return ReloadAsync();
     }
 }

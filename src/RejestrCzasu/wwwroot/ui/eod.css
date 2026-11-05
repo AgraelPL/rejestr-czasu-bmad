@@ -1,0 +1,314 @@
+/* ════════════════════════════════════════════════════════════════════════
+   Rejestr czasu – kopia wzorca UI eod-ui (Eod.Platform.UI/eod.css), dopasowania: docs/ui/DOPASOWANIA.md
+   Układ: FluentLayout (belka · menu boczne · treść). Strony = karty + siatki.
+   Kolory, typografia i odstępy wyłącznie z tokenów Fluent 2 – tokeny jasne/ciemne ustawia biblioteka (IThemeService).
+   Klasy fluent-*  = znaczniki/klasy biblioteki Fluent UI Blazor v5 (CSS biblioteki jest globalny).
+   Klasy eod-*     = wzorce aplikacji – renderują je komponenty Eod* z tej biblioteki.
+   Arkusz ładuje się po stylach biblioteki (EodHead), więc przy tej samej specyficzności wygrywa.
+   ════════════════════════════════════════════════════════════════════════ */
+:root {
+  --eod-nav-width: 264px;
+  --eod-header-height: 48px;
+  --eod-gutter: 24px;
+  --eod-zoom: 1;
+}
+/* ── Rozmiar interfejsu ──────────────────────────────────────────────────
+   Jedna skala dla tekstu, kontrolek i odstępów (CSS zoom na <body>).
+   Tryb automatyczny: okno węższe niż 1440 px (np. 1280×720, 1366×768) → 90%,
+   1440–2199 px (1536×864, 1920×1080) → 100%, od 2200 px (2560×1440) → 110%.
+   Wybór ręczny zapisuje atrybut data-scale na <html>. */
+@media (min-width: 901px) and (max-width: 1439px) { :root:not([data-scale]) { --eod-zoom: .9; } }
+@media (min-width: 2200px) { :root:not([data-scale]) { --eod-zoom: 1.1; } }
+:root[data-scale="90"] { --eod-zoom: .9; }
+:root[data-scale="100"] { --eod-zoom: 1; }
+:root[data-scale="110"] { --eod-zoom: 1.1; }
+:root[data-scale="125"] { --eod-zoom: 1.25; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  zoom: var(--eod-zoom);
+  margin: 0;
+  background: var(--colorNeutralBackground3);
+  color: var(--colorNeutralForeground1);
+  font-family: var(--fontFamilyBase);
+  font-size: var(--fontSizeBase300);
+  line-height: var(--lineHeightBase300);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, p, dl, dd, ol, ul { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+a { color: var(--colorBrandForegroundLink); }
+:focus-visible { outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2); outline-offset: 1px; }
+
+/* ── Ikony (Fluent System Icons, domyślnie Regular 20) ───────────────── */
+.ic { width: 20px; height: 20px; fill: currentColor; flex: none; display: inline-block; vertical-align: middle; }
+.ic-16 { width: 16px; height: 16px; }
+.ic-24 { width: 24px; height: 24px; }
+.ic-32 { width: 32px; height: 32px; }
+.ic-48 { width: 48px; height: 48px; }
+.c-brand { color: var(--colorBrandForeground1); }
+.c-success { color: var(--colorStatusSuccessForeground1); }
+.c-warning { color: var(--colorStatusWarningForeground1); }
+.c-danger { color: var(--colorStatusDangerForeground1); }
+.c-muted { color: var(--colorNeutralForeground3); }
+
+/* ── Typografia (rampa Fluent 2) ─────────────────────────────────────── */
+.eod-h1 { font-size: var(--fontSizeBase600); line-height: var(--lineHeightBase600); font-weight: var(--fontWeightSemibold); text-wrap: balance; }
+.eod-h2 { font-size: var(--fontSizeBase400); line-height: var(--lineHeightBase400); font-weight: var(--fontWeightSemibold); }
+.eod-h3 { font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); font-weight: var(--fontWeightSemibold); }
+.eod-caption { font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground3); }
+.eod-overline { font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground3); font-weight: var(--fontWeightSemibold); letter-spacing: .02em; }
+.eod-num { font-variant-numeric: tabular-nums; }
+.eod-code { font-family: var(--fontFamilyMonospace); font-size: var(--fontSizeBase200); line-height: var(--lineHeightBase200); color: var(--colorNeutralForeground2); background: var(--colorNeutralBackground3); border-radius: var(--borderRadiusMedium); padding: 2px 6px; overflow-wrap: anywhere; }
+
+/* ── FluentLayout: uzupełnienia (w Blazor część ustawia komponent) ───── */
+div:has(> .fluent-layout.eod-shell) { height: 100%; }
+.fluent-layout.eod-shell { height: 100%; }
+/* min-width: 0 – belka (obejmuje wszystkie kolumny siatki) nie może rozpychać układu na wąskim ekranie */
+.eod-shell > .fluent-layout-item[area="header"] { gap: 4px; padding: 0 12px; overflow: visible; min-width: 0; }
+.eod-shell > .fluent-layout-item[area="nav"] { display: flex; flex-direction: column; background: var(--colorNeutralBackground4); border-right: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-shell > .fluent-layout-item[area="content"] { min-width: 0; background: var(--colorNeutralBackground3); scroll-behavior: smooth; }
+.eod-nav { display: flex; flex-direction: column; min-height: 100%; }
+.eod-nav > .fluent-nav { flex: 1; }
+
+/* Belka górna */
+.eod-appname { font-size: var(--fontSizeBase400); font-weight: var(--fontWeightSemibold); letter-spacing: .06em; white-space: nowrap; color: inherit; text-decoration: none; padding: 4px 8px; border-radius: var(--borderRadiusMedium); }
+.eod-header-spacer { flex: 1; min-width: 4px; }
+.eod-onbrand, .eod-onbrand:hover, .eod-onbrand:active, .eod-onbrand[aria-expanded="true"] { color: var(--colorNeutralForegroundOnBrand); }
+.eod-onbrand:hover, .eod-onbrand[aria-expanded="true"] { background: var(--colorBrandBackgroundHover); }
+.eod-onbrand:active { background: var(--colorBrandBackgroundPressed); }
+.eod-userbtn > [slot="start"] { display: inline-flex; }
+.eod-userbtn fluent-avatar { margin-inline: -4px 2px; }
+
+/* Menu boczne */
+.eod-nav-top { padding: 12px 12px 8px; }
+.eod-nav-top fluent-menu { display: block; }
+.eod-nav-top fluent-menu-button { width: 100%; }
+.eod-nav-top fluent-menu-button::part(content) { flex: 0 1 auto; }
+.fluent-nav { background: transparent; flex: 1; padding-top: 4px; }
+.fluent-nav .fluent-navitem { align-items: center; gap: 10px; font: inherit; }
+.fluent-nav .fluent-navitem .ic { color: var(--colorNeutralForeground2); }
+.fluent-nav .fluent-navitem.active .ic { color: var(--colorCompoundBrandForeground1); }
+.fluent-nav .fluent-navitem.active { color: var(--colorNeutralForeground1); background: var(--colorNeutralBackground4Hover); }
+.fluent-nav .fluent-navitem.active::after { left: 16px; top: 10px; }
+.fluent-nav .fluent-navitem > fluent-counter-badge { margin-inline-start: auto; }
+.fluent-nav .fluent-navsectionheader { margin-block: 16px 4px; color: var(--colorNeutralForeground3); }
+.eod-nav-foot { padding: 8px 16px 12px; border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+
+/* Strona: treść zajmuje całą szerokość i wysokość obszaru roboczego (bez limitu szerokości i bez centrowania).
+   Szerokość czytelną zapewnia siatka FluentGrid wewnątrz kart, nie margines strony. */
+.eod-page { min-height: 100%; padding-block: 20px 24px; padding-inline: var(--eod-gutter); display: flex; flex-direction: column; gap: 16px; }
+.eod-page-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 16px; }
+.eod-page-head > :first-child { flex: 1; min-width: min(100%, 260px); }
+.eod-stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.eod-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.eod-grow { flex: 1; min-width: 0; }
+.eod-messages { display: flex; flex-direction: column; gap: 8px; }
+.eod-messages:not(:has(fluent-message-bar)) { display: none; }
+fluent-message-bar { width: 100%; }
+fluent-message-bar .title { font-weight: var(--fontWeightSemibold); margin-inline-end: 6px; }
+
+/* ── Karta (powierzchnia) ─────────────────────────────────────────────── */
+.eod-card { background: var(--colorNeutralBackground1); border: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: var(--borderRadiusXLarge); min-width: 0; }
+.eod-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); min-height: 56px; }
+.eod-card-head > .eod-h2 { flex: 1; min-width: 140px; }
+.eod-card-body { padding: 16px; }
+.eod-card-body.flush { padding: 0; }
+/* Karta i wiersz siatki, które pochłaniają wolną wysokość strony (ostatni wiersz strony startowej, raport) */
+.eod-page > .eod-stack { flex: 1 0 auto; }
+.eod-grid-fill { flex: 1 0 auto; }
+.eod-grid-fill > div { display: flex; flex-direction: column; }
+.eod-grid-fill > div > * { flex: 1 0 auto; }
+.eod-grid-fill .eod-stack > :last-child { flex: 1 0 auto; }
+.eod-card-fill { display: flex; flex-direction: column; }
+.eod-page > .eod-card-fill { flex: 1 0 auto; }
+.eod-card-fill > .eod-table-wrap { flex: 1 0 auto; }
+.eod-card-foot { padding: 8px 16px; border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* ── FluentDataGrid: uzupełnienia ─────────────────────────────────────── */
+.eod-table-wrap { overflow-x: auto; }
+.fluent-data-grid { width: 100%; border-spacing: 0; }
+.fluent-data-grid th[cell-type="columnheader"] { text-align: start; color: var(--colorNeutralForeground2); white-space: nowrap; padding: 4px 6px; }
+.fluent-data-grid td { height: 44px; }
+.fluent-data-grid td:not([col-select="true"]) { max-width: 420px; }
+/* Kolumna opisowa (numer + przedmiot): 42% szerokości. W trybie Table siatka ma table-layout: fixed – szerokość bierze się z nagłówka. */
+.fluent-data-grid :is(th, td).eod-col-flex { max-width: 0; width: 42%; }
+.fluent-data-grid td.eod-cell-actions { padding: 0 8px; text-align: end; white-space: nowrap; overflow: visible; }
+.fluent-data-grid tbody tr:last-child td { border-bottom-color: transparent; }
+.fluent-data-grid td .eod-caption { display: block; overflow: hidden; text-overflow: ellipsis; }
+.fluent-data-grid td fluent-text-input, .fluent-data-grid td fluent-dropdown { width: 100%; min-width: 110px; }
+.eod-cell-main { font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); text-decoration: none; }
+/* Kolumna typu link: etykieta w kolorze linku (FluentLink), podkreślenie po najechaniu */
+a.eod-cell-main { color: var(--colorBrandForegroundLink); }
+a.eod-cell-main:hover { text-decoration: underline; color: var(--colorBrandForegroundLinkHover); }
+a.eod-cell-main:active { color: var(--colorBrandForegroundLinkPressed); }
+.eod-paginator { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 8px 12px; border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); }
+.eod-paginator > :first-child { flex: 1; }
+
+/* Aktualności: kafle wiadomości w siatce */
+.eod-news { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.eod-news article { display: flex; flex-direction: column; gap: 6px; }
+.eod-news h3 a { color: inherit; text-decoration: none; }
+.eod-news h3 a:hover { color: var(--colorBrandForegroundLink); text-decoration: underline; }
+.eod-news p { color: var(--colorNeutralForeground2); }
+
+/* ── Ścieżka i pasek nad tabelą raportu ──────────────────────────────── */
+.eod-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); }
+.eod-formbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 16px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+
+/* Pola: kontrolki wypełniają komórkę siatki */
+.fluent-grid fluent-field { display: grid; width: 100%; }
+.fluent-grid fluent-field[label-position="after"],
+fluent-radio-group fluent-field, .fluent-grid fluent-radio-group fluent-field { display: inline-grid; width: auto; }
+.fluent-grid fluent-text-input, .fluent-grid fluent-dropdown, .fluent-grid fluent-textarea { width: 100%; max-width: none; }
+fluent-text-input > span[slot="end"], fluent-text-input > span[slot="start"] { font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); color: var(--colorNeutralForeground3); }
+fluent-text[slot="message"] { display: flex; align-items: center; gap: 4px; }
+fluent-text[slot="message"][data-intent="error"] { color: var(--colorStatusDangerForeground1); }
+fluent-text[slot="message"][data-intent="warning"] { color: var(--colorStatusWarningForeground1); }
+fluent-text[slot="message"][data-intent="success"] { color: var(--colorStatusSuccessForeground1); }
+fluent-text[slot="message"]:not([data-intent]) { color: var(--colorNeutralForeground3); }
+.fluent-label-info > button .ic { width: 16px; height: 16px; color: var(--colorNeutralForeground3); }
+
+/* ── Chipy ───────────────────────────────────────────────────────────── */
+/* Chip (filtry i układ raportu, osoby): tekst + przycisk usuwania */
+.eod-chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 2px 0 8px; border-radius: var(--borderRadiusMedium); background: var(--colorBrandBackground2); color: var(--colorBrandForeground2); font-size: var(--fontSizeBase200); white-space: nowrap; }
+.eod-chip button { display: inline-flex; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 2px; border-radius: var(--borderRadiusSmall); }
+.eod-chip button:hover { background: var(--colorBrandBackground2Hover); }
+
+/* Okna: FluentDialog / MessageBox */
+fluent-dialog-body { max-width: 100%; }
+.fluent-message-box { align-items: flex-start; }
+.fluent-message-box .icon { width: 32px; height: 32px; margin-top: 2px; }
+.fluent-message-box .message { min-width: 0; }
+.fluent-message-box .message p + p { margin-top: 8px; }
+.fluent-message-box .message ul { list-style: disc; padding-inline-start: 20px; margin: 8px 0; }
+[slot="action"] { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+[slot="footer"] { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Blok zasad pod treścią karty (EodRule w parametrze Rules komponentu EodCard) */
+.eod-rule { display: flex; gap: 8px; align-items: flex-start; color: var(--colorNeutralForeground2); }
+.eod-rule .ic { margin-top: 1px; color: var(--colorBrandForeground1); }
+.eod-rules { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; background: var(--colorNeutralBackground2); border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2); border-radius: 0 0 var(--borderRadiusXLarge) var(--borderRadiusXLarge); }
+
+/* ── Wąskie ekrany ────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  :root { --eod-gutter: 16px; }
+  .eod-username { display: none; }
+  .fluent-layout-item[area="header"] fluent-menu { min-width: 0; }
+  .eod-appname { padding-inline: 4px; letter-spacing: .03em; }
+  .eod-shell > .fluent-layout-item[area="header"] { padding: 0 8px; padding-top: env(safe-area-inset-top, 0px); }
+}
+@media (prefers-reduced-motion: reduce) { .fluent-layout-item[area="content"] { scroll-behavior: auto; } }
+
+/* ── Paski filtrów (katalog raportów, raport, zastępstwa) ────────────── */
+.eod-filterbar fluent-field { width: auto; }
+/* Pole szukania w pasku filtrów: FluentTextInput jest owinięty w fluent-field – rośnie od 220 do 360 px */
+.eod-filterbar > fluent-field:has(> fluent-text-input) { flex: 1 1 220px; max-width: 360px; }
+.eod-filterbar > fluent-field > fluent-text-input { width: 100%; max-width: none; }
+.eod-filterbar fluent-dropdown { min-width: 200px; }
+fluent-field > label[slot="label"][data-req]::after { content: " *"; color: var(--colorPaletteRedForeground1); }
+.eod-field-msg { display: flex; align-items: center; gap: 4px; color: var(--colorStatusDangerForeground1); margin-top: -6px; }
+.fluent-data-grid td[multiline="true"] { align-content: center; padding-block: 10px; overflow: visible; }
+
+/* ── Raport tabelaryczny (EodReport) ──────────────────────────────────── */
+.eod-page-fill { height: 100%; padding-bottom: 20px; }
+.eod-report { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.eod-report-wrap { flex: 1 1 auto; min-height: 260px; overflow: auto; }
+.eod-report .fluent-data-grid { min-width: max-content; }
+.eod-report .fluent-data-grid td { height: 36px; }
+.eod-report .fluent-data-grid tr[row-type="sticky-header"] > th { background: var(--colorNeutralBackground1); box-shadow: inset 0 -1px 0 var(--colorNeutralStroke1); padding: 2px 4px; }
+.eod-th { display: flex; align-items: center; gap: 2px; }
+.eod-th [col-sort-button] { flex: 1; min-width: 0; justify-content: flex-start; font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); }
+th[col-justify="end"] .eod-th [col-sort-button] { justify-content: flex-end; }
+.eod-th [data-rep-filter] { color: var(--colorNeutralForeground3); flex: none; }
+.eod-th [data-rep-filter][data-active] { color: var(--colorCompoundBrandForeground1); }
+.fluent-data-grid tr.eod-group-row > td { background: var(--colorNeutralBackground2); height: 40px; padding: 0 8px; overflow: visible; }
+.eod-group { display: flex; align-items: center; gap: 8px; font-weight: var(--fontWeightSemibold); position: sticky; left: 8px; width: max-content; }
+.eod-group .eod-caption { display: inline; font-weight: var(--fontWeightRegular); }
+.eod-filter-body { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+.eod-filter-body fluent-text-input { width: 100%; }
+.eod-filter-pop fluent-field { display: grid; width: 100%; }
+.eod-filter-pop fluent-field[label-position="after"] { display: inline-grid; width: auto; }
+.eod-filter-pop fluent-text-input { width: 100%; }
+.eod-filter-list { display: flex; flex-direction: column; max-height: 232px; overflow: auto; }
+.eod-filter-range { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+@media (max-width: 900px) {
+  .eod-page-fill { height: auto; }
+  .eod-report-wrap { max-height: 70vh; }
+}
+.eod-report .eod-filterbar > fluent-field:has(> fluent-text-input) { flex: 1 1 160px; max-width: 300px; }
+/* Pierwsza kolumna przypięta (Pin="Start"): numer sprawy zostaje widoczny przy przewijaniu w poziomie */
+.eod-report .fluent-data-grid { --fluent-data-grid-pinned-background: var(--colorNeutralBackground1); }
+.eod-report th[col-pinned="start"], .eod-report td[col-pinned="start"] { position: sticky; left: 0; }
+.eod-report td[col-pinned="start"] { z-index: 1; }
+.eod-report tr[row-type="sticky-header"] > th[col-pinned="start"] { z-index: 4; border-inline-end: var(--strokeWidthThin) solid var(--colorNeutralStroke1); }
+/* Raport: ciaśniejsze komórki, żeby na szerokim ekranie mieściły się wszystkie kolumny */
+.eod-report .fluent-data-grid td:not([col-select="true"]) { padding: 0 12px; }
+.eod-report .eod-th [col-sort-button] { padding-inline: 8px; }
+
+/* Raport: pasek układu (grupowanie · sortowanie · filtry) i poziomy grup */
+.eod-statebar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 28px; padding: 6px 16px; min-height: 44px; border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2); }
+.eod-seg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.eod-chip > .eod-chip-main { font: inherit; gap: 4px; padding: 2px 2px 2px 0; }
+/* Rejestr (AD-23 poz. 5): układ zablokowany – nagłówek bez przycisku sortowania, żeton bez przycisków */
+.eod-report .eod-th .eod-th-text { flex: 1; min-width: 0; padding-inline: 8px; font-weight: var(--fontWeightSemibold); color: var(--colorNeutralForeground1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+th[col-justify="end"] .eod-th .eod-th-text { text-align: end; }
+.eod-chip.eod-chip-locked { padding-inline-end: 8px; }
+.eod-sort-ind { display: inline-flex; align-items: center; }
+.fluent-data-grid tr.eod-group-row:not([data-level="0"]) > td { background: var(--colorNeutralBackground1); }
+
+/* Raport: kolumna „Akcje” przypięta z prawej, wiersz bez kliknięcia (tekst można zaznaczać), kolejność kolumn */
+.eod-report th[col-pinned="end"], .eod-report td[col-pinned="end"] { position: sticky; right: 0; width: 88px; }
+.eod-report td[col-pinned="end"] { z-index: 1; border-inline-start: var(--strokeWidthThin) solid var(--colorNeutralStroke1); }
+.eod-report tr[row-type="sticky-header"] > th[col-pinned="end"] { z-index: 4; border-inline-start: var(--strokeWidthThin) solid var(--colorNeutralStroke1); }
+.eod-report th[col-pinned="end"] [col-title] { padding-inline: 12px; }
+.eod-report .fluent-data-grid tr[hover]:hover td { cursor: default; }
+.eod-filter-pop .eod-row > .eod-caption { margin-inline-end: 4px; }
+.fluent-data-grid td fluent-menu-item { text-align: start; }
+
+/* ── Uzupełnienia dla komponentów Blazor (Eod.Platform.UI) ───────────── */
+.eod-block { display: block; }
+.eod-regular { font-weight: var(--fontWeightRegular); }
+.eod-row-end { justify-content: flex-end; }
+/* Filtr kolumny raportu: ikona neutralna, aktywny filtr w kolorze marki (ikona wypełniona) */
+.eod-th .eod-filter-icon { color: var(--colorNeutralForeground3); flex: none; }
+.eod-th .eod-filter-icon-active { color: var(--colorCompoundBrandForeground1); flex: none; }
+.eod-statebar .fluent-label-info { color: var(--colorNeutralForeground3); font-size: var(--fontSizeBase200); }
+/* Okno MessageBox: ikona 32 px */
+.fluent-message-box .icon, .fluent-message-box > svg:first-child { width: 32px; height: 32px; }
+
+/* Stan pusty (EodEmptyState) / strony „nie znaleziono”, „brak dostępu”: ikona 32, tytuł, wyjaśnienie, droga dalej */
+.eod-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 48px 16px; min-height: 100%; }
+.eod-empty > .eod-caption { max-width: 480px; }
+/* Wersja zwarta: wiersz pustej tabeli, pusta kategoria załączników, pusta lista komentarzy */
+.eod-empty[data-compact] { gap: 6px; padding: 24px 16px; min-height: 0; }
+.eod-empty[data-compact] > .eod-row { margin-top: 6px; justify-content: center; }
+.eod-card-fill > .eod-empty, .eod-card-fill > .eod-card-body > .eod-empty { flex: 1 0 auto; }
+/* Pusta tabela: jeden wiersz z komunikatem na całą szerokość (bez limitu szerokości i wysokości komórki) */
+.fluent-data-grid tr[row-state="empty-content"] > td { height: auto; max-width: none; padding: 0; white-space: normal; }
+/* Raport przewijany w poziomie: stan pusty zostaje w widocznej części tabeli */
+.eod-report-wrap { container-type: inline-size; }
+.eod-report tr[row-state="empty-content"] .eod-empty { position: sticky; left: 0; width: 100cqi; padding-block: 40px; }
+
+/* Szkielety wczytywania (EodReport Loading) – FluentSkeleton w kształcie treści */
+.eod-skeleton-row .fluent-skeleton { display: block; }
+@media (prefers-reduced-motion: reduce) { [class*="fluent-skeleton"]::after { animation: none; display: none; } }
+
+/* Treść opcji listy (awatar, podpis) nie przechwytuje kliknięcia – musi trafić w fluent-option (FluentAutocomplete, FluentSelect) */
+fluent-option * { pointer-events: none; }
+
+/* Karta o wysokości wiersza siatki (dwie karty obok siebie równej wysokości) */
+.eod-card-stretch { height: 100%; }
+
+/* Tekst tylko dla czytników ekranu (np. nagłówek kolumny „Akcje”) */
+.eod-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* Tekst w polu przed / za wartością (jednostka „PLN”, „%”, prefiks): rozmiar treści, nie ikony (Fluent daje slotom 20 px) */
+:is(fluent-text-input, fluent-textarea) :is([slot="start"], [slot="end"]) > span { font-size: var(--fontSizeBase300); line-height: var(--lineHeightBase300); }
+
+/* ── Pola wymagane i komunikaty pod polem ── */
+/* Nagłówek kolumny z polem wymaganym: gwiazdka jak przy etykiecie pola */
+.eod-th-required::after { content: " *"; color: var(--colorPaletteRedForeground1); }
+/* Komunikat pod polem w kilku wierszach (wąska komórka tabeli, okno): ikona nie kurczy się i stoi przy pierwszym wierszu */
+fluent-text[slot="message"] > svg { flex: none; align-self: flex-start; margin-top: 2px; }

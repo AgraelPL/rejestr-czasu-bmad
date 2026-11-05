@@ -3,7 +3,7 @@ title: 'Edycja, kopia i usuwanie Wpisu z Listy wpisów'
 type: 'feature'
 ticket: '3'
 created: '2026-11-02'
-status: 'built'
+status: done
 baseline_revision: 'c9996b7dfafe171fcd7111f60ddea388262c37ae'
 route: 'full'
 route_source: 'auto'

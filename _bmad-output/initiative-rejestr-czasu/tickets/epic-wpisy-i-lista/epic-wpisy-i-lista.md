@@ -8,6 +8,7 @@ companions: []
 after: []
 refined: true
 risk: medium
+status: done
 ---
 
 # Wpisy w Sesji wpisywania i Lista wpisów
@@ -65,3 +66,4 @@ User przenosi w aplikacji uruchomionej lokalnie notatki z 3–4 dni w jednej Ses
 - Decision (31.10.2026): re-slice po forge chmura-konta-wdrożenie: User zamiast Autora, praca na serwerze, R5 z datą przy każdym otwarciu ekranu Nowy wpis, R16 przez internet, R26 strony pomocy ekranów tego epiku.
 - Decision (01.11.2026): Autor odkłada wdrożenie na Droplet na koniec, po dostarczeniu funkcji z epików 1–3 i 5: migracja `Initial` zostaje otwarta do pierwszego wdrożenia (NFR-9), bez kosztów i obsługi serwera, zanim aplikacja jest użyteczna. Wdrożenie, rollback i sprawdzenia na serwerze przeszły do nowego epic-wdrozenie-na-serwer (epik 6), przed Miesiącem „na serio”. Done when sprawdzany lokalnie; na serwerze powtarza go historia 6.3.
 - Decision (01.11.2026): podział na 4 historie zatwierdzony przez Autora: 2.1 Nowy wpis i Sesja wpisywania (tracer bullet: `EntryForm`, zapis, klawiatura, `EntryDateMemory`), 2.2 Lista wpisów, 2.3 edycja, kopia i usuwanie w oknie dialogowym, 2.4 Refactor sweep. Najmniej pewny: wybór Projektu i Typu pracy z klawiatury w 10 s — komponent ustala historia 2.1.
+- Decision (02.11.2026): epik zamknięty — historie 2.1–2.4 scalone do `main` (PR #16), Done when sprawdzony lokalnie przez Autora (Sesja wpisywania, Lista wpisów z filtrami, edycja, kopia, usunięcie); na serwerze powtarza go historia 6.3.

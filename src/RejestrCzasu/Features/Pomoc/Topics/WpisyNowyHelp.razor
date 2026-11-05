@@ -6,14 +6,14 @@
 
 <h2>Pola</h2>
 <ul>
-    <li><strong>Data</strong> — przy każdym otwarciu ekranu dzisiejsza (według czasu polskiego). Datę wpiszesz
+    <li><strong>Data</strong> - przy każdym otwarciu ekranu dzisiejsza (według czasu polskiego). Datę wpiszesz
         z klawiatury: dzień, miesiąc i rok, strzałki w górę i w dół zmieniają zaznaczoną część. Obok pola widać
         dzień tygodnia.</li>
-    <li><strong>Projekt</strong> — lista Twoich aktywnych Projektów w postaci „KOD — nazwa”. Wpisz początek kodu,
+    <li><strong>Projekt</strong> - lista Twoich aktywnych Projektów w postaci „KOD - nazwa”. Wpisz początek kodu,
         a lista wskaże pierwszy pasujący Projekt.</li>
-    <li><strong>Typ pracy</strong> — lista Twoich aktywnych Typów pracy. Wpisz początek nazwy.</li>
-    <li><strong>Opis</strong> — wymagany; spacje na początku i końcu są pomijane.</li>
-    <li><strong>Czas</strong> — tak jak w Jirze: godziny z literą <strong>h</strong> i minuty z literą
+    <li><strong>Typ pracy</strong> - lista Twoich aktywnych Typów pracy. Wpisz początek nazwy.</li>
+    <li><strong>Opis</strong> - wymagany; spacje na początku i końcu są pomijane.</li>
+    <li><strong>Czas</strong> - tak jak w Jirze: godziny z literą <strong>h</strong> i minuty z literą
         <strong>m</strong>, np. <strong>1h 30m</strong>, <strong>1h30m</strong>, <strong>2h</strong>,
         <strong>45m</strong> albo <strong>90m</strong>. Możesz też wpisać godziny z ułamkiem (<strong>1,5h</strong>
         lub <strong>1.5h</strong>) albo zapis z dwukropkiem (<strong>1:30</strong>). W zapisie z literami h i m wielkość
@@ -21,7 +21,7 @@
         albo 1,5 bez litery h, nie zostanie zapisany, a przy polu pojawi się komunikat.</li>
 </ul>
 <p>
-    Nieaktywnych Projektów i Typów pracy nie ma na listach. Suma Czasu jednego dnia może przekroczyć 24 godziny —
+    Nieaktywnych Projektów i Typów pracy nie ma na listach. Suma Czasu jednego dnia może przekroczyć 24 godziny -
     aplikacja tego nie blokuje.
 </p>
 
@@ -37,12 +37,43 @@
 
 <h2>Po zapisaniu</h2>
 <p>
-    U góry pojawia się krótki komunikat z datą, kodem Projektu i Czasem zapisanego Wpisu (np. „Zapisano Wpis: 03.09.2026, RDZ, 1h 30m.”). Data zostaje bez zmian,
-    pola Projekt, Typ pracy, Opis i Czas są puste, a kursor stoi w polu Projekt — możesz od razu wpisywać kolejny
+    Pod nagłówkiem strony pojawia się krótki komunikat z datą, kodem Projektu i Czasem zapisanego Wpisu (np. „Zapisano Wpis: 03.09.2026, RDZ, 1h 30m.”), a nowy Wpis pojawia się na liście pod formularzem. Data zostaje bez zmian,
+    pola Projekt, Typ pracy, Opis i Czas są puste, a kursor stoi w polu Projekt - możesz od razu wpisywać kolejny
     Wpis z tego samego dnia. Wpis z innego dnia zaczynasz od zmiany daty (Shift+Tab z pola Projekt).
 </p>
 <p>
-    Jeśli wybrany Projekt lub Typ pracy został w międzyczasie usunięty (np. w innym oknie), zobaczysz komunikat
-    „Wybrany Projekt lub Typ pracy już nie istnieje.”. Wpis nie zostanie zapisany, wpisane wartości zostają,
+    Jeśli wybrany Projekt lub Typ pracy został w międzyczasie usunięty (np. w innym oknie), pod nagłówkiem strony
+    zobaczysz komunikat „Wybrany Projekt lub Typ pracy już nie istnieje.”. Wpis nie zostanie zapisany, wpisane wartości zostają,
     a listy wyboru wczytają się ponownie.
+</p>
+
+<h2>Wpisy bieżącego Miesiąca</h2>
+<p>
+    Pod formularzem jest lista Twoich Wpisów z bieżącego Miesiąca (według czasu polskiego), od najnowszej daty;
+    w obrębie jednego dnia ostatnio zapisany Wpis jest wyżej. Kolumny są takie jak na ekranie
+    <strong>Lista wpisów</strong>: <strong>Data</strong>, <strong>Dzień</strong>, <strong>Projekt</strong> (kod),
+    <strong>Typ pracy</strong>, <strong>Opis</strong> i <strong>Czas</strong>. W stopce widać liczbę Wpisów i sumę
+    ich Czasu, np. „Wpisy: 3, suma Czasu: 5h”.
+</p>
+<p>
+    Po każdym zapisaniu Wpisu lista wczytuje się ponownie, więc nowy Wpis od razu na niej widać. Kursor zostaje
+    w polu Projekt. Wpis z datą z innego Miesiąca zapisuje się normalnie, ale tu go nie widać - znajdziesz go na
+    ekranie <strong>Lista wpisów</strong> po ustawieniu zakresu dat.
+</p>
+<p>
+    Na końcu każdego wiersza są ikony <strong>Edytuj</strong>, <strong>Kopiuj</strong> i <strong>Usuń</strong>.
+    Działają tak samo jak na ekranie Lista wpisów: Edycja i Kopia otwierają okno Wpisu, a Usuń pyta o potwierdzenie
+    (Enter nie usuwa Wpisu). Po zmianie lista wczytuje się ponownie. Sortowanie, grupowanie i kolejność kolumn tej
+    listy ustawiasz niezależnie od Listy wpisów; obowiązują do odświeżenia strony.
+</p>
+<p>
+    Lista pokazuje po 30 Wpisów na stronie; gdy jest ich więcej, pod listą są numer strony i przyciski przejścia
+    między stronami, a licznik i suma Czasu w stopce dotyczą wszystkich stron. Zmiana filtra kolumny, wyszukiwania, sortowania
+    lub grupowania oraz <strong>Przywróć układ domyślny</strong> wracają na pierwszą stronę, a po zapisaniu Wpisu zostajesz na tej samej stronie.
+</p>
+<p>
+    Przycisk <strong>Eksportuj</strong> nad listą zapisuje plik Excela (xlsx), np. <strong>wpisy-2026-09-03.xlsx</strong>
+    (data eksportu według czasu polskiego), z Wpisami bieżącego Miesiąca, które spełniają filtry kolumn i wyszukiwanie,
+    ze wszystkich stron. Czas jest w nim w kolumnie <strong>Godziny</strong> liczbą godzin dziesiętnych (np. 1,5), którą
+    da się zsumować; pod Wpisami jest wiersz <strong>Suma</strong> z sumą Godzin, tak jak na ekranie Lista wpisów.
 </p>

@@ -3,7 +3,7 @@ title: 'Nowy wpis i Sesja wpisywania'
 type: 'feature'
 ticket: '1'
 created: '2026-11-01'
-status: 'built'
+status: done
 baseline_revision: 'afcce4adb903e12c64756c14eebec72825d1f121'
 route: 'full'
 route_source: 'auto'

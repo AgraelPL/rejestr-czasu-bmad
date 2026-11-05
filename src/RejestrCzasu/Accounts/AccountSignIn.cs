@@ -35,12 +35,13 @@ public sealed class AccountSignIn(
     /// <summary>
     /// Creates a <see cref="AccountStatus.Pending"/> Account with the <see cref="AppRoles.User"/> role, all or nothing.
     /// No <c>account_settings</c> row (AD-7). Errors come from the Identity configuration, in Polish.
+    /// White space around the login is dropped, as at login; the password is kept as typed.
     /// </summary>
     public async Task<IdentityResult> RegisterAsync(string userName, string password)
     {
         var user = new AppUser
         {
-            UserName = userName,
+            UserName = userName.Trim(),
             Status = AccountStatus.Pending,
             RegisteredAt = timeProvider.GetUtcNow().UtcDateTime,
         };
@@ -62,10 +63,11 @@ public sealed class AccountSignIn(
     /// <summary>
     /// Password first, then the Account state (<see cref="AppSignInManager"/>); a wrong password counts towards the
     /// lockout in every state. On success the login cookie is set and <c>last_login_at</c> is saved (UTC).
+    /// White space around the login is ignored (pasted or autofilled logins); the password is used as typed.
     /// </summary>
     public async Task<LoginOutcome> LoginAsync(string userName, string password)
     {
-        var user = await userManager.FindByNameAsync(userName);
+        var user = await userManager.FindByNameAsync(userName.Trim());
         if (user is null)
         {
             // Same work as for an existing login, so the response time does not reveal which logins exist.

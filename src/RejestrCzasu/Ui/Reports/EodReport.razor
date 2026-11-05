@@ -1,0 +1,478 @@
+@namespace RejestrCzasu.Ui
+@*
+    EodReport – raport tabelaryczny (specyfikacja UI, sekcja 9.7). Jeden silnik dla wszystkich raportów: raport różni się
+    tylko definicją (ReportDefinition) i wierszami. Umieszczaj go na stronie EodPage Fill="true" – zajmuje całą przestrzeń,
+    przewija się tylko tabela.
+    Pasek narzędzi (szukaj · Kolumny · Eksportuj), pasek układu (grupowanie · sortowanie · filtry), tabela w wyglądzie
+    FluentDataGrid (nagłówek przyklejony, pierwsza kolumna i „Akcje” przypięte), wiersze grup z sumami, stopka z podsumowaniem.
+    Okienko kolumny (FluentPopover): sortowanie, grupowanie, kolejność, filtr zależny od typu kolumny.
+    Tabela jest własna (klasy FluentDataGrid), bo FluentDataGrid nie ma wierszy grup z podsumowaniami.
+    Stany (specyfikacja UI, sekcja 9.14): Loading="true" – szkielety wierszy zamiast danych (pasek narzędzi zostaje, tabela ma
+    aria-busy); brak wierszy – jeden wiersz ze stanem pustym (EmptyContent albo „Raport nie zawiera pozycji.”); brak wierszy
+    po wyszukiwaniu i filtrach – „Brak pozycji spełniających filtry.” z akcją „Wyczyść filtry”.
+    Dopasowanie Rejestru (AD-23 poz. 11): PageSize – strony po PageSize wierszy (FluentPaginator pod tabelą, gdy wierszy
+    po filtrach jest więcej), bez paginacji przy grupowaniu; stopka i eksport liczą wszystkie wiersze po filtrach.
+    Przykład:
+        <EodReport Definition="@definition" Rows="@rows" RowHref="@(row => CaseHref(row))" DataAsOf="@today">
+            <RowActions Context="row">…</RowActions>
+        </EodReport>
+*@
+
+<div class="eod-card eod-report">
+
+    @* Pasek narzędzi *@
+    <div class="eod-formbar eod-filterbar">
+        <FluentTextInput Placeholder="Szukaj we wszystkich kolumnach"
+                         AriaLabel="Szukaj we wszystkich kolumnach"
+                         Immediate="true"
+                         Value="@Layout.Search"
+                         ValueChanged="@SetSearch">
+            <StartTemplate><EodIcon Value="@(new Icons.Regular.Size20.Search())" /></StartTemplate>
+        </FluentTextInput>
+        <span class="eod-grow"></span>
+        <FluentMenu PersistOnItemClick="true">
+            <FluentMenuButton IconStart="@(new Icons.Regular.Size20.ColumnTriple())">Kolumny</FluentMenuButton>
+            <FluentMenuList>
+                @foreach (var c in Layout.AllInOrder)
+                {
+                    var column = c;
+                    <FluentMenuItem @key="column.Key"
+                                    Role="MenuItemRole.Checkbox"
+                                    Checked="@(!Layout.Hidden.Contains(column.Key))"
+                                    Disabled="@column.IsKey"
+                                    CheckedChanged="@(v => SetColumnVisible(column, v == true))">
+                        @column.Label
+                    </FluentMenuItem>
+                }
+                <FluentDivider />
+                <FluentMenuItem IconStart="@(new Icons.Regular.Size20.ArrowReset())" OnClick="@ResetLayout">Przywróć układ domyślny</FluentMenuItem>
+            </FluentMenuList>
+        </FluentMenu>
+        @if (ShowExport && ExportFile is not null)
+        {
+            <FluentButton IconStart="@(new Icons.Regular.Size20.ArrowDownload())" OnClick="@ExportAsync">Eksportuj</FluentButton>
+        }
+    </div>
+
+    @* Pasek układu: grupowanie · sortowanie · filtry *@
+    <div class="eod-statebar" aria-label="Układ raportu">
+        <div class="eod-seg">
+            <span class="eod-caption">Grupowanie</span>
+            @for (var i = 0; i < Layout.Grouping.Count; i++)
+            {
+                var key = Layout.Grouping[i];
+                var label = LabelOf(key);
+                if (i > 0)
+                {
+                    <EodIcon Value="@(new Icons.Regular.Size16.ChevronRight())" Class="ic-16 c-muted" />
+                }
+                if (LockedLayout)
+                {
+                    <span class="eod-chip eod-chip-locked">@label</span>
+                }
+                else
+                {
+                    <span class="eod-chip">@label<button type="button" aria-label="@($"Usuń poziom grupowania: {label}")" @onclick="@(() => RemoveGrouping(key))"><EodIcon Value="@(new Icons.Regular.Size16.Dismiss())" Class="ic-16" /></button></span>
+                }
+            }
+            @if (!LockedLayout)
+            {
+                <FluentMenu>
+                    <FluentMenuButton Appearance="ButtonAppearance.Subtle" Size="ButtonSize.Small" IconStart="@(new Icons.Regular.Size20.Add())">Dodaj poziom</FluentMenuButton>
+                    <FluentMenuList>
+                        @foreach (var c in Definition.Columns.Where(c => !Layout.Grouping.Contains(c.Key)))
+                        {
+                            var column = c;
+                            <FluentMenuItem @key="column.Key" OnClick="@(() => AddGrouping(column.Key))">@column.Label</FluentMenuItem>
+                        }
+                    </FluentMenuList>
+                </FluentMenu>
+            }
+            @if (Layout.Grouping.Count > 0)
+            {
+                <FluentButton Appearance="ButtonAppearance.Subtle" Size="ButtonSize.Small" OnClick="@ExpandAll">Rozwiń wszystkie</FluentButton>
+                <FluentButton Appearance="ButtonAppearance.Subtle" Size="ButtonSize.Small" OnClick="@CollapseAll">Zwiń wszystkie</FluentButton>
+            }
+        </div>
+
+        <div class="eod-seg">
+            @if (LockedLayout)
+            {
+                <span class="eod-caption">Sortowanie</span>
+            }
+            else
+            {
+                <FluentLabelInfo Class="eod-caption" InfoText="Kliknięcie nagłówka sortuje po jednej kolumnie. Shift + kliknięcie dodaje kolejną kolumnę do sortowania.">Sortowanie</FluentLabelInfo>
+            }
+            @if (Layout.Sorting.Count == 0)
+            {
+                <span class="eod-caption">brak</span>
+            }
+            @for (var i = 0; i < Layout.Sorting.Count; i++)
+            {
+                var s = Layout.Sorting[i];
+                var label = LabelOf(s.Key);
+                if (i > 0)
+                {
+                    <EodIcon Value="@(new Icons.Regular.Size16.ChevronRight())" Class="ic-16 c-muted" />
+                }
+                if (LockedLayout)
+                {
+                    <span class="eod-chip eod-chip-locked" role="img" aria-label="@($"{label}: {(s.Descending ? "malejąco" : "rosnąco")}")">
+                        @label
+                        <EodIcon Value="@(s.Descending ? new Icons.Regular.Size16.ArrowSortDown() : new Icons.Regular.Size16.ArrowSortUp())" Class="ic-16" />
+                    </span>
+                    continue;
+                }
+                <span class="eod-chip">
+                    <button type="button" class="eod-chip-main" aria-label="@($"{label}: {(s.Descending ? "malejąco" : "rosnąco")}. Odwróć kierunek")" @onclick="@(() => ReverseSort(s.Key))">
+                        @label
+                        <EodIcon Value="@(s.Descending ? new Icons.Regular.Size16.ArrowSortDown() : new Icons.Regular.Size16.ArrowSortUp())" Class="ic-16" />
+                    </button>
+                    <button type="button" aria-label="@($"Usuń z sortowania: {label}")" @onclick="@(() => RemoveSort(s.Key))"><EodIcon Value="@(new Icons.Regular.Size16.Dismiss())" Class="ic-16" /></button>
+                </span>
+            }
+        </div>
+
+        @if (Layout.Filters.Count > 0)
+        {
+            <div class="eod-seg">
+                <span class="eod-caption">Filtry</span>
+                @foreach (var (key, filter) in Layout.Filters.ToList())
+                {
+                    var filterKey = key;
+                    var column = Definition.Column(filterKey);
+                    if (column is null)
+                    {
+                        continue;
+                    }
+                    <span class="eod-chip">@column.Label: @ReportEngine.DescribeFilter(column, filter, Rows)<button type="button" aria-label="@($"Usuń filtr: {column.Label}")" @onclick="@(() => ClearFilter(filterKey))"><EodIcon Value="@(new Icons.Regular.Size16.Dismiss())" Class="ic-16" /></button></span>
+                }
+                <FluentButton Appearance="ButtonAppearance.Subtle" Size="ButtonSize.Small" OnClick="@ClearFilters">Wyczyść filtry</FluentButton>
+            </div>
+        }
+    </div>
+
+    @* Tabela – nagłówek przyklejony, przewija się tylko ten obszar *@
+    <div class="eod-table-wrap eod-report-wrap" tabindex="0" aria-label="Tabela raportu – przewijany obszar">
+        <table class="fluent-data-grid" display-mode="table" role="grid" aria-label="@Definition.Title" aria-busy="@(Loading ? "true" : null)" col-reorder-active="@(_draggedKey is null ? null : "true")">
+            <thead>
+                <tr class="fluent-data-grid-row" row-type="sticky-header">
+                    @for (var i = 0; i < _visibleColumns.Count; i++)
+                    {
+                        var column = _visibleColumns[i];
+                        var sortLevel = Layout.Sorting.FindIndex(s => s.Key == column.Key);
+                        <th cell-type="columnheader"
+                            scope="col"
+                            col-index="@(i + 1)"
+                            col-justify="@(column.Type == ColumnType.Number ? "end" : "start")"
+                            col-pinned="@(column.IsKey ? "start" : null)"
+                            aria-sort="@(sortLevel == 0 ? (Layout.Sorting[0].Descending ? "descending" : "ascending") : null)"
+                            draggable="@(column.IsKey || LockedLayout ? null : "true")"
+                            col-reorder-dragging="@(_draggedKey == column.Key ? "true" : null)"
+                            col-reorder-drop-target="@(_dropTargetKey == column.Key ? "true" : null)"
+                            @ondragstart="@(() => StartDrag(column))"
+                            @ondragover="@(() => DragOver(column))"
+                            @ondragover:preventDefault="@(!column.IsKey && _draggedKey is not null)"
+                            @ondrop="@(() => DropOn(column))"
+                            @ondragend="@EndDrag">
+                            <div class="eod-th">
+                                @if (LockedLayout)
+                                {
+                                    <span class="eod-th-text">@column.Label</span>
+                                }
+                                else
+                                {
+                                    <FluentButton Appearance="ButtonAppearance.Subtle"
+                                                  col-sort-button
+                                                  Title="@($"Kliknij, aby sortować. Shift + kliknięcie dodaje kolumnę do sortowania.{(column.IsKey ? "" : " Przeciągnij, aby zmienić kolejność kolumn.")}")"
+                                                  OnClick="@(e => SortByHeader(column, e))">
+                                        @column.Label
+                                        @if (sortLevel >= 0)
+                                        {
+                                            <span slot="end" class="eod-sort-ind">
+                                                <EodIcon Value="@(Layout.Sorting[sortLevel].Descending ? new Icons.Regular.Size16.ArrowSortDown() : new Icons.Regular.Size16.ArrowSortUp())" Class="ic-16" />
+                                                @if (Layout.Sorting.Count > 1)
+                                                {
+                                                    <span col-sort-level>@(sortLevel + 1)</span>
+                                                }
+                                            </span>
+                                        }
+                                    </FluentButton>
+                                }
+                                <FluentButton Id="@FilterButtonId(column)"
+                                              Appearance="ButtonAppearance.Subtle"
+                                              Size="ButtonSize.Small"
+                                              IconOnly="true"
+                                              Class="@(Layout.Filters.ContainsKey(column.Key) ? "eod-filter-icon-active" : "eod-filter-icon")"
+                                              IconStart="@(Layout.Filters.ContainsKey(column.Key) ? new Icons.Filled.Size20.Filter() : new Icons.Regular.Size20.Filter())"
+                                              Title="@(LockedLayout ? $"Filtr: {column.Label}" : $"Filtr, sortowanie i kolejność: {column.Label}")"
+                                              OnClick="@(() => TogglePopover(column))" />
+                            </div>
+                        </th>
+                    }
+                    @if (RowActions is not null)
+                    {
+                        <th cell-type="columnheader" scope="col" col-pinned="end"><div col-title><div col-title-text>Akcje</div></div></th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (Loading)
+                {
+                    @* Wczytywanie: szkielety w kolumnach układu użytkownika – po wczytaniu tabela nie „skacze” *@
+                    @for (var r = 0; r < LoadingRows; r++)
+                    {
+                        var row = r;
+                        <tr class="fluent-data-grid-row eod-skeleton-row" @key="row" aria-hidden="true">
+                            @for (var i = 0; i < _visibleColumns.Count; i++)
+                            {
+                                <td col-index="@(i + 1)" col-pinned="@(_visibleColumns[i].IsKey ? "start" : null)">
+                                    <FluentSkeleton Width="@SkeletonWidths[(row + i) % SkeletonWidths.Length]" Height="12px" Shimmer="true" />
+                                </td>
+                            }
+                            @if (RowActions is not null)
+                            {
+                                <td class="eod-cell-actions" col-pinned="end"></td>
+                            }
+                        </tr>
+                    }
+                }
+                else if (_filteredRows.Count == 0)
+                {
+                    <tr class="fluent-data-grid-row" row-state="empty-content">
+                        <td colspan="@(_visibleColumns.Count + (RowActions is null ? 0 : 1))">
+                            @if (Rows.Count == 0)
+                            {
+                                @if (EmptyContent is not null)
+                                {
+                                    @EmptyContent
+                                }
+                                else
+                                {
+                                    <EodEmptyState Compact="true" Title="Raport nie zawiera pozycji." />
+                                }
+                            }
+                            else
+                            {
+                                <EodEmptyState Compact="true"
+                                               Icon="@(new Icons.Regular.Size24.Filter())"
+                                               Title="Brak pozycji spełniających filtry."
+                                               Description="Zmień wyszukiwaną frazę albo filtry kolumn.">
+                                    <Actions>
+                                        <FluentButton Size="ButtonSize.Small" OnClick="@ClearSearchAndFilters">Wyczyść filtry</FluentButton>
+                                    </Actions>
+                                </EodEmptyState>
+                            }
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @RenderLevel(_pageRows, 0, string.Empty)
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* Paginacja (dopasowanie Rejestru, AD-23 poz. 11): teksty jak lista użytkowników wzorca *@
+    @if (ShowPaginator)
+    {
+        <FluentPaginator State="@(_pagination!)" Class="eod-paginator" CurrentPageIndexChanged="@OnPageChanged">
+            <SummaryTemplate>@ItemRangeText</SummaryTemplate>
+            <PaginationTextTemplate>@PageText</PaginationTextTemplate>
+        </FluentPaginator>
+    }
+
+    <div class="eod-card-foot"><span class="eod-num" aria-live="polite">@(Loading ? "Wczytywanie danych…" : FooterText)</span></div>
+
+    @* Okienko kolumny. FluentPopover jest w drzewie stale, a otwiera go zmiana Opened: komponent webowy, który dostaje
+       opened="true" przy tworzeniu (przed wstawieniem do dokumentu), nie może się otworzyć (showPopover na odłączonym elemencie). *@
+    <FluentPopover AnchorId="@(_popoverColumn is null ? null : FilterButtonId(_popoverColumn))" Opened="@(_popoverColumn is not null)" OpenedChanged="@OnPopoverOpenedChanged" Width="300px" Class="eod-filter-pop">
+        @if (_popoverColumn is { } col)
+        {
+            <div class="eod-filter-body" @key="col.Key">
+                <h3 class="eod-h3">@col.Label</h3>
+                @{
+                    var sort = Layout.Sorting.FirstOrDefault(s => s.Key == col.Key);
+                    var isGrouped = Layout.Grouping.Contains(col.Key);
+                    var movable = Layout.Movable;
+                    var position = movable.ToList().IndexOf(col.Key);
+                }
+                @if (!LockedLayout)
+                {
+                    <div class="eod-row">
+                        @if (sort is null || sort.Descending)
+                        {
+                            <FluentButton Size="ButtonSize.Small" IconStart="@(new Icons.Regular.Size20.ArrowSortUp())" OnClick="@(() => SetSortDirection(col.Key, false))">Rosnąco</FluentButton>
+                        }
+                        @if (sort is null || !sort.Descending)
+                        {
+                            <FluentButton Size="ButtonSize.Small" IconStart="@(new Icons.Regular.Size20.ArrowSortDown())" OnClick="@(() => SetSortDirection(col.Key, true))">Malejąco</FluentButton>
+                        }
+                        @if (sort is null && Layout.Sorting.Count > 0)
+                        {
+                            <FluentButton Size="ButtonSize.Small" IconStart="@(new Icons.Regular.Size20.Add())" OnClick="@(() => AddSort(col.Key))">Dodaj do sortowania</FluentButton>
+                        }
+                        @if (sort is not null)
+                        {
+                            <FluentButton Size="ButtonSize.Small" IconStart="@(new Icons.Regular.Size20.Dismiss())" OnClick="@(() => RemoveSort(col.Key))">Usuń z sortowania</FluentButton>
+                        }
+                    </div>
+                    <div class="eod-row">
+                        <FluentButton Size="ButtonSize.Small" IconStart="@(new Icons.Regular.Size20.GroupList())"
+                                      OnClick="@(() => { if (isGrouped) RemoveGrouping(col.Key); else AddGrouping(col.Key); })">
+                            @(isGrouped ? "Usuń z grupowania" : Layout.Grouping.Count > 0 ? "Dodaj poziom grupowania" : "Grupuj według tej kolumny")
+                        </FluentButton>
+                    </div>
+                    @if (!col.IsKey)
+                    {
+                        <div class="eod-row">
+                            <span class="eod-caption">Kolejność</span>
+                            <FluentButton Size="ButtonSize.Small" IconOnly="true" IconStart="@(new Icons.Regular.Size20.ChevronDoubleLeft())" Title="Przesuń na początek" Disabled="@(position <= 0)" OnClick="@(() => MoveColumn(col.Key, "start"))" />
+                            <FluentButton Size="ButtonSize.Small" IconOnly="true" IconStart="@(new Icons.Regular.Size20.ChevronLeft())" Title="Przesuń w lewo" Disabled="@(position <= 0)" OnClick="@(() => MoveColumn(col.Key, "left"))" />
+                            <FluentButton Size="ButtonSize.Small" IconOnly="true" IconStart="@(new Icons.Regular.Size20.ChevronRight())" Title="Przesuń w prawo" Disabled="@(position >= movable.Count - 1)" OnClick="@(() => MoveColumn(col.Key, "right"))" />
+                            <FluentButton Size="ButtonSize.Small" IconOnly="true" IconStart="@(new Icons.Regular.Size20.ChevronDoubleRight())" Title="Przesuń na koniec" Disabled="@(position >= movable.Count - 1)" OnClick="@(() => MoveColumn(col.Key, "end"))" />
+                        </div>
+                    }
+                    <FluentDivider />
+                }
+                @switch (col.Type)
+                {
+                    case ColumnType.Text:
+                        <span class="eod-caption">Pokaż wiersze, w których tekst zawiera:</span>
+                        <FluentTextInput Placeholder="Wpisz fragment" AriaLabel="Zawiera" Immediate="true" Width="100%"
+                                         Value="@((Layout.Filters.GetValueOrDefault(col.Key) as TextFilter)?.Phrase)"
+                                         ValueChanged="@(v => SetFilter(col.Key, string.IsNullOrWhiteSpace(v) ? null : new TextFilter(v.Trim())))">
+                            <StartTemplate><EodIcon Value="@(new Icons.Regular.Size20.Search())" /></StartTemplate>
+                        </FluentTextInput>
+                        break;
+
+                    case ColumnType.List:
+                        var chosen = (Layout.Filters.GetValueOrDefault(col.Key) as ListFilter)?.Values;
+                        <span class="eod-caption">Pokaż wybrane wartości:</span>
+                        <div class="eod-row">
+                            <FluentButton Appearance="ButtonAppearance.Subtle" Size="ButtonSize.Small" OnClick="@(() => SetFilter(col.Key, null))">Zaznacz wszystkie</FluentButton>
+                            <FluentButton Appearance="ButtonAppearance.Subtle" Size="ButtonSize.Small" OnClick="@(() => SetFilter(col.Key, new ListFilter(new HashSet<string>())))">Odznacz wszystkie</FluentButton>
+                        </div>
+                        <div class="eod-filter-list">
+                            @foreach (var value in ReportEngine.DistinctValues(col, Rows))
+                            {
+                                var text = value?.ToString() ?? string.Empty;
+                                var count = Rows.Count(r => ReportEngine.GetValue(r, col.Key)?.ToString() == text);
+                                <FluentCheckbox @key="text"
+                                                Label="@($"{ReportEngine.Display(col, value)} ({count})")"
+                                                Value="@(chosen is null || chosen.Contains(text))"
+                                                ValueChanged="@(v => ToggleListValue(col, text, v))" />
+                            }
+                        </div>
+                        break;
+
+                    case ColumnType.Number:
+                        var range = Layout.Filters.GetValueOrDefault(col.Key) as NumberFilter;
+                        <span class="eod-caption">Pokaż wartości z zakresu:</span>
+                        <div class="eod-filter-range">
+                            <FluentNumberInput TValue="decimal?" Label="Od" LabelPosition="LabelPosition.Before" Immediate="true"
+                                               Value="@range?.From" ValueChanged="@(v => SetNumberRange(col.Key, v, range?.To))">
+                                <EndTemplate>@if (col.IsAmount) { <span>zł</span> }</EndTemplate>
+                            </FluentNumberInput>
+                            <FluentNumberInput TValue="decimal?" Label="Do" LabelPosition="LabelPosition.Before" Immediate="true"
+                                               Value="@range?.To" ValueChanged="@(v => SetNumberRange(col.Key, range?.From, v))">
+                                <EndTemplate>@if (col.IsAmount) { <span>zł</span> }</EndTemplate>
+                            </FluentNumberInput>
+                        </div>
+                        break;
+
+                    case ColumnType.Date:
+                        var period = Layout.Filters.GetValueOrDefault(col.Key) as DateFilter;
+                        <span class="eod-caption">Pokaż daty z okresu:</span>
+                        <div class="eod-filter-range">
+                            <FluentDatePicker TValue="DateTime?" Label="Od" LabelPosition="LabelPosition.Before"
+                                              Value="@period?.From?.ToDateTime(TimeOnly.MinValue)"
+                                              ValueChanged="@(v => SetDateBound(col.Key, true, v))" />
+                            <FluentDatePicker TValue="DateTime?" Label="Do" LabelPosition="LabelPosition.Before"
+                                              Value="@period?.To?.ToDateTime(TimeOnly.MinValue)"
+                                              ValueChanged="@(v => SetDateBound(col.Key, false, v))" />
+                        </div>
+                        break;
+                }
+                <div class="eod-row eod-row-end">
+                    <FluentButton Size="ButtonSize.Small" OnClick="@(() => ClearFilter(col.Key))">Wyczyść filtr</FluentButton>
+                    <FluentButton Size="ButtonSize.Small" Appearance="ButtonAppearance.Primary" OnClick="@ClosePopover">Gotowe</FluentButton>
+                </div>
+            </div>
+        }
+    </FluentPopover>
+</div>
+
+@code {
+    // Wiersze grup (wielopoziomowe) i wiersze danych. Grupa: „Kolumna: wartość” + liczba pozycji i suma; wcięcie 28 px na poziom.
+    private RenderFragment RenderLevel(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows, int level, string path) => __builder =>
+    {
+        if (level >= Layout.Grouping.Count)
+        {
+            foreach (var row in rows)
+            {
+                @RenderRow(row)
+            }
+            return;
+        }
+
+        foreach (var g in ReportEngine.Groups(Layout, rows, level, path))
+        {
+            var expanded = !Layout.Collapsed.Contains(g.Id);
+            <tr class="fluent-data-grid-row eod-group-row" row-type="group" data-level="@g.Level">
+                <td colspan="@(_visibleColumns.Count + (RowActions is null ? 0 : 1))">
+                    <div class="eod-group" style="@($"padding-inline-start: {g.Level * 28}px")">
+                        <FluentButton Appearance="ButtonAppearance.Subtle" Size="ButtonSize.Small" IconOnly="true"
+                                      IconStart="@(expanded ? new Icons.Regular.Size20.ChevronDown() : new Icons.Regular.Size20.ChevronRight())"
+                                      aria-expanded="@(expanded ? "true" : "false")"
+                                      Title="@($"{(expanded ? "Zwiń" : "Rozwiń")} grupę: {g.Value}")"
+                                      OnClick="@(() => ToggleGroup(g.Id))" />
+                        <span>@g.Column.Label: @g.Value</span>
+                        <span class="eod-caption eod-num">@GroupText(g)</span>
+                    </div>
+                </td>
+            </tr>
+            if (expanded)
+            {
+                @RenderLevel(g.Rows, level + 1, g.Id)
+            }
+        }
+    };
+
+    private RenderFragment RenderRow(IReadOnlyDictionary<string, object?> row) => __builder =>
+    {
+        <tr class="fluent-data-grid-row" hover="true">
+            @for (var i = 0; i < _visibleColumns.Count; i++)
+            {
+                var column = _visibleColumns[i];
+                var value = ReportEngine.GetValue(row, column.Key);
+                var text = ReportEngine.Display(column, value);
+                if (column.IsLink)
+                {
+                    <td col-index="@(i + 1)" col-pinned="@(column.IsKey ? "start" : null)">
+                        <a class="eod-cell-main" href="@(RowHref?.Invoke(row) ?? "#")">@text</a>
+                    </td>
+                }
+                else if (column.BadgeColors is not null)
+                {
+                    <td col-index="@(i + 1)">
+                        <FluentBadge Appearance="BadgeAppearance.Tint" Color="@Statuses.Color(value?.ToString(), column.BadgeColors)">@text</FluentBadge>
+                    </td>
+                }
+                else
+                {
+                    <td col-index="@(i + 1)"
+                        col-pinned="@(column.IsKey ? "start" : null)"
+                        col-justify="@(column.Type == ColumnType.Number ? "end" : null)"
+                        class="@(column.Type is ColumnType.Number or ColumnType.Date ? "eod-num" : null)">@text</td>
+                }
+            }
+            @if (RowActions is not null)
+            {
+                <td class="eod-cell-actions" col-pinned="end">@RowActions(row)</td>
+            }
+        </tr>
+    };
+}

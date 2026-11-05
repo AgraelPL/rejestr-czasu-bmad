@@ -1,7 +1,17 @@
 @page "/not-found"
 @layout MainLayout
 @attribute [AllowAnonymous]
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@* The Polish "nie znaleziono" page (AD-11): unknown addresses and the menu items of screens not built yet. *@
 
-<PageHeader Title="Nie znaleziono" />
-
-<p>Strona, której szukasz, nie istnieje.</p>
+<EodPage Title="Nie znaleziono" Description="Adres jest nieprawidłowy albo ten ekran jeszcze nie powstał.">
+    <EodCard Fill="true">
+        <EodEmptyState Icon="@(new Icons.Regular.Size32.DocumentSearch())"
+                       Title="Strona, której szukasz, nie istnieje"
+                       Description="Sprawdź adres albo wybierz ekran z menu.">
+            <Actions>
+                <FluentAnchorButton Href="/" Class="not-found-home">Przejdź na stronę startową</FluentAnchorButton>
+            </Actions>
+        </EodEmptyState>
+    </EodCard>
+</EodPage>

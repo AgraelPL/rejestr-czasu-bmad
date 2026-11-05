@@ -1,0 +1,20 @@
+@namespace RejestrCzasu.Ui
+@*
+    EodHead – zasoby wzorca do sekcji <head> w App.razor (jedna linia: <EodHead />):
+    style Fluent UI Blazor v5, reboot, eod.css oraz skrypty eod.js, IMask i SortableJS. Komponent nie ma parametrów.
+    Skala interfejsu zapisana przez użytkownika jest ustawiana od razu, przed pierwszym wyrenderowaniem (bez „skoku” rozmiaru).
+    Skrypt skali (ui/eod-scale.js, synchronicznie, przed pozostałymi skryptami) musi być zgodny z eod.js
+    (klucz localStorage 'eod.scale', wartości jak SCALES, atrybut data-scale na <html>). Rejestr: plik zamiast skryptu
+    inline, bo CSP ma script-src 'self' (AD-12, AD-23 poz. 8).
+    IMask (FluentNumberInput, pola z maską) i SortableJS (FluentSortableList) Fluent v5 domyślnie pobiera z unpkg.com –
+    bez internetu połączenie Blazor zrywa się przy pierwszym takim polu. Ładujemy lokalne kopie (licencja MIT, wwwroot/lib);
+    Fluent korzysta z nich, gdy window.IMask / window.Sortable już istnieją.
+*@
+
+<link rel="stylesheet" href="_content/Microsoft.FluentUI.AspNetCore.Components/Microsoft.FluentUI.AspNetCore.Components.bundle.scp.css" />
+<link rel="stylesheet" href="_content/Microsoft.FluentUI.AspNetCore.Components/css/reboot.css" />
+<link rel="stylesheet" href="ui/eod.css" />
+<script src="ui/eod-scale.js"></script>
+<script src="ui/lib/imask/imask.min.js"></script>
+<script src="ui/lib/sortablejs/Sortable.min.js"></script>
+<script src="ui/eod.js" defer></script>

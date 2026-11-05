@@ -7,6 +7,7 @@ using RejestrCzasu.Accounts;
 using RejestrCzasu.Data;
 using RejestrCzasu.Features.Pomoc;
 using RejestrCzasu.Features.Pomoc.Topics;
+using RejestrCzasu.Shared;
 using RejestrCzasu.Tests.Shared;
 
 namespace RejestrCzasu.Tests.Features;
@@ -53,7 +54,9 @@ public sealed class HelpTests : BunitContext
 
         Assert.Equal("Strona startowa i menu", cut.Find("h1").TextContent);
         Assert.NotEmpty(cut.FindComponents<StartHelp>());
-        Assert.Equal("/pomoc", cut.Find(".page-breadcrumbs a").GetAttribute("href"));
+        Assert.NotNull(cut.Find(".eod-page .eod-breadcrumb").QuerySelector("[href='/pomoc']"));
+        Assert.Equal("Strona startowa i menu", cut.Find(".eod-breadcrumb [aria-current='page']").TextContent);
+        Assert.Equal("start", cut.FindComponent<PageHelp>().Instance.Topic);
     }
 
     [Fact]

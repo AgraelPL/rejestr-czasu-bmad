@@ -1,0 +1,20 @@
+@namespace RejestrCzasu.Ui
+@*
+    EodRule – wiersz bloku zasad pod treścią karty (parametr Rules komponentu EodCard): ikona ptaszka + zdanie zasady
+    (specyfikacja UI, sekcja 7 – blok „zasad” na tle colorNeutralBackground2).
+    Przykład:
+    <EodCard Title="Wygląd">
+        <ChildContent>…</ChildContent>
+        <Rules><EodRule>Zmiany zapisują się od razu.</EodRule></Rules>
+    </EodCard>
+*@
+<div class="eod-rule">
+    <EodIcon Value="@(new Icons.Regular.Size20.Checkmark())" />
+    <span>@ChildContent</span>
+</div>
+
+@code {
+    /// <summary>Treść zasady – jedno zdanie.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

@@ -7,44 +7,50 @@
 @using Microsoft.AspNetCore.RateLimiting
 @inject AccountSignIn AccountSignIn
 
-<PageTitle>Rejestracja — Rejestr czasu pracy</PageTitle>
+<PageTitle>Rejestracja · Rejestr czasu</PageTitle>
 <AccountHelp Topic="rejestracja" />
 
-<h1>Rejestracja</h1>
+<section class="eod-page">
+    <h1 class="eod-h1">Rejestracja</h1>
 
-@if (_registered)
-{
-    <AccountMessages Messages="@([RegisteredMessage])" Intent="MessageBarIntent.Success" />
-    <p><a href="/konto/logowanie">Przejdź do logowania</a></p>
-}
-else
-{
-    <AccountMessages Messages="@_errors" />
+    @if (_registered)
+    {
+        <EodCard>
+            <AccountMessages Messages="@([RegisteredMessage])" Intent="MessageBarIntent.Success" />
+            <p class="account-links"><a href="/konto/logowanie">Przejdź do logowania</a></p>
+        </EodCard>
+    }
+    else
+    {
+        <p class="eod-caption">@AdministratorAccessNotice</p>
 
-    <p class="account-notice">@AdministratorAccessNotice</p>
+        <EodCard>
+            <AccountMessages Messages="@_errors" />
 
-    <EditForm Model="Input" FormName="rejestracja" OnValidSubmit="RegisterAsync" method="post" class="account-form">
-        <DataAnnotationsValidator />
-        <div class="account-field">
-            <label for="register-user-name">Login</label>
-            <InputText id="register-user-name" @bind-Value="Input.UserName" autocomplete="username" maxlength="@IdentitySetup.MaxUserNameLength" autofocus />
-            <ValidationMessage For="() => Input.UserName" />
-        </div>
-        <div class="account-field">
-            <label for="register-password">Hasło (co najmniej @IdentitySetup.MinPasswordLength znaków)</label>
-            <InputText id="register-password" type="password" @bind-Value="Input.Password" autocomplete="new-password" />
-            <ValidationMessage For="() => Input.Password" />
-        </div>
-        <div class="account-field">
-            <label for="register-confirm-password">Powtórz hasło</label>
-            <InputText id="register-confirm-password" type="password" @bind-Value="Input.ConfirmPassword" autocomplete="new-password" />
-            <ValidationMessage For="() => Input.ConfirmPassword" />
-        </div>
-        <button type="submit" class="account-submit">Załóż Konto</button>
-    </EditForm>
+            <EditForm Model="Input" FormName="rejestracja" OnValidSubmit="RegisterAsync" method="post" class="account-form">
+                <DataAnnotationsValidator />
+                <div class="account-field">
+                    <label for="register-user-name">Login</label>
+                    <InputText id="register-user-name" @bind-Value="Input.UserName" autocomplete="username" maxlength="@IdentitySetup.MaxUserNameLength" autofocus />
+                    <ValidationMessage For="() => Input.UserName" />
+                </div>
+                <div class="account-field">
+                    <label for="register-password">Hasło (co najmniej @IdentitySetup.MinPasswordLength znaków)</label>
+                    <InputText id="register-password" type="password" @bind-Value="Input.Password" autocomplete="new-password" />
+                    <ValidationMessage For="() => Input.Password" />
+                </div>
+                <div class="account-field">
+                    <label for="register-confirm-password">Powtórz hasło</label>
+                    <InputText id="register-confirm-password" type="password" @bind-Value="Input.ConfirmPassword" autocomplete="new-password" />
+                    <ValidationMessage For="() => Input.ConfirmPassword" />
+                </div>
+                <button type="submit" class="account-submit">Załóż Konto</button>
+            </EditForm>
+        </EodCard>
 
-    <p>Masz już Konto? <a href="/konto/logowanie">Zaloguj się</a></p>
-}
+        <p class="account-links">Masz już Konto? <a href="/konto/logowanie">Zaloguj się</a></p>
+    }
+</section>
 
 @code {
     public const string AdministratorAccessNotice =
