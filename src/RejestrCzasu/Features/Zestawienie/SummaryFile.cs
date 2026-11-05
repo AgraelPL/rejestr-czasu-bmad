@@ -7,8 +7,8 @@ namespace RejestrCzasu.Features.Zestawienie;
 public static class SummaryFile
 {
     /// <summary>
-    /// The name for <paramref name="month"/>; a non-empty <paramref name="prefix"/> goes in front with "_". The prefix of
-    /// the Ustawienia konta comes in story 5; until then the endpoint passes <see langword="null"/>.
+    /// The name for <paramref name="month"/>; a non-empty <paramref name="prefix"/> goes in front with "_". The endpoint passes
+    /// the prefix saved in the Ustawienia konta, the Ustawienia konta screen the typed one for its preview.
     /// </summary>
     public static string Name(YearMonth month, string? prefix)
     {

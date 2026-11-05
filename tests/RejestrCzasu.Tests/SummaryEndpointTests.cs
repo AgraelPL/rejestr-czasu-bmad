@@ -2,6 +2,7 @@ using System.Net;
 using Microsoft.EntityFrameworkCore;
 using RejestrCzasu.Accounts;
 using RejestrCzasu.Data;
+using RejestrCzasu.Features.UstawieniaKonta;
 using RejestrCzasu.Tests.Features;
 using RejestrCzasu.Tests.Reporting;
 
@@ -43,6 +44,65 @@ public sealed class SummaryEndpointTests(PostgresFixture postgres) : IAsyncLifet
         Assert.Equal("RAZEM WRZESIEŃ 2026", sheet.Cell(31, 5).GetText());
         Assert.Equal(103.0, sheet.Cell(31, 6).GetDouble());
         Assert.Equal(103.0, sheet.Cell(31, 8).GetDouble());
+    }
+
+    [Fact]
+    public async Task SavedPrefix_InTheFileName()
+    {
+        var (app, userId) = await LoggedInAsync("prefiks");
+        await using var _ = app;
+        await SeptemberShape.SeedAsync(postgres, userId, Ct);
+        await new AccountSettingsStore(postgres.CreateLoggedInUserDbContextFactory(userId)).SavePrefixAsync("ABC", Ct);
+
+        using var response = await app.Http.GetAsync(SeptemberPath, Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("ABC_Zestawienie-wrzesień_2026.xlsx", response.Content.Headers.ContentDisposition?.FileNameStar);
+    }
+
+    [Fact]
+    public async Task PolishPrefix_InTheFileName()
+    {
+        var (app, userId) = await LoggedInAsync("prefiks-polski");
+        await using var _ = app;
+        await SeptemberShape.SeedAsync(postgres, userId, Ct);
+        await new AccountSettingsStore(postgres.CreateLoggedInUserDbContextFactory(userId)).SavePrefixAsync("Łódź-Zespół", Ct);
+
+        using var response = await app.Http.GetAsync(SeptemberPath, Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Łódź-Zespół_Zestawienie-wrzesień_2026.xlsx", response.Content.Headers.ContentDisposition?.FileNameStar);
+    }
+
+    [Fact]
+    public async Task ClearedPrefix_FileNameWithoutPrefix()
+    {
+        var (app, userId) = await LoggedInAsync("prefiks-wyczyszczony");
+        await using var _ = app;
+        await SeptemberShape.SeedAsync(postgres, userId, Ct);
+        var store = new AccountSettingsStore(postgres.CreateLoggedInUserDbContextFactory(userId));
+        await store.SavePrefixAsync("ABC", Ct);
+        await store.SavePrefixAsync("", Ct);
+
+        using var response = await app.Http.GetAsync(SeptemberPath, Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Zestawienie-wrzesień_2026.xlsx", response.Content.Headers.ContentDisposition?.FileNameStar);
+    }
+
+    [Fact]
+    public async Task AnotherUsersPrefix_NotUsed_NoRow_NoPrefix()
+    {
+        var (app, userId) = await LoggedInAsync("bez-prefiksu");
+        await using var _ = app;
+        await SeptemberShape.SeedAsync(postgres, userId, Ct);
+        var otherId = await postgres.CreateUserAsync("z-prefiksem");
+        await new AccountSettingsStore(postgres.CreateLoggedInUserDbContextFactory(otherId)).SavePrefixAsync("BBB", Ct);
+
+        using var response = await app.Http.GetAsync(SeptemberPath, Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Zestawienie-wrzesień_2026.xlsx", response.Content.Headers.ContentDisposition?.FileNameStar);
     }
 
     [Fact]

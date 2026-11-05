@@ -1,5 +1,6 @@
 using System.Globalization;
 using RejestrCzasu.Domain;
+using RejestrCzasu.Features.UstawieniaKonta;
 using RejestrCzasu.Reporting;
 
 namespace RejestrCzasu.Features.Zestawienie;
@@ -7,7 +8,7 @@ namespace RejestrCzasu.Features.Zestawienie;
 /// <summary>
 /// <c>GET /zestawienie/{rok}/{miesiac}</c> (AD-14): the Zestawienie of a Miesiąc of the logged-in User as xlsx. The
 /// Wpisy only through <see cref="MonthEntriesQuery"/> (User mode, AD-16), every number from <see cref="MonthReport"/>
-/// (AD-5). Opened only by a link with <c>download</c> from the Widok miesiąca, never by the Blazor router.
+/// (AD-5), the file name prefix from <see cref="AccountSettingsStore"/> (R5). Opened only by a link with <c>download</c> from the Widok miesiąca, never by the Blazor router.
 /// </summary>
 public static class SummaryEndpoint
 {
@@ -23,7 +24,8 @@ public static class SummaryEndpoint
 
     public static IEndpointRouteBuilder MapSummaryEndpoint(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet(Route, async (int rok, int miesiac, MonthEntriesQuery query, CancellationToken cancellationToken) =>
+        endpoints.MapGet(Route, async (int rok, int miesiac, MonthEntriesQuery query, AccountSettingsStore settings,
+                CancellationToken cancellationToken) =>
             {
                 if (rok is < 1 or > 9999 || miesiac is < 1 or > 12)
                 {
@@ -37,7 +39,8 @@ public static class SummaryEndpoint
                     // With a body, so UseStatusCodePagesWithReExecute does not turn it into "nie znaleziono".
                     return Results.Text(EmptyMessage(month), "text/plain; charset=utf-8", statusCode: StatusCodes.Status404NotFound);
                 }
-                return Results.File(SummaryXlsx.Write(report), SummaryXlsx.ContentType, SummaryFile.Name(month, prefix: null));
+                var prefix = await settings.GetPrefixAsync(cancellationToken);
+                return Results.File(SummaryXlsx.Write(report), SummaryXlsx.ContentType, SummaryFile.Name(month, prefix));
             })
             .RequireAuthorization();
         return endpoints;

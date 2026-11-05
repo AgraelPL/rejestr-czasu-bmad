@@ -54,6 +54,24 @@ public sealed class DbErrorsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SecondAccountSettingsRow_IsUniqueViolationOfAccountSettingsKeyOnly()
+    {
+        await using (var db = await postgres.CreateUserContextAsync(_user))
+        {
+            db.AccountSettings.Add(new AccountSettings { ExportPrefix = "ABC" });
+            await db.SaveChangesAsync(Ct);
+        }
+        await using var second = await postgres.CreateUserContextAsync(_user);
+        second.AccountSettings.Add(new AccountSettings { ExportPrefix = "XYZ" });
+
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => second.SaveChangesAsync(Ct));
+
+        Assert.True(DbErrors.IsUniqueViolation(ex, DbErrors.AccountSettingsKey));
+        Assert.False(DbErrors.IsUniqueViolation(ex, DbErrors.ProjectCodeIndex));
+        Assert.False(DbErrors.IsForeignKeyViolation(ex));
+    }
+
+    [Fact]
     public async Task DeletingProjectUsedByEntry_IsForeignKeyViolation()
     {
         await using var db = await postgres.CreateUserContextAsync(_user);

@@ -44,6 +44,7 @@ public static class HelpTopics
     public const string WpisyNowy = "wpisy-nowy";
     public const string Wpisy = "wpisy";
     public const string Miesiac = "miesiac";
+    public const string UstawieniaKonta = "ustawienia-konta";
 
     public static IReadOnlyList<HelpTopic> All { get; } =
     [
@@ -53,6 +54,7 @@ public static class HelpTopics
         new(TypyPracy, "Typy pracy", typeof(TypyPracyHelp), HelpAccess.LoggedIn),
         new(WpisyNowy, "Nowy wpis", typeof(WpisyNowyHelp), HelpAccess.LoggedIn),
         new(Wpisy, "Lista wpisów", typeof(WpisyHelp), HelpAccess.LoggedIn),
+        new(UstawieniaKonta, "Ustawienia konta", typeof(UstawieniaKontaHelp), HelpAccess.LoggedIn),
     ];
 
     /// <summary>The topic with the key (case-insensitive), or <c>null</c>.</summary>

@@ -14,6 +14,9 @@ public static class DbErrors
     /// <summary>Unique functional index on <c>work_type (user_id, lower(name))</c>: a Work type name is unique per User.</summary>
     public const string WorkTypeNameIndex = "ux_work_type_user_id_name_lower";
 
+    /// <summary>Primary key of <c>account_settings (user_id)</c>: one row of Ustawienia konta per User (AD-7).</summary>
+    public const string AccountSettingsKey = "pk_account_settings";
+
     /// <summary>
     /// <c>true</c> when <paramref name="exception"/> (or one of its inner exceptions) is a unique violation (23505) of
     /// the constraint or index <paramref name="constraintName"/>.
