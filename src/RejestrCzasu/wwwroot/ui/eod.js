@@ -52,9 +52,10 @@
     // ── Combobox (FluentCombobox / FluentSelect): tekst wartości ustawionej przy pierwszym renderze ──
     showSelectedText,
 
-    // ── Pobranie pliku wygenerowanego po stronie serwera (eksport CSV: UTF-8 z BOM, otwiera się w Excelu) ──
-    downloadFile(fileName, fileContent, type) {
-      const blob = new Blob(['﻿' + fileContent], { type: type || 'text/csv;charset=utf-8' });
+    // ── Pobranie pliku wygenerowanego po stronie serwera (eksport raportu: strumień obwodu → Blob, bez BOM) ──
+    async downloadStream(fileName, streamRef, type) {
+      const buffer = await streamRef.arrayBuffer();
+      const blob = new Blob([buffer], { type: type || 'application/octet-stream' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = fileName;

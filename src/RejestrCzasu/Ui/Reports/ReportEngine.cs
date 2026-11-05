@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 
 namespace RejestrCzasu.Ui;
 
@@ -16,7 +15,7 @@ namespace RejestrCzasu.Ui;
 public sealed record ReportGroup(string Id, ReportColumn Column, string Value, int Level, IReadOnlyList<IReadOnlyDictionary<string, object?>> Rows, object? Key = null);
 
 /// <summary>
-/// Logika raportu bez UI: odczyt i format wartości, porządek, filtry, sortowanie z grupowaniem, sumy i eksport CSV.
+/// Logika raportu bez UI: odczyt i format wartości, porządek, filtry, sortowanie z grupowaniem, i sumy.
 /// Używa jej <see cref="EodReport"/>; można ją testować i wywoływać bez komponentu.
 /// </summary>
 /// <remarks>Wiersz raportu to słownik: klucz kolumny (<see cref="ReportColumn.Key"/>) → wartość. Specyfikacja UI, sekcja 9.7.</remarks>
@@ -313,47 +312,6 @@ public static class ReportEngine
 
         return text;
     }
-
-    // ── Eksport CSV ──────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Tworzy treść pliku CSV: widoczne kolumny i wiersze po filtrach w kolejności z ekranu.
-    /// </summary>
-    /// <param name="layout">Układ raportu (widoczne kolumny i ich kolejność).</param>
-    /// <param name="rows">Wiersze po filtrach, w kolejności wyświetlania (wynik <see cref="Rows"/>).</param>
-    /// <returns>Treść CSV z wierszem nagłówków.</returns>
-    /// <remarks>
-    /// Separator „;”, przecinek dziesiętny bez odstępów tysięcy, daty dd.mm.rrrr, końce wierszy CRLF; pola ze średnikiem,
-    /// cudzysłowem lub końcem wiersza są ujmowane w cudzysłów. BOM UTF-8 dokłada pobranie pliku (<c>EodUI.downloadFile</c>).
-    /// Kolumna z <see cref="ReportColumn.ExportLabel"/> i <see cref="ReportColumn.ExportFormat"/> ma w pliku własny nagłówek
-    /// i wartość (dopasowanie Rejestru, AD-23 poz. 13).
-    /// </remarks>
-    public static string ToCsv(ReportLayout layout, IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
-    {
-        var columns = layout.Visible;
-        var sb = new StringBuilder();
-        sb.Append(string.Join(';', columns.Select(c => Field(c.ExportLabel ?? c.Label)))).Append("\r\n");
-        foreach (var r in rows)
-        {
-            sb.Append(string.Join(';', columns.Select(c => Field(ExportValue(c, GetValue(r, c.Key)))))).Append("\r\n");
-        }
-
-        return sb.ToString();
-
-        static string Field(string s) => s.IndexOfAny([';', '"', '\r', '\n']) >= 0 ? $"\"{s.Replace("\"", "\"\"")}\"" : s;
-    }
-
-    // Dopasowanie Rejestru (AD-23 poz. 13): ReportColumn.ExportFormat przed formatem typu kolumny.
-    private static string ExportValue(ReportColumn column, object? value)
-        => column.ExportFormat is { } format && value is not null ? format(value) : CsvValue(column, value);
-
-    private static string CsvValue(ReportColumn column, object? value) => column.Type switch
-    {
-        ColumnType.Date => ToDate(value) is { } d ? Formats.Date(d) : string.Empty,
-        ColumnType.Number when column.IsAmount => ToNumber(value).ToString("0.00", Culture),
-        ColumnType.Number => ToNumber(value).ToString("0.##", Culture),
-        _ => value?.ToString() ?? string.Empty,
-    };
 
     private static int IndexOf(IReadOnlyList<string> list, string? value)
     {

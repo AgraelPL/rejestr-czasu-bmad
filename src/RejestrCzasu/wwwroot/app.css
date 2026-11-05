@@ -90,10 +90,11 @@
     gap: 0.25rem;
 }
 
-/* Medium (the Entry window, a narrow card): Data, Projekt, Typ pracy / Opis over two columns, Czas. */
+/* Medium (the Entry window, a narrow card): Data fixed, Projekt wider than Typ pracy / Opis over two columns, Czas.
+   From 480px (30rem): the column minimums (8.5rem) and the two gaps (2rem) fit. */
 @container entry-form (min-width: 480px) {
     .entry-form {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: 8.5rem minmax(0, 3fr) minmax(0, 2fr);
     }
 
         .entry-form > :is(.entry-description, :has(.entry-description)) {
@@ -101,11 +102,12 @@
         }
 }
 
-/* Wide (Nowy wpis on a wide screen): one row, Data and Czas narrow, Opis the widest; Zapisz below. From 60rem only:
-   the column minimums (56rem) and the four gaps (4rem) fit. */
-@container entry-form (min-width: 60rem) {
+/* Wide (Nowy wpis on a wide screen): one row, Data and Czas fixed and narrow, Projekt wider than Typ pracy (the full
+   "KOD - nazwa" of a Project), Opis the widest as the card grows; Zapisz below. From 61rem only: the column minimums
+   (8.5 + 18 + 12 + 12 + 6.5 = 57rem) and the four gaps (4rem) fit. */
+@container entry-form (min-width: 61rem) {
     .entry-form {
-        grid-template-columns: minmax(9rem, 10rem) minmax(12rem, 1fr) minmax(12rem, 1fr) minmax(16rem, 2fr) minmax(7rem, 8rem);
+        grid-template-columns: 8.5rem minmax(18rem, 3fr) minmax(12rem, 2fr) minmax(12rem, 4fr) 6.5rem;
     }
 
         .entry-form > :is(.entry-description, :has(.entry-description)) {

@@ -48,7 +48,7 @@
                 <FluentMenuItem IconStart="@(new Icons.Regular.Size20.ArrowReset())" OnClick="@ResetLayout">Przywróć układ domyślny</FluentMenuItem>
             </FluentMenuList>
         </FluentMenu>
-        @if (ShowExport)
+        @if (ShowExport && ExportFile is not null)
         {
             <FluentButton IconStart="@(new Icons.Regular.Size20.ArrowDownload())" OnClick="@ExportAsync">Eksportuj</FluentButton>
         }

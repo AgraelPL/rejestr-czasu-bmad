@@ -1,4 +1,3 @@
-@using System.Globalization
 @using RejestrCzasu.Domain
 @using RejestrCzasu.Features.Pomoc
 @using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
@@ -9,9 +8,10 @@
    through EntryStore and gives it here; the footer sum comes from that list (AD-5), so the report's column filters only
    hide rows. The row icons edit, copy and delete the Entry through EntryDialogs by its Id (R6, R7, AD-10); after a
    change the host reads the list again (OnChanged). Eksportuj writes every row that passes the screen filters, the
-   column filters and the search, from all pages (30 rows a page), with Czas in decimal hours ("Godziny"). *@
+   column filters and the search, from all pages (30 rows a page), to xlsx (EntriesXlsx): Data a date cell, Czas the
+   column "Godziny" as a number of decimal hours. *@
 
-<EodReport Definition="Definition" Rows="_rows" LayoutKey="@LayoutKey" PageSize="PageSize"
+<EodReport Definition="Definition" Rows="_rows" LayoutKey="@LayoutKey" PageSize="PageSize" ExportFile="EntriesXlsx.Write"
            DataAsOf="PolishCalendar.Today(TimeProvider)" PreserveRowOrder="true" Loading="Entries is null" FooterSummary="@Summary(Entries ?? [])">
     <RowActions Context="row">
         @{ var id = (int)row[IdKey]!; }
@@ -31,12 +31,11 @@
     /// <summary>Rows on one page of the report; the footer and the export count all rows after the filters (AD-5).</summary>
     internal const int PageSize = 30;
 
-    private static readonly CultureInfo Polish = CultureInfo.GetCultureInfo("pl-PL");
-
     /// <summary>
-    /// The report of Entries (AD-9): value filter in every column, counter in the footer, export to CSV. Data is a
+    /// The report of Entries (AD-9): value filter in every column, counter in the footer, export to xlsx. Data is a
     /// <see cref="DateOnly"/> and Czas an <see cref="int"/> of minutes, so both sort by value, not by text. In the file
-    /// Data is dd.mm.rrrr and Czas the column "Godziny" in decimal hours with a comma ("1,5"), as in the Zestawienie.
+    /// (<see cref="EntriesXlsx"/>) Data is a date cell dd.mm.yyyy and Czas the column "Godziny" in decimal hours as a
+    /// number (1.5), as in the Zestawienie.
     /// </summary>
     internal static readonly ReportDefinition Report = new()
     {
@@ -49,7 +48,6 @@
             new(nameof(EntryRow.Date), "Data", ColumnType.List) {
                 IsKey = true,
                 Format = v => EntryMessages.Date((DateOnly)v!),
-                ExportFormat = v => EntryMessages.Date((DateOnly)v!),
             },
             new(nameof(EntryRow.DayName), "Dzień", ColumnType.List),
             new(nameof(EntryRow.ProjectCode), "Projekt", ColumnType.List),
@@ -59,7 +57,6 @@
             {
                 Format = v => Czas.Format((int)v!),
                 ExportLabel = "Godziny",
-                ExportFormat = v => Czas.ToDecimalHours((int)v!).ToString("0.##", Polish),
             },
         ],
     };

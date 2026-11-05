@@ -77,8 +77,8 @@
     /// <summary>Called when a save is asked for but the model does not pass <see cref="EntryFormValidator"/>.</summary>
     [Parameter] public EventCallback OnInvalid { get; set; }
 
-    /// <summary>Text of a Project option: "KOD — nazwa".</summary>
-    internal static string ProjectText(ProjectOption? project) => project is null ? "" : $"{project.Code} — {project.Name}";
+    /// <summary>Text of a Project option: "KOD - nazwa".</summary>
+    internal static string ProjectText(ProjectOption? project) => project is null ? "" : $"{project.Code} - {project.Name}";
 
     private static string WorkTypeText(WorkTypeOption? workType) => workType?.Name ?? "";
 

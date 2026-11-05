@@ -164,13 +164,18 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         var export = cut.FindAll(".eod-report .eod-formbar fluent-button").Single(b => b.TextContent.Trim() == "Eksportuj");
         await cut.InvokeAsync(() => export.Click());
 
-        var download = Assert.Single(JSInterop.Invocations, i => i.Identifier == "EodUI.downloadFile");
-        Assert.Equal("wpisy-2026-09-03.csv", download.Arguments[0]);
-        Assert.Equal(
-            "Data;Dzień;Projekt;Typ pracy;Opis;Godziny\r\n"
-            + "30.09.2026;Środa;ABC;Development;Koniec;0,75\r\n"
-            + "01.09.2026;Wtorek;RDZ;Development;\"Pierwszy; \"\"cytat\"\"\";1,5\r\n",
-            download.Arguments[1]);
+        var download = Assert.Single(JSInterop.Invocations, i => i.Identifier == "EodUI.downloadStream");
+        Assert.Equal("wpisy-2026-09-03.xlsx", download.Arguments[0]);
+        using var workbook = XlsxDownload.Open(download);
+        var sheet = workbook.Worksheet(EntriesXlsx.SheetName);
+        Assert.Equal(["Data", "Dzień", "Projekt", "Typ pracy", "Opis", "Godziny"], sheet.Row(1).CellsUsed().Select(c => c.GetText()));
+        Assert.Equal(3, sheet.LastRowUsed()!.RowNumber());
+        Assert.Equal(new DateTime(2026, 9, 30), sheet.Cell(2, 1).GetDateTime());
+        Assert.Equal(["Środa", "ABC", "Development", "Koniec"], new[] { 2, 3, 4, 5 }.Select(c => sheet.Cell(2, c).GetText()));
+        Assert.Equal(0.75, sheet.Cell(2, 6).GetDouble());
+        Assert.Equal(new DateTime(2026, 9, 1), sheet.Cell(3, 1).GetDateTime());
+        Assert.Equal("Pierwszy; \"cytat\"", sheet.Cell(3, 5).GetText());
+        Assert.Equal(1.5, sheet.Cell(3, 6).GetDouble());
     }
 
     [Fact(Timeout = TestTimeoutMs)]
@@ -369,7 +374,7 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
 
         var projects = ProjectList(cut).Instance;
         Assert.Equal(["ABC", "RDZ"], projects.Items!.Select(p => p.Code));
-        Assert.Equal("RDZ — Rozwój", EntryForm.ProjectText(projects.Items!.Last()));
+        Assert.Equal("RDZ - Rozwój", EntryForm.ProjectText(projects.Items!.Last()));
         Assert.Equal(["Development"], WorkTypeList(cut).Instance.Items!.Select(w => w.Name));
         Assert.DoesNotContain("NIE", cut.Markup);
         Assert.DoesNotContain("Archiwalny", cut.Markup);

@@ -90,7 +90,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
 
         var cut = RenderScreen();
 
-        Assert.Equal(["Wszystkie", "OLD — Stary (nieaktywny)", "RDZ — Rozwój"], Options(ProjectSelect(cut)));
+        Assert.Equal(["Wszystkie", "OLD - Stary (nieaktywny)", "RDZ - Rozwój"], Options(ProjectSelect(cut)));
         Assert.Equal(["Wszystkie", "Archiwalny (nieaktywny)", "Development", "Spotkanie"], Options(WorkTypeSelect(cut)));
         Assert.Equal("Wszystkie", ProjectSelect(cut).Instance.Value?.Text);
         Assert.DoesNotContain("CUD", Options(ProjectSelect(cut)).Select(o => o[..3]));
@@ -103,7 +103,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         var cut = RenderScreen();
         cut.WaitForAssertion(() => Assert.Equal(3, Descriptions(cut).Count));
 
-        await SelectAsync(cut, ProjectSelect(cut), "RDZ — Rozwój");
+        await SelectAsync(cut, ProjectSelect(cut), "RDZ - Rozwój");
         cut.WaitForAssertion(() => Assert.Equal(["Drugi 1 września", "Pierwszy 1 września"], Descriptions(cut)));
         Assert.Equal("2 pozycje · Wpisy: 2, suma Czasu: 1h 30m", Summary(cut));
 
@@ -123,7 +123,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         await SeedAsync();
         var cut = RenderScreen();
 
-        await SelectAsync(cut, ProjectSelect(cut), "OLD — Stary (nieaktywny)");
+        await SelectAsync(cut, ProjectSelect(cut), "OLD - Stary (nieaktywny)");
 
         cut.WaitForAssertion(() => Assert.Equal(["Koniec września"], Descriptions(cut)));
         Assert.Equal("1 pozycja · Wpisy: 1, suma Czasu: 24h", Summary(cut));
@@ -479,7 +479,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         var project = ProjectList(cut).Instance.Value!;
         var workType = WorkTypeList(cut).Instance.Value!;
         cut.WaitForAssertion(() => Assert.Equal(
-            [$"{project.Code} — {project.Name}", workType.Name],
+            [$"{project.Code} - {project.Name}", workType.Name],
             JSInterop.Invocations.Where(i => i.Identifier == "EodUI.showSelectedText").Select(i => (string?)i.Arguments[1])));
         // The workaround lives only in eod.js of the eod-ui copy (AD-1): no module of EntryForm.
         Assert.DoesNotContain(JSInterop.Invocations, i => i.Identifier == "import" && i.Arguments.Any(a => a is string path && path.Contains("EntryForm", StringComparison.Ordinal)));
@@ -611,20 +611,20 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         Assert.Equal(13, Rows(cut).Count);
         Assert.Equal("Strona 2 z 2", PaginatorTexts(cut).Page);
 
-        await SelectAsync(cut, ProjectSelect(cut), "RDZ — Rozwój");
+        await SelectAsync(cut, ProjectSelect(cut), "RDZ - Rozwój");
         cut.WaitForAssertion(() => Assert.Equal(("Pozycje 1–30 z 42", "Strona 1 z 2"), PaginatorTexts(cut)));
         Assert.Equal("Seria 40", Descriptions(cut)[0]);
     }
 
     [Fact]
-    public async Task Eksportuj_ScreenFilter_ColumnFilter_Search_AllPages_PolishDateAndDecimalHours()
+    public async Task Eksportuj_ScreenFilter_ColumnFilter_Search_AllPages_XlsxWithDateCellsAndNumberHours()
     {
         await SeedAsync();
         await AddEntriesAsync(new DateOnly(2026, 9, 2), [.. Enumerable.Range(1, 40).Select(i => ($"Seria {i}", 90))]);
         var cut = RenderScreen();
         cut.WaitForAssertion(() => Assert.Equal(30, Rows(cut).Count));
 
-        await SelectAsync(cut, ProjectSelect(cut), "RDZ — Rozwój");
+        await SelectAsync(cut, ProjectSelect(cut), "RDZ - Rozwój");
         cut.WaitForAssertion(() => Assert.StartsWith("42 pozycje", Summary(cut)));
         await OpenColumnFilterAsync(cut, "Czas");
         var checkbox = cut.FindComponents<FluentCheckbox>().Single(c => c.Instance.Label == "30m (1)");
@@ -635,18 +635,24 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
 
         await cut.InvokeAsync(() => ExportButton(cut).Click());
 
-        var download = Assert.Single(JSInterop.Invocations, i => i.Identifier == "EodUI.downloadFile");
+        var download = Assert.Single(JSInterop.Invocations, i => i.Identifier == "EodUI.downloadStream");
         // 22:30 UTC on 2 September is 3 September in Poland.
-        Assert.Equal("wpisy-2026-09-03.csv", download.Arguments[0]);
-        var lines = ((string)download.Arguments[1]!).Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal(41, lines.Length);
-        Assert.Equal("Data;Dzień;Projekt;Typ pracy;Opis;Godziny", lines[0]);
-        Assert.Equal("02.09.2026;Środa;RDZ;Development;Seria 40;1,5", lines[1]);
-        Assert.Equal("02.09.2026;Środa;RDZ;Development;Seria 1;1,5", lines[^1]);
+        Assert.Equal("wpisy-2026-09-03.xlsx", download.Arguments[0]);
+        Assert.Equal(EntriesXlsx.ContentType, download.Arguments[2]);
+        using var workbook = XlsxDownload.Open(download);
+        var sheet = workbook.Worksheet(EntriesXlsx.SheetName);
+        Assert.Equal(["Data", "Dzień", "Projekt", "Typ pracy", "Opis", "Godziny"], sheet.Row(1).CellsUsed().Select(c => c.GetText()));
+        Assert.Equal(41, sheet.LastRowUsed()!.RowNumber());
+        Assert.Equal(ClosedXML.Excel.XLDataType.DateTime, sheet.Cell(2, 1).DataType);
+        Assert.Equal(new DateTime(2026, 9, 2), sheet.Cell(2, 1).GetDateTime());
+        Assert.Equal(["Środa", "RDZ", "Development", "Seria 40"], new[] { 2, 3, 4, 5 }.Select(c => sheet.Cell(2, c).GetText()));
+        Assert.Equal(ClosedXML.Excel.XLDataType.Number, sheet.Cell(2, 6).DataType);
+        Assert.Equal(1.5, sheet.Cell(2, 6).GetDouble());
+        Assert.Equal("Seria 1", sheet.Cell(41, 5).GetText());
         // Title and text of the message bar (UiMessages): the export counts all 40 rows, not the page.
         cut.WaitForAssertion(() => Assert.Contains(Messages(cut), m =>
             m.StartsWith("success: Wyeksportowano raport.", StringComparison.Ordinal)
-            && m.EndsWith("wpisy-2026-09-03.csv: 40 wierszy, 6 kolumn.", StringComparison.Ordinal)), TimeSpan.FromSeconds(5));
+            && m.EndsWith("wpisy-2026-09-03.xlsx: 40 wierszy, 6 kolumn.", StringComparison.Ordinal)), TimeSpan.FromSeconds(5));
     }
 
     [Fact]

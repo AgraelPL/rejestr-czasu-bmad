@@ -86,16 +86,10 @@ public sealed record ReportColumn(string Key, string Label, ColumnType Type = Co
     public Func<object?, string>? Format { get; init; }
 
     /// <summary>
-    /// Własny format wartości tylko w eksporcie CSV (np. Czas w minutach jako godziny dziesiętne „1,5”); ekran dalej
-    /// używa <see cref="Format"/>.
+    /// Nagłówek kolumny tylko w pliku eksportu (<see cref="EodReport.ExportFile"/>; np. „Godziny” zamiast „Czas”).
     /// </summary>
-    /// <value>Domyślnie <see langword="null"/> – wartość w pliku wg <see cref="Type"/>, jak we wzorcu.</value>
-    /// <remarks>Dopasowanie Rejestru (AD-23 poz. 13, docs/ui/DOPASOWANIA.md). Funkcja nie dostaje <see langword="null"/>.</remarks>
-    public Func<object?, string>? ExportFormat { get; init; }
-
-    /// <summary>Nagłówek kolumny tylko w eksporcie CSV (np. „Godziny” zamiast „Czas”).</summary>
-    /// <value>Domyślnie <see langword="null"/> – nagłówek <see cref="Label"/>, jak we wzorcu.</value>
-    /// <remarks>Dopasowanie Rejestru (AD-23 poz. 13, docs/ui/DOPASOWANIA.md).</remarks>
+    /// <value>Domyślnie <see langword="null"/> – nagłówek <see cref="Label"/>.</value>
+    /// <remarks>Dopasowanie Rejestru (AD-23 poz. 13, docs/ui/DOPASOWANIA.md); czyta go pisarz pliku ekranu.</remarks>
     public string? ExportLabel { get; init; }
 }
 
@@ -160,7 +154,7 @@ public sealed record ReportDefinition
     /// </summary>
     public bool InMenu { get; init; }
 
-    /// <summary>Początek nazwy pliku eksportu CSV: „{FileName}-RRRR-MM-DD.csv” (data stanu danych).</summary>
+    /// <summary>Początek nazwy pliku eksportu: „{FileName}-RRRR-MM-DD.{rozszerzenie}” (data stanu danych).</summary>
     public required string FileName { get; init; }
 
     /// <summary>Kolumny raportu w kolejności domyślnej (kolumna kluczowa zawsze trafia na początek).</summary>

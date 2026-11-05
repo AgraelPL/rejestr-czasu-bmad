@@ -84,12 +84,12 @@ public partial class EodReport
     /// <summary>
     /// Zawartość kolumny „Akcje” (przypiętej z prawej) dla wiersza: najwyżej dwie ikony Subtle i menu „Więcej”.
     /// </summary>
-    /// <remarks>Kontekstem szablonu jest wiersz raportu. Kolumna „Akcje” jest zawsze ostatnia i nie trafia do eksportu CSV.</remarks>
+    /// <remarks>Kontekstem szablonu jest wiersz raportu. Kolumna „Akcje” jest zawsze ostatnia i nie trafia do pliku eksportu.</remarks>
     /// <value>Domyślnie <see langword="null"/> – tabela bez kolumny akcji.</value>
     [Parameter]
     public RenderFragment<IReadOnlyDictionary<string, object?>>? RowActions { get; set; }
 
-    /// <summary>Data stanu danych – trafia do nazwy pliku eksportu („{FileName}-RRRR-MM-DD.csv”).</summary>
+    /// <summary>Data stanu danych – trafia do nazwy pliku eksportu („{FileName}-RRRR-MM-DD.{rozszerzenie}”).</summary>
     /// <value>
     /// Domyślnie <see langword="default"/> – ekran z eksportem podaje datę z <c>PolishCalendar.Today</c>
     /// (dopasowanie Rejestru: zakaz <c>DateTime.Today</c>, AD-6).
@@ -98,16 +98,26 @@ public partial class EodReport
     public DateOnly DataAsOf { get; set; }
 
     /// <summary>
-    /// Przycisk „Eksportuj” na pasku narzędzi: plik CSV z widocznymi kolumnami i wszystkimi wierszami po wyszukiwaniu
-    /// i filtrach (ze wszystkich stron), w kolejności z ekranu.
+    /// Przycisk „Eksportuj” na pasku narzędzi: plik z <see cref="ExportFile"/> z widocznymi kolumnami i wszystkimi
+    /// wierszami po wyszukiwaniu i filtrach (ze wszystkich stron), w kolejności z ekranu.
     /// </summary>
     /// <value>
     /// Domyślnie <see langword="true"/> – jak we wzorcu; w Rejestrze <see langword="true"/> tylko na listach Wpisów,
-    /// Słowniki podają <see langword="false"/>.
+    /// Słowniki podają <see langword="false"/>. Bez <see cref="ExportFile"/> przycisku nie ma.
     /// </value>
-    /// <remarks>Dopasowanie Rejestru, AD-23 poz. 1 i 12 (etykieta „Eksportuj” zamiast „Eksport CSV”).</remarks>
+    /// <remarks>Dopasowanie Rejestru, AD-23 poz. 1, 12 (etykieta „Eksportuj” zamiast „Eksport CSV”) i 14.</remarks>
     [Parameter]
     public bool ShowExport { get; set; } = true;
+
+    /// <summary>
+    /// Pisarz pliku eksportu: widoczne kolumny (w kolejności z ekranu) i wszystkie wiersze po wyszukiwaniu i filtrach
+    /// (ze wszystkich stron) → plik (<see cref="ReportFile"/>). Nagłówek kolumny w pliku: <see cref="ReportColumn.ExportLabel"/>
+    /// albo <see cref="ReportColumn.Label"/>.
+    /// </summary>
+    /// <value>Domyślnie <see langword="null"/> – bez przycisku „Eksportuj” (eksport CSV wzorca usunięty).</value>
+    /// <remarks>Dopasowanie Rejestru, AD-23 poz. 14.</remarks>
+    [Parameter]
+    public Func<IReadOnlyList<ReportColumn>, IReadOnlyList<IReadOnlyDictionary<string, object?>>, ReportFile>? ExportFile { get; set; }
 
     /// <summary>
     /// Bez sortowania użytkownika wiersze zostają w kolejności wejścia (także wewnątrz grup), zamiast porządku wg kolumny
@@ -320,10 +330,19 @@ public partial class EodReport
 
     private async Task ExportAsync()
     {
-        var fileName = $"{Definition.FileName}-{DataAsOf:yyyy-MM-dd}.csv";
-        await JS.InvokeVoidAsync("EodUI.downloadFile", fileName, ReportEngine.ToCsv(Layout, _filteredRows), "text/csv;charset=utf-8");
+        if (ExportFile is null)
+        {
+            return;
+        }
+
+        // Dopasowanie Rejestru (AD-23 poz. 14): plik buduje ekran, do przeglądarki idzie strumieniem obwodu.
+        var columns = Layout.Visible;
+        var file = ExportFile(columns, _filteredRows);
+        var fileName = $"{Definition.FileName}-{DataAsOf:yyyy-MM-dd}.{file.Extension}";
+        using var stream = new DotNetStreamReference(new MemoryStream(file.Content));
+        await JS.InvokeVoidAsync("EodUI.downloadStream", fileName, stream, file.ContentType);
         await Messages.ShowSuccessAsync("Wyeksportowano raport.",
-            $"{fileName}: {PolishPlural.WithCount(_filteredRows.Count, "wiersz", "wiersze", "wierszy")}, {PolishPlural.WithCount(_visibleColumns.Count, "kolumna", "kolumny", "kolumn")}.");
+            $"{fileName}: {PolishPlural.WithCount(_filteredRows.Count, "wiersz", "wiersze", "wierszy")}, {PolishPlural.WithCount(columns.Count, "kolumna", "kolumny", "kolumn")}.");
     }
 
     // ── Grupowanie ───────────────────────────────────────────────────────

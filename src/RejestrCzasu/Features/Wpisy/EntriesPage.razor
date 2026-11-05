@@ -72,7 +72,7 @@
 
         var projects = await Projects.ListAsync();
         var workTypes = await WorkTypes.ListAsync();
-        _projectOptions = [All, .. projects.Select(p => new FilterOption(p.Id, $"{p.Code} — {p.Name}{Inactive(p.IsActive)}"))];
+        _projectOptions = [All, .. projects.Select(p => new FilterOption(p.Id, $"{p.Code} - {p.Name}{Inactive(p.IsActive)}"))];
         _workTypeOptions = [All, .. workTypes.Select(w => new FilterOption(w.Id, $"{w.Name}{Inactive(w.IsActive)}"))];
         await ReloadAsync();
     }

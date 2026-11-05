@@ -1,11 +1,12 @@
 using Bunit;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FluentUI.AspNetCore.Components;
 using RejestrCzasu.Domain;
 using RejestrCzasu.Ui;
 
 namespace RejestrCzasu.Tests.Ui;
 
-/// <summary>EodReport of the eod-ui copy: Rejestr adjustments AD-23 items 1–5 and 11–13, one test per I/O matrix row.</summary>
+/// <summary>EodReport of the eod-ui copy: Rejestr adjustments AD-23 items 1–5 and 11–14, one test per I/O matrix row.</summary>
 public sealed class EodReportTests : BunitContext
 {
     private static readonly ReportColumn Kod = new("kod", "Kod") { IsKey = true };
@@ -41,44 +42,28 @@ public sealed class EodReportTests : BunitContext
     }
 
     [Fact]
-    public void ShowExportFalse_HidesExportButton()
+    public void ShowExportFalse_HidesExportButton_EvenWithExportFile()
     {
-        var cut = RenderReport(Plain, p => p.Add(r => r.ShowExport, false));
+        var cut = RenderReport(Plain, p => p.Add(r => r.ShowExport, false).Add(r => r.ExportFile, new Writer().Write));
 
         Assert.DoesNotContain("Eksport", cut.Markup);
     }
 
     [Fact]
-    public void ShowExportOmitted_ShowsEksportujButton()
+    public void ShowExportOmitted_WithoutExportFile_NoExportButton()
     {
         var cut = RenderReport(Plain);
 
-        Assert.Equal("Eksportuj", ExportButton(cut).TextContent.Trim());
-        Assert.DoesNotContain("Eksport CSV", cut.Markup);
+        Assert.DoesNotContain("Eksport", cut.Markup);
     }
 
     [Fact]
-    public void ToCsv_ExportLabelAndExportFormat_ReplaceHeaderAndValue_OthersAsBefore()
+    public void ShowExportOmitted_WithExportFile_ShowsEksportujButton()
     {
-        var hours = new ReportColumn("czas", "Czas", ColumnType.List)
-        {
-            Format = v => Czas.Format((int)v!),
-            ExportLabel = "Godziny",
-            ExportFormat = v => ((int)v! / 60m).ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("pl-PL")),
-        };
-        var definition = Plain with { Key = "csv", Columns = [Kod, Projekt, hours] };
-        var layout = new ReportLayoutStore().Get("csv", definition);
-        IReadOnlyDictionary<string, object?>[] rows =
-        [
-            Row("A", "P1", 90),
-            Row("B", "a;\"b\"\nc", 45),
-            new Dictionary<string, object?> { ["kod"] = "C", ["projekt"] = "P1", ["czas"] = null },
-        ];
+        var cut = RenderReport(Plain, p => p.Add(r => r.ExportFile, new Writer().Write));
 
-        var csv = ReportEngine.ToCsv(layout, rows);
-
-        Assert.Equal("Kod;Projekt;Godziny\r\nA;P1;1,5\r\nB;\"a;\"\"b\"\"\nc\";0,75\r\nC;P1;\r\n", csv);
-        Assert.Equal("Kod;Projekt;Czas\r\nA;P1;90\r\n", ReportEngine.ToCsv(new ReportLayoutStore().Get("plain", Plain), [Row("A", "P1", 90)]));
+        Assert.Equal("Eksportuj", ExportButton(cut).TextContent.Trim());
+        Assert.DoesNotContain("Eksport CSV", cut.Markup);
     }
 
     [Fact]
@@ -205,9 +190,10 @@ public sealed class EodReportTests : BunitContext
     }
 
     [Fact]
-    public async Task Export_AfterColumnFilter_WritesAllPagesOfFilteredRows()
+    public async Task Export_AfterColumnFilter_WriterGetsVisibleColumnsAndAllPagesOfFilteredRows()
     {
-        var cut = RenderPaged(Numbered(61), p => p.Add(r => r.DataAsOf, new DateOnly(2026, 11, 4)));
+        var writer = new Writer();
+        var cut = RenderPaged(Numbered(61), p => p.Add(r => r.DataAsOf, new DateOnly(2026, 11, 4)).Add(r => r.ExportFile, writer.Write));
         await OpenPopoverAsync(cut, "Czas");
         var checkbox = cut.FindComponents<FluentCheckbox>().Single(c => c.Instance.Label == "15m (1)");
         await cut.InvokeAsync(() => checkbox.Instance.ValueChanged.InvokeAsync(false));
@@ -215,13 +201,30 @@ public sealed class EodReportTests : BunitContext
 
         await cut.InvokeAsync(() => ExportButton(cut).Click());
 
-        var download = Assert.Single(JSInterop.Invocations, i => i.Identifier == "EodUI.downloadFile");
-        Assert.Equal("raport-2026-11-04.csv", download.Arguments[0]);
-        var lines = ((string)download.Arguments[1]!).Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal(61, lines.Length);
-        Assert.Equal("Kod;Projekt;Czas", lines[0]);
-        Assert.Equal("K02;P2;30", lines[1]);
-        Assert.Equal("K61;P1;915", lines[^1]);
+        Assert.Equal(["kod", "projekt", "czas"], writer.Columns!.Select(c => c.Key));
+        Assert.Equal(60, writer.Rows!.Count);
+        Assert.Equal("K02", writer.Rows[0]["kod"]);
+        Assert.Equal("K61", writer.Rows[^1]["kod"]);
+        var download = Assert.Single(JSInterop.Invocations, i => i.Identifier == "EodUI.downloadStream");
+        Assert.Equal("raport-2026-11-04.txt", download.Arguments[0]);
+        var stream = Assert.IsType<Microsoft.JSInterop.DotNetStreamReference>(download.Arguments[1]);
+        Assert.Equal(Writer.Content, Assert.IsType<MemoryStream>(stream.Stream).ToArray());
+        Assert.Equal("text/plain", download.Arguments[2]);
+    }
+
+    [Fact]
+    public async Task Export_HiddenColumn_NotGivenToWriter()
+    {
+        var writer = new Writer();
+        var cut = RenderReport(Plain, p => p.Add(r => r.ExportFile, writer.Write));
+        var layout = Services.GetRequiredService<ReportLayoutStore>().Get("plain", Plain);
+        layout.Hidden.Add("projekt");
+        cut.Render();
+
+        await cut.InvokeAsync(() => ExportButton(cut).Click());
+
+        Assert.Equal(["kod", "czas"], writer.Columns!.Select(c => c.Key));
+        Assert.Equal(3, writer.Rows!.Count);
     }
 
     [Fact]
@@ -403,4 +406,21 @@ public sealed class EodReportTests : BunitContext
 
     private static IReadOnlyDictionary<string, object?> Row(string kod, string projekt, int czas) =>
         new Dictionary<string, object?> { ["kod"] = kod, ["projekt"] = projekt, ["czas"] = czas };
+
+    /// <summary>A fake writer of the export file: records what EodReport gives it.</summary>
+    private sealed class Writer
+    {
+        public static readonly byte[] Content = [1, 2, 3];
+
+        public IReadOnlyList<ReportColumn>? Columns { get; private set; }
+
+        public IReadOnlyList<IReadOnlyDictionary<string, object?>>? Rows { get; private set; }
+
+        public ReportFile Write(IReadOnlyList<ReportColumn> columns, IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
+        {
+            Columns = columns;
+            Rows = rows;
+            return new ReportFile("txt", "text/plain", Content);
+        }
+    }
 }
