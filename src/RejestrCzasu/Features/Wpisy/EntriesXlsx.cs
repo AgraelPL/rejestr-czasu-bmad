@@ -60,7 +60,7 @@ internal static class EntriesXlsx
             }
         }
 
-        WriteSum(sheet, columns, rows.Count);
+        WriteSum(sheet, columns, rows);
 
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
@@ -68,20 +68,21 @@ internal static class EntriesXlsx
     }
 
     /// <summary>
-    /// The bold sum row under the Entries: "Suma" in the first column and a SUM formula of "Godziny", so the sum follows
-    /// later edits in Excel. None without Entries or without a visible "Godziny".
+    /// The bold sum row under the Entries: "Suma" in the first column and the sum of "Godziny" as a number. A value, not
+    /// a formula: ClosedXML stores no calculated result, and Excel opens a downloaded file in Protected View without
+    /// calculating, so a formula cell would stay empty. None without Entries or without a visible "Godziny".
     /// </summary>
-    private static void WriteSum(IXLWorksheet sheet, IReadOnlyList<ReportColumn> columns, int rowCount)
+    private static void WriteSum(IXLWorksheet sheet, IReadOnlyList<ReportColumn> columns, IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
     {
         var hours = columns.ToList().FindIndex(c => c.Key == nameof(EntryRow.Minutes));
-        if (rowCount == 0 || hours < 0)
+        if (rows.Count == 0 || hours < 0)
         {
             return;
         }
-        var sumRow = rowCount + 2;
-        var hoursColumn = sheet.Column(hours + 1).ColumnLetter();
+        var sumRow = rows.Count + 2;
+        var minutes = rows.Sum(r => r.TryGetValue(nameof(EntryRow.Minutes), out var value) && value is int m ? m : 0);
         var sum = sheet.Cell(sumRow, hours + 1);
-        sum.FormulaA1 = $"SUM({hoursColumn}2:{hoursColumn}{rowCount + 1})";
+        sum.Value = (double)Czas.ToDecimalHours(minutes);
         sum.Style.Font.Bold = true;
         if (hours > 0)
         {

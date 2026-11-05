@@ -104,7 +104,7 @@ public sealed class EntriesXlsxTests
     }
 
     [Fact]
-    public void Write_SumRowUnderEntries_FormulaOfGodziny()
+    public void Write_SumRowUnderEntries_NumberOfGodziny()
     {
         var file = EntriesXlsx.Write(AllColumns, [Row(new DateOnly(2026, 11, 3), "Opis", 90), Row(new DateOnly(2026, 11, 4), "Drugi", 60)]);
 
@@ -113,7 +113,9 @@ public sealed class EntriesXlsxTests
         Assert.Equal(4, sheet.LastRowUsed()!.RowNumber());
         Assert.Equal("Suma", sheet.Cell(4, 1).GetText());
         Assert.True(sheet.Cell(4, 1).Style.Font.Bold);
-        Assert.Equal("SUM(F2:F3)", sheet.Cell(4, 6).FormulaA1);
+        // A stored number, not a formula: Excel's Protected View shows it without calculating.
+        Assert.False(sheet.Cell(4, 6).HasFormula);
+        Assert.Equal(XLDataType.Number, sheet.Cell(4, 6).DataType);
         Assert.Equal(2.5, sheet.Cell(4, 6).GetDouble());
         Assert.True(sheet.Cell(4, 6).Style.Font.Bold);
     }
