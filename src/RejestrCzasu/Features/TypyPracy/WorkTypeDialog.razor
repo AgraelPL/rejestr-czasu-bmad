@@ -42,7 +42,6 @@
         dialogs.ShowDialogAsync<WorkTypeDialog>(dialog =>
         {
             dialog.Modal = true;
-            dialog.Size = DialogSize.Medium;
             // The library renders the title as (sanitized) HTML; the title is plain text with the User's name.
             dialog.Header.Title = WebUtility.HtmlEncode(form.Id is null ? "Dodaj Typ pracy" : $"Edytuj Typ pracy {editedName}");
             // The library footer stays hidden and without shortcuts: Zapisz and Anuluj are in the window's form.

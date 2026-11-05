@@ -110,7 +110,6 @@ public sealed class EntryDialogs(
         var result = await dialogs.ShowDialogAsync<EntryDialog>(dialog =>
         {
             dialog.Modal = true;
-            dialog.Size = DialogSize.Medium;
             // The library renders the title as (sanitized) HTML; the title is plain text.
             dialog.Header.Title = WebUtility.HtmlEncode(title);
             // The library footer stays hidden and without shortcuts, as in UiMessages.ConfirmAsync: Zapisz and Anuluj (from

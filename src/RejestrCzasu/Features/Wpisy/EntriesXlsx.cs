@@ -60,10 +60,39 @@ internal static class EntriesXlsx
             }
         }
 
+        WriteSum(sheet, columns, rows.Count);
+
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         return new ReportFile("xlsx", ContentType, stream.ToArray());
     }
+
+    /// <summary>
+    /// The bold sum row under the Entries: "Suma" in the first column and a SUM formula of "Godziny", so the sum follows
+    /// later edits in Excel. None without Entries or without a visible "Godziny".
+    /// </summary>
+    private static void WriteSum(IXLWorksheet sheet, IReadOnlyList<ReportColumn> columns, int rowCount)
+    {
+        var hours = columns.ToList().FindIndex(c => c.Key == nameof(EntryRow.Minutes));
+        if (rowCount == 0 || hours < 0)
+        {
+            return;
+        }
+        var sumRow = rowCount + 2;
+        var hoursColumn = sheet.Column(hours + 1).ColumnLetter();
+        var sum = sheet.Cell(sumRow, hours + 1);
+        sum.FormulaA1 = $"SUM({hoursColumn}2:{hoursColumn}{rowCount + 1})";
+        sum.Style.Font.Bold = true;
+        if (hours > 0)
+        {
+            var label = sheet.Cell(sumRow, 1);
+            label.Value = SumLabel;
+            label.Style.Font.Bold = true;
+        }
+    }
+
+    /// <summary>The text of the sum row in the first column.</summary>
+    public const string SumLabel = "Suma";
 
     private static void SetCell(IXLCell cell, ReportColumn column, object? value)
     {

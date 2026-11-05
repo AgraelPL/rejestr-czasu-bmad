@@ -103,6 +103,30 @@ public sealed class EntriesXlsxTests
         Assert.Equal(1, sheet.LastRowUsed()!.RowNumber());
     }
 
+    [Fact]
+    public void Write_SumRowUnderEntries_FormulaOfGodziny()
+    {
+        var file = EntriesXlsx.Write(AllColumns, [Row(new DateOnly(2026, 11, 3), "Opis", 90), Row(new DateOnly(2026, 11, 4), "Drugi", 60)]);
+
+        using var workbook = XlsxDownload.Open(file.Content);
+        var sheet = workbook.Worksheet("Wpisy");
+        Assert.Equal(4, sheet.LastRowUsed()!.RowNumber());
+        Assert.Equal("Suma", sheet.Cell(4, 1).GetText());
+        Assert.True(sheet.Cell(4, 1).Style.Font.Bold);
+        Assert.Equal("SUM(F2:F3)", sheet.Cell(4, 6).FormulaA1);
+        Assert.Equal(2.5, sheet.Cell(4, 6).GetDouble());
+        Assert.True(sheet.Cell(4, 6).Style.Font.Bold);
+    }
+
+    [Fact]
+    public void Write_GodzinyHidden_NoSumRow()
+    {
+        var file = EntriesXlsx.Write([.. AllColumns.Where(c => c.Key != nameof(EntryRow.Minutes))], [Row(new DateOnly(2026, 11, 3), "Opis", 90)]);
+
+        using var workbook = XlsxDownload.Open(file.Content);
+        Assert.Equal(2, workbook.Worksheet("Wpisy").LastRowUsed()!.RowNumber());
+    }
+
     private static List<string> Header(IXLWorksheet sheet) =>
         [.. sheet.Row(1).CellsUsed().Select(c => c.GetText())];
 

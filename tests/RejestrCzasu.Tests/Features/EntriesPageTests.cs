@@ -642,7 +642,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         using var workbook = XlsxDownload.Open(download);
         var sheet = workbook.Worksheet(EntriesXlsx.SheetName);
         Assert.Equal(["Data", "Dzień", "Projekt", "Typ pracy", "Opis", "Godziny"], sheet.Row(1).CellsUsed().Select(c => c.GetText()));
-        Assert.Equal(41, sheet.LastRowUsed()!.RowNumber());
+        Assert.Equal(42, sheet.LastRowUsed()!.RowNumber());
         Assert.Equal(ClosedXML.Excel.XLDataType.DateTime, sheet.Cell(2, 1).DataType);
         Assert.Equal(new DateTime(2026, 9, 2), sheet.Cell(2, 1).GetDateTime());
         Assert.Equal(["Środa", "RDZ", "Development", "Seria 40"], new[] { 2, 3, 4, 5 }.Select(c => sheet.Cell(2, c).GetText()));

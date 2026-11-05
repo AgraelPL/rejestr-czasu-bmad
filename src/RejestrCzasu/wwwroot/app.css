@@ -45,11 +45,21 @@
     margin: 0.25rem 0;
 }
 
-/* Projekty and Typy pracy: the add/edit window (ProjectDialog, WorkTypeDialog); Zapisz first, then Anuluj. */
+/* Every window (fluent-dialog, not a drawer): width and height from its content, never wider than the screen. Overrides
+   the fixed width of the library's sizes (DialogSize.Medium = 592px), so the Entry window no longer scrolls sideways. */
+fluent-dialog:not([position=start]):not([position=end])::part(dialog) {
+    height: auto;
+    max-width: min(48rem, calc(100vw - 2rem));
+    width: auto;
+}
+
+/* Projekty and Typy pracy: the add/edit window (ProjectDialog, WorkTypeDialog); Zapisz first, then Anuluj. The form
+   sets the width of the window. */
 .dictionary-dialog-form {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    width: min(28rem, calc(100vw - 5rem));
 }
 
 .dictionary-dialog-buttons {
@@ -90,7 +100,7 @@
     gap: 0.25rem;
 }
 
-/* Medium (the Entry window, a narrow card): Data fixed, Projekt wider than Typ pracy / Opis over two columns, Czas.
+/* Medium (a narrow card): Data fixed, Projekt wider than Typ pracy / Opis over two columns, Czas.
    From 480px (30rem): the column minimums (8.5rem) and the two gaps (2rem) fit. */
 @container entry-form (min-width: 480px) {
     .entry-form {
@@ -111,6 +121,32 @@
     }
 
         .entry-form > :is(.entry-description, :has(.entry-description)) {
+            grid-column: auto;
+        }
+}
+
+/* The Entry window (EntryDialog) takes its width from the form, so its body is no size container (an inline-size
+   container cannot get its width from its content): fixed columns as the medium grid, Opis over two columns; one
+   column on a narrow screen. 8.5 + 18 + 12rem and two gaps = 40.5rem, within the window's 48rem. */
+fluent-dialog :has(> .entry-form) {
+    container-type: normal;
+}
+
+fluent-dialog .entry-form {
+    grid-template-columns: 8.5rem 18rem 12rem;
+}
+
+    fluent-dialog .entry-form > :is(.entry-description, :has(.entry-description)) {
+        grid-column: span 2;
+    }
+
+@media (max-width: 44rem) {
+    fluent-dialog .entry-form {
+        grid-template-columns: minmax(0, 1fr);
+        width: calc(100vw - 5rem);
+    }
+
+        fluent-dialog .entry-form > :is(.entry-description, :has(.entry-description)) {
             grid-column: auto;
         }
 }
