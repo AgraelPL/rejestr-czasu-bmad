@@ -79,3 +79,6 @@
 ## Rozstrzygnięte (3.4, Widok miesiąca, 05.11.2026)
 
 - „Pasek komunikatu pojawia się przed ponownym wczytaniem Listy wpisów (przegląd 7.5 #3)…” — rozstrzygnięte w 3.4: `EntryDialogs` przyjmuje opcjonalny `afterChange` (ponowne wczytanie danych ekranu) i pokazuje pasek dopiero po nim; tak robią Lista wpisów, Nowy wpis i Widok miesiąca (AD-10).
+- source_plan: `tickets/epic-miesiac-i-zestawienie/tickets/story-strona-bedu-i-sprawdzanie-uprawnien-na-eodpage-plan.md`
+  summary: Po wejściu na stronę wymagającą logowania fokus nie trafia w H1, bo `FocusOnNavigate Selector="h1"` (Routes.razor) próbuje raz, przy treści „Sprawdzanie uprawnień...” bez H1.
+  evidence: Przegląd 3.7; zachowanie sprzed zmiany (stary `<p>` też bez H1). Dotyka dostępności nawigacji klawiaturą; poprawka np. ponowny fokus po zakończeniu autoryzacji - osobna historia.

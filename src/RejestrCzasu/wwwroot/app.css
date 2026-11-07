@@ -12,11 +12,6 @@
     width: 100%;
 }
 
-/* Treść w EodShell bez EodPage (/Error, Sprawdzanie uprawnień) dostaje odstęp strony z eod.css. */
-.eod-content:not(:has(> .eod-page)) {
-    padding: 20px var(--eod-gutter, 24px) 24px;
-}
-
 /* The screen failing on every render (AppErrorBoundary), shown without the shell. */
 .app-error {
     gap: 8px;
