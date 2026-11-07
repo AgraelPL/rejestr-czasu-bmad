@@ -1,7 +1,5 @@
 @using RejestrCzasu.Domain
 @using RejestrCzasu.Features.Pomoc
-@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
-@inject EntryDialogs Dialogs
 @inject TimeProvider TimeProvider
 @* The report of Entries (AD-9): the one definition, row and footer of the Lista wpisów (/wpisy, the screen filters'
    list) and of the list of the current Month under the form on Nowy wpis (/wpisy/nowy). The host loads the list
@@ -16,12 +14,7 @@
            DataAsOf="PolishCalendar.Today(TimeProvider)" PreserveRowOrder="true" Loading="Entries is null" FooterSummary="@Summary(Entries ?? [])">
     <RowActions Context="row">
         @{ var id = (int)row[IdKey]!; }
-        <FluentButton IconStart="@(new Icons.Regular.Size20.Edit())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
-                      Title="Edytuj" aria-label="Edytuj" OnClick="@(() => ChangeAfterAsync(a => Dialogs.EditAsync(id, a)))" />
-        <FluentButton IconStart="@(new Icons.Regular.Size20.Copy())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
-                      Title="Kopiuj" aria-label="Kopiuj" OnClick="@(() => ChangeAfterAsync(a => Dialogs.CopyAsync(id, a)))" />
-        <FluentButton IconStart="@(new Icons.Regular.Size20.Delete())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
-                      Title="Usuń" aria-label="Usuń" OnClick="@(() => ChangeAfterAsync(a => Dialogs.DeleteAsync(id, a)))" />
+        <EntryRowActions Id="id" Gate="_gate" AfterChange="() => OnChanged.InvokeAsync()" />
     </RowActions>
 </EodReport>
 
@@ -76,7 +69,7 @@
 
     private IReadOnlyList<EntryRow>? _shown;
     private IReadOnlyList<IReadOnlyDictionary<string, object?>> _rows = [];
-    private bool _busy;
+    private readonly SingleAction _gate = new();
 
     /// <summary>The Entries from <c>EntryStore.ListAsync</c>, in its order; <c>null</c> until the first load (skeleton rows).</summary>
     [Parameter] public IReadOnlyList<EntryRow>? Entries { get; set; }
@@ -113,25 +106,6 @@
         {
             _shown = Entries;
             _rows = Entries?.Select(ToRow).ToList() ?? [];
-        }
-    }
-
-    // A row action while another one is still running (e.g. a second click while its window is open) is ignored.
-    private async Task ChangeAfterAsync(Func<Func<Task>, Task<bool>> action)
-    {
-        if (_busy)
-        {
-            return;
-        }
-        _busy = true;
-        try
-        {
-            // EntryDialogs calls OnChanged itself (afterChange) before its bar; its result needs nothing more here.
-            await action(() => OnChanged.InvokeAsync());
-        }
-        finally
-        {
-            _busy = false;
         }
     }
 }

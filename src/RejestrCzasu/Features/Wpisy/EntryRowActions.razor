@@ -1,0 +1,23 @@
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@inject EntryDialogs Dialogs
+@* The row icons of a Wpis in every Entry report (R6, R7, AD-10): edit, copy and delete through EntryDialogs by its Id.
+   Gate is the screen's one SingleAction, so one action runs at a time in the whole report; AfterChange is the host
+   reading its data again, given to EntryDialogs as afterChange, so the bar comes only after the new data. *@
+
+<FluentButton IconStart="@(new Icons.Regular.Size20.Edit())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+              Title="Edytuj" aria-label="Edytuj" OnClick="@(() => Gate.RunAsync(() => Dialogs.EditAsync(Id, AfterChange)))" />
+<FluentButton IconStart="@(new Icons.Regular.Size20.Copy())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+              Title="Kopiuj" aria-label="Kopiuj" OnClick="@(() => Gate.RunAsync(() => Dialogs.CopyAsync(Id, AfterChange)))" />
+<FluentButton IconStart="@(new Icons.Regular.Size20.Delete())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
+              Title="Usuń" aria-label="Usuń" OnClick="@(() => Gate.RunAsync(() => Dialogs.DeleteAsync(Id, AfterChange)))" />
+
+@code {
+    /// <summary>The Id of the Wpis of the row.</summary>
+    [Parameter, EditorRequired] public int Id { get; set; }
+
+    /// <summary>The screen's one lock of row actions.</summary>
+    [Parameter, EditorRequired] public SingleAction Gate { get; set; } = default!;
+
+    /// <summary>The host reading its data again after a change or a missing Wpis, before the bar.</summary>
+    [Parameter, EditorRequired] public Func<Task> AfterChange { get; set; } = default!;
+}
