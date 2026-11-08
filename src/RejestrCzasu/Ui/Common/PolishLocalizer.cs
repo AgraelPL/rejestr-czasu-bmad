@@ -7,16 +7,20 @@ namespace RejestrCzasu.Ui;
 /// Rejestracja: <c>AddFluentUIComponents(o =&gt; o.Localizer = new PolishLocalizer())</c> – robi to <see cref="ServiceCollectionExtensions.AddEodPlatformUI"/>.
 /// </summary>
 /// <remarks>
-/// Klucz bez polskiego tłumaczenia dostaje tekst domyślny biblioteki (<c>IFluentLocalizer.GetDefault</c>).
-/// Nowy komponent Fluent z angielskim tekstem w interfejsie = brakujący klucz – dopisz go do słownika.
+/// Klucz spoza słownika idzie do <c>IFluentLocalizer.GetDefault</c> biblioteki: daje on angielski tekst klucza nowszej
+/// wersji Fluent UI, a dla klucza spoza zasobu (Fluent UI 5.0.1) rzuca <c>ArgumentException</c>.
+/// Słownik ma dokładnie klucze zasobu <c>LanguageResource</c> zainstalowanego Fluent UI, z tymi samymi miejscami <c>{n}</c>;
+/// pilnuje tego test pokrycia w <c>PolishTextsTests</c> (aktualizacja Fluent UI z nowym kluczem = czerwony test z nazwą klucza).
 /// </remarks>
 public sealed class PolishLocalizer : IFluentLocalizer
 {
-    private static readonly Dictionary<string, string> Texts = new(StringComparer.Ordinal)
+    /// <summary>Polskie teksty po kluczach zasobu <c>LanguageResource</c> zainstalowanego Fluent UI.</summary>
+    internal static readonly IReadOnlyDictionary<string, string> Texts = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["LayoutHamburger_Title"] = "Menu",
         ["LayoutHamburger_Close"] = "Zamknij",
         ["FluentInputBase_Required"] = "Wymagane",
+        ["FluentInputBase_RequiredMessage"] = "To pole jest wymagane.",
         ["MessageBox_ButtonYes"] = "Tak",
         ["MessageBox_ButtonOk"] = "OK",
         ["MessageBox_ButtonNo"] = "Nie",
@@ -26,28 +30,26 @@ public sealed class PolishLocalizer : IFluentLocalizer
         ["MessageBox_Error"] = "Błąd",
         ["MessageBox_Information"] = "Informacja",
         ["MessageBox_Confirmation"] = "Potwierdzenie",
-        ["TextInput_RequiredMessage"] = "To pole jest wymagane.",
-        ["Calendar_RequiredMessage"] = "To pole jest wymagane.",
         ["Calendar_FieldMustBeADate"] = "Pole {0} musi zawierać datę.",
         ["Field_ErrorMessage"] = "Wystąpił błąd.",
         ["Field_SuccessMessage"] = "Dane poprawne.",
         ["Field_WarningMessage"] = "Sprawdź tę wartość.",
         ["TimeAgo_SecondAgo"] = "Przed chwilą",
         ["TimeAgo_SecondsAgo"] = "{0} s temu",
-        ["TimeAgo_MinuteAgo"] = "minutę temu",
+        ["TimeAgo_MinuteAgo"] = "{0} minutę temu",
         ["TimeAgo_MinutesAgo"] = "{0} min temu",
-        ["TimeAgo_HourAgo"] = "godzinę temu",
+        ["TimeAgo_HourAgo"] = "{0} godzinę temu",
         ["TimeAgo_HoursAgo"] = "{0} godz. temu",
-        ["TimeAgo_DayAgo"] = "wczoraj",
+        ["TimeAgo_DayAgo"] = "{0} dzień temu",
         ["TimeAgo_DaysAgo"] = "{0} dni temu",
-        ["TimeAgo_MonthAgo"] = "miesiąc temu",
+        ["TimeAgo_MonthAgo"] = "{0} miesiąc temu",
         ["TimeAgo_MonthsAgo"] = "{0} mies. temu",
-        ["TimeAgo_YearAgo"] = "rok temu",
+        ["TimeAgo_YearAgo"] = "{0} rok temu",
         ["TimeAgo_YearsAgo"] = "{0} lat temu",
         ["FluentInputFile_LoadingBefore"] = "Wczytywanie…",
         ["FluentInputFile_LoadingCompleted"] = "Zakończono",
         ["FluentInputFile_LoadingCanceled"] = "Anulowano",
-        ["FluentInputFile_LoadingInProgress"] = "Wczytywanie {0}/{1} – {2}",
+        ["FluentInputFile_LoadingInProgress"] = "Wczytywanie {0}/{1} - {2}",
         ["TreeItem_LoadingMessage"] = "Wczytywanie…",
         ["ErrorBoundary_Close"] = "Zamknij",
         ["ErrorBoundary_Title"] = "Wystąpił błąd",
@@ -113,12 +115,21 @@ public sealed class PolishLocalizer : IFluentLocalizer
         ["Tabs_MoreItems"] = "Pokaż więcej kart: {0}",
         ["ColorPickerInput_InvalidHexMessage"] = "Niepoprawny kolor szesnastkowy",
         ["ColorPickerInput_OpenPickerTitle"] = "Otwórz wybór koloru",
+        ["PresenceStatus_Available"] = "dostępny",
+        ["PresenceStatus_Away"] = "nieobecny",
+        ["PresenceStatus_Blocked"] = "zablokowany",
+        ["PresenceStatus_Busy"] = "zajęty",
+        ["PresenceStatus_DoNotDisturb"] = "nie przeszkadzać",
+        ["PresenceStatus_Offline"] = "offline",
+        ["PresenceStatus_OutOfOffice"] = "poza biurem",
+        ["PresenceStatus_Unknown"] = "nieznany",
+        ["Fake_Hello"] = "Witaj, {0}",
     };
 
     /// <summary>Tekst komponentu Fluent dla klucza zasobu, z podstawionymi argumentami.</summary>
     /// <param name="key">Klucz zasobu biblioteki, np. <c>MessageBox_ButtonCancel</c>, <c>Paginator_Status</c>.</param>
     /// <param name="arguments">Wartości do wstawienia w miejsca <c>{0}</c>, <c>{1}</c>… (formatowane w kulturze <see cref="Formats.Culture"/>).</param>
-    /// <returns>Tekst polski albo – gdy klucza nie ma w słowniku – tekst domyślny biblioteki.</returns>
+    /// <returns>Tekst polski albo - gdy klucza nie ma w słowniku - wynik <c>IFluentLocalizer.GetDefault</c>.</returns>
     public string this[string key, params object[] arguments]
         => Texts.TryGetValue(key, out var text)
             ? (arguments.Length == 0 ? text : string.Format(Formats.Culture, text, arguments))

@@ -133,6 +133,18 @@ docker cp docs/dev/seed-slowniki.sql rejestr-czasu-db:/tmp/seed-slowniki.sql
 docker exec rejestr-czasu-db psql -U rejestr -d rejestr -v login=<login> -f /tmp/seed-slowniki.sql
 ```
 
+### Wpisy testowe
+
+Po Słownikach testowych skrypt `docs/dev/seed-wpisy.sql` dodaje temu Kontu 50 fikcyjnych Wpisów do sprawdzania Widoku
+miesiąca, Zestawienia i Listy wpisów: listopad 2026 (ponad 30 wierszy, niedziela 01.11 sama w tygodniu, złączany Wiersz
+zestawienia 03.11, sobota 14.11), kilka w październiku 2026 i po jednym w grudniu 2025 i styczniu 2026. Wpisy mają opis
+zaczynający się od `[seed]`; przy ponownym uruchomieniu skrypt usuwa tylko je i dodaje od nowa:
+
+```powershell
+docker cp docs/dev/seed-wpisy.sql rejestr-czasu-db:/tmp/seed-wpisy.sql
+docker exec rejestr-czasu-db psql -U rejestr -d rejestr -v login=<login> -f /tmp/seed-wpisy.sql
+```
+
 ## Obraz aplikacji (Docker)
 
 Na serwerze aplikacja działa jako obraz kontenera za Caddy (wdrożenie: historia 4.8). `Dockerfile` w katalogu głównym

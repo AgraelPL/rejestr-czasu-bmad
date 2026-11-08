@@ -138,7 +138,7 @@ Sumy dnia, Sumy tygodnia i suma Miesiąca w Widoku miesiąca są identyczne z od
 
 ### 4.5 Zestawienie
 
-**Opis:** Jedno kliknięcie w Widoku miesiąca daje Zestawienie za wybrany Miesiąc; to samo daje ekran Eksport (pozycja w menu) po wyborze Miesiąca. Realizuje UJ-2. Układ jest jeden, wspólny dla wszystkich Userów.
+**Opis:** Jedno kliknięcie w Widoku miesiąca daje Zestawienie za wybrany Miesiąc. Realizuje UJ-2. Układ jest jeden, wspólny dla wszystkich Userów.
 
 #### FR-11: Złączenie Wpisów w Wiersze zestawienia
 Wpisy z tego samego dnia o tym samym Projekcie i Typie pracy tworzą jeden Wiersz zestawienia: Czas się sumuje, opisy trafiają do kolejnych linii tej samej komórki w kolejności dodania Wpisów. Wiersze zestawienia jednego dnia są ułożone według kodu Projektu, potem nazwy Typu pracy.
@@ -240,7 +240,7 @@ Parametry połączenia z bazą i sekrety pochodzą z konfiguracji poza gitem, na
 - **NFR-3 Szybkość wpisu:** każdy kolejny Wpis w Sesji wpisywania, od pustego formularza do zapisu, zajmuje kilka sekund, nie więcej niż 10, przy pracy przez internet; całość da się wykonać samą klawiaturą.
 - **NFR-4 Platforma:** aktualna przeglądarka na komputerze; interfejs tylko po polsku; aplikacja nie jest projektowana pod telefon (adres zadziała, układ nie jest dopasowany). Dostęp pod subdomeną Autora. Środowiskiem testowym jest lokalne uruchomienie; nie ma osobnego środowiska przedprodukcyjnego.
 - **NFR-5 Arytmetyka:** Czas jest liczony w minutach całkowitych; zaokrąglenia nie występują aż do konwersji na godziny dziesiętne w Zestawieniu.
-- **NFR-6 Układ i komunikaty:** belka górna (Pomoc `?`, Ustawienia konta, Wyloguj), menu boczne (przycisk Nowy wpis; sekcja Rejestr: Widok miesiąca, Lista wpisów, Eksport; sekcja Słowniki: Projekty, Typy pracy; sekcja Administracja, tylko dla Administratora: Użytkownicy), treść na pełną szerokość. Komunikaty walidacji i mniej istotnych operacji w pasku komunikatu, każde potwierdzenie w oknie komunikatu. Skala 90/100/110/125% według szerokości okna; motyw jasny i ciemny.
+- **NFR-6 Układ i komunikaty:** belka górna (Pomoc `?`, Ustawienia konta, Wyloguj), menu boczne (przycisk Nowy wpis; sekcja Rejestr: Widok miesiąca, Lista wpisów; sekcja Słowniki: Projekty, Typy pracy; sekcja Administracja, tylko dla Administratora: Użytkownicy), treść na pełną szerokość. Komunikaty walidacji i mniej istotnych operacji w pasku komunikatu, każde potwierdzenie w oknie komunikatu. Skala 90/100/110/125% według szerokości okna; motyw jasny i ciemny.
 - **NFR-7 Czas polski:** „dzisiaj”, daty Wpisów i daty na ekranie Użytkownicy liczone są w strefie Europe/Warsaw, niezależnie od zegara serwera.
 - **NFR-8 Ochrona dostępu:** rejestracja i logowanie mają ograniczenie liczby prób; baza nie jest dostępna z internetu; dostęp administracyjny do serwera i bazy tylko szyfrowanym kanałem z kluczem; do bazy na co dzień z uprawnieniem tylko do odczytu. Limity prób, reguły haseł i czas trwania sesji logowania ustala architektura jako bezpieczne wartości domyślne.
 - **NFR-9 Zmiany schematu:** od pierwszego wdrożenia zmiany schematu bazy tylko dodają (kolumny, tabele) i są stosowane przy starcie aplikacji; dane na serwerze nie mogą zostać utracone przez wdrożenie. Dzięki temu poprzednia wersja aplikacji działa na nowszym schemacie i rollback (FR-29) nie wymaga cofania bazy.

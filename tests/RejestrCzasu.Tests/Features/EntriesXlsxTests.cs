@@ -59,6 +59,20 @@ public sealed class EntriesXlsxTests
         Assert.Equal("ŁÓD", sheet.Cell(2, 3).GetText());
     }
 
+    [Fact]
+    public void Write_MultiLineOpis_WrappedTextCell_LinesKept()
+    {
+        var file = EntriesXlsx.Write(AllColumns, [Row(new DateOnly(2026, 11, 3), "Pierwsza linia\nDruga linia", 90)]);
+
+        using var workbook = XlsxDownload.Open(file.Content);
+        var sheet = workbook.Worksheet("Wpisy");
+        var cell = sheet.Cell(2, 5);
+        Assert.Equal(XLDataType.Text, cell.DataType);
+        Assert.Equal("Pierwsza linia\nDruga linia", cell.GetText());
+        Assert.True(cell.Style.Alignment.WrapText);
+        Assert.False(sheet.Cell(2, 3).Style.Alignment.WrapText);
+    }
+
     [Theory]
     [InlineData("=SUMA(A1)")]
     [InlineData("0012")]

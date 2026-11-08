@@ -1,0 +1,95 @@
+# Historie epiku Widok miesiąca i Zestawienie, w kolejności budowy.
+next_id = 10
+
+[[entry]]
+id = 1
+type = "story"
+title = "Widok miesiąca z sumami i Wierszami zestawienia z MonthReport"
+description = "Tracer bullet. Reporting/MonthEntriesQuery.LoadAsync(YearMonth) w kontekście Usera i czysty MonthReport.Build, w całości z typami wejścia i wyjścia (AD-5): sumy dnia, tygodnia (poniedziałek–niedziela, tylko dni Miesiąca) i Miesiąca, kolejność Wpisów (dzień, kod Projektu, nazwa Typu pracy, kolejność dodania) oraz Wiersze zestawienia (Wpisy z tego samego dnia, Projektu i Typu pracy w jeden wiersz, Czas sumowany, opisy w kolejnych liniach w kolejności dodania, Suma tygodnia przy pierwszym wierszu tygodnia), z których korzysta pisarz Zestawienia w historii 3. Testy xUnit na zanonimizowanym zestawie o kształcie września 2026 (tygodnie 30 / 16 / 18 / 25 / 14 h, RAZEM 103 h). Ekran /miesiac (bieżący Miesiąc) na EodPage + EodReport: LockedLayout z grupowaniem Tydzień → Dzień, nagłówek tygodnia „Tydzień N (dd.mm–dd.mm)” z zakresem tylko z Miesiąca, dzień z nazwą dnia tygodnia, GroupSummary i FooterSummary z MonthReport, filtr kolumn bez wpływu na sumy, ShowExport=false, bez paginacji. Strona pomocy `miesiac`."
+verify = "Lokalnie: /miesiac pokazuje Wpisy bieżącego Miesiąca w grupach Tydzień → Dzień z Sumą tygodnia, Sumą dnia i sumą Miesiąca; filtr kolumny ukrywa wiersze, sumy zostają; testy xUnit MonthReport na zestawie o kształcie września (sumy 30 / 16 / 18 / 25 / 14, RAZEM 103, złączanie opisów, kolejność, tydzień na przełomie Miesięcy) i bUnit ekranu zielone."
+covers = ["R1", "R2", "R3", "R6", "R8"]
+after = ["7.1", "7.3", "epic-szkielet-i-slowniki"]
+hitl = false
+risk = "high" # rdzeń sum dla Widoku i Zestawienia
+references = ["export-layout.md", "glossary.md", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-5", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-9", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-22"]
+
+[[entry]]
+id = 3
+type = "story"
+title = "Zestawienie xlsx z Widoku miesiąca"
+description = "Endpoint GET /zestawienie/{rok}/{miesiac} (RequireAuthorization, dane z MonthEntriesQuery w kontekście Usera, AD-14) i pisarz xlsx (ClosedXML) w układzie z export-layout.md: arkusz z nazwą Miesiąca, zamrożony nagłówek, kolumny A–H, Sumy dnia i tygodnia oraz wiersz RAZEM jako wartości. Pisarz bierze Wiersze zestawienia i sumy z MonthReport z historii 1. Przycisk „Pobierz Zestawienie” w Widoku miesiąca przez Shared/DownloadLink (atrybut download); Miesiąc bez Wpisów daje komunikat zamiast pliku; nazwa pliku Zestawienie-<miesiąc małą literą>_<RRRR>.xlsx (prefiks w historii 5). Usunięcie pozycji menu „Eksport” (menu, test układu, pomoc startowa) i zapisów o ekranie Eksport w AD-11, AD-14, AD-22 i PRD §4.5. Pomoc `miesiac` opisuje przycisk."
+verify = "Lokalnie: przycisk w Widoku miesiąca pobiera Zestawienie-wrzesień_2026.xlsx, który otwiera się w Excelu w układzie z export-layout.md z sumami równymi sumom Widoku; pusty Miesiąc daje komunikat; testy pisarza (odczyt skoroszytu: komórki, sumy jako wartości, układ) i endpointu (cudze Wpisy niewidoczne; bez logowania i z nieaktywnym Kontem przekierowanie na logowanie) zielone; w menu nie ma Eksportu."
+covers = ["R2", "R4", "R5", "R8"]
+after = [1]
+hitl = false
+risk = "high" # najmniej pewna: układ Odbiorcy co do komórki
+references = ["export-layout.md", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-14", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-11", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-22", "prd-rejestr-czasu/prd-rejestr-czasu.md"]
+
+[[entry]]
+id = 4
+type = "story"
+title = "Wybór Miesiąca i akcje Wpisu w Widoku miesiąca"
+description = "Przyciski Poprzedni / Następny / Bieżący i Miesiąc w adresie /miesiac/RRRR-MM (bez niego bieżący; zły adres → strona „nie znaleziono”). Ikony w wierszu Edytuj / Kopiuj / Usuń przez EntryDialogs po Id; po zmianie lista i sumy liczone od nowa z bazy. Pasek komunikatu dopiero po ponownym wczytaniu listy (EntryDialogs, także Lista wpisów i Nowy wpis). Pomoc `miesiac` uzupełniona."
+verify = "Lokalnie: przejście do poprzedniego Miesiąca zmienia adres i dane, zakładka z adresem otwiera ten Miesiąc; edycja, kopia i usunięcie Wpisu przeliczają Sumę dnia, tygodnia i Miesiąca od razu; pasek pojawia się po odświeżeniu listy; testy bUnit zielone."
+covers = ["R1", "R8"]
+after = [1, "7.5", "epic-wpisy-i-lista"]
+hitl = false
+risk = "medium"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-10"]
+
+[[entry]]
+id = 5
+type = "story"
+title = "Ustawienia konta z prefiksem pliku Zestawienia"
+description = "Ekran /ustawienia-konta (link w belce już jest) na EodPage: prefiks pliku Zestawienia z walidatorem (spacje na końcach pomijane, najwyżej 100 znaków, bez \\ / : * ? \" < > |, puste usuwa prefiks), zapis do account_settings tworzonego leniwie przy pierwszym zapisie (AD-7), link do /konto/zmiana-hasla (AD-15). Endpoint Zestawienia czyta prefiks: <prefiks>_Zestawienie-<miesiąc>_<RRRR>.xlsx. Strona pomocy `ustawienia-konta`."
+verify = "Lokalnie: zapis prefiksu „ABC” daje plik ABC_Zestawienie-wrzesień_2026.xlsx, wyczyszczenie prefiksu wraca do nazwy bez prefiksu, niedozwolony znak pokazuje komunikat pod polem; link prowadzi do zmiany hasła; testy walidatora, zapisu (wiersz tworzony przy pierwszym zapisie, oddzielenie danych) i nazwy pliku zielone."
+covers = ["R5", "R7", "R8"]
+after = [3, "4.4"]
+hitl = false
+risk = "low"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-7", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-8", "architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-15"]
+
+[[entry]]
+id = 6
+type = "story"
+title = "Polskie teksty Fluent UI z testem pokrycia"
+description = "Uzupełnienie brakujących kluczy PolishLocalizer (Ui/Common, m.in. FluentInputBase_RequiredMessage, PresenceStatus_*) i test, że każdy klucz zasobu LanguageResource zainstalowanego Fluent UI ma polski tekst; zmiana w kopii jako nowa pozycja AD-23 i linia w docs/ui/DOPASOWANIA.md."
+verify = "dotnet test: test pokrycia kluczy zielony; żaden widoczny tekst Fluent UI nie jest po angielsku na ekranach aplikacji."
+covers = []
+after = []
+hitl = false
+risk = "low"
+references = ["architecture-rejestr-czasu/architecture-rejestr-czasu.md#ad-23"]
+
+[[entry]]
+id = 7
+type = "story"
+title = "Strona błędu i „Sprawdzanie uprawnień” na EodPage"
+description = "/Error i komunikat „Sprawdzanie uprawnień...” (Components/Routes.razor) na EodPage, potem usunięcie reguły przejściowej .eod-content:not(:has(> .eod-page)) z wwwroot/app.css; strony bez zmian treści."
+verify = "Lokalnie: strona błędu i sprawdzanie uprawnień wyglądają jak inne strony wzorca; reguły przejściowej nie ma w app.css; testy zielone."
+covers = []
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Test wrześniowy lokalnie"
+description = "Autor wpisuje lokalnie prawdziwe Wpisy z września 2026 i porównuje Zestawienie z oryginałem: Sumy dnia, Sumy tygodnia 30 / 16 / 18 / 25 / 14 h, RAZEM 103 h, układ. Prawdziwe dane ani plik nie trafiają do repozytorium ani na serwer; różnice stają się nowymi zgłoszeniami. Termin 28.12.2026."
+verify = "Zestawienie za wrzesień 2026 z lokalnej aplikacji zgodne z oryginałem co do sum i układu (prd SM-1); w repozytorium brak prawdziwych danych."
+covers = ["R2", "R3", "R4", "R5"]
+after = [3, 4, 5]
+hitl = true
+risk = "high" # kryterium inicjatywy SM-1
+
+[[entry]]
+id = 9
+type = "story"
+title = "Refactor sweep"
+description = "Porządki odłożone w planach i przeglądach historii 1 i 3–8; zakres ustalany na starcie tej historii, wyłącznie sprzątanie."
+verify = "dotnet build bez ostrzeżeń i dotnet test przechodzą; odłożone uwagi z planów historii 1 i 3–8 zamknięte albo przeniesione do nowych historii."
+covers = []
+after = [1, 3, 4, 5, 6, 7, 8]
+hitl = false
+risk = "low"

@@ -1,13 +1,12 @@
 @using RejestrCzasu.Domain
 @using RejestrCzasu.Features.Pomoc
-@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
-@inject EntryDialogs Dialogs
 @inject TimeProvider TimeProvider
 @* The report of Entries (AD-9): the one definition, row and footer of the Lista wpisów (/wpisy, the screen filters'
    list) and of the list of the current Month under the form on Nowy wpis (/wpisy/nowy). The host loads the list
    through EntryStore and gives it here; the footer sum comes from that list (AD-5), so the report's column filters only
    hide rows. The row icons edit, copy and delete the Entry through EntryDialogs by its Id (R6, R7, AD-10); after a
-   change the host reads the list again (OnChanged). Eksportuj writes every row that passes the screen filters, the
+   change the host reads the list again (OnChanged, given to EntryDialogs as afterChange), and only then EntryDialogs
+   shows the bar, on Lista wpisów and on Nowy wpis alike. Eksportuj writes every row that passes the screen filters, the
    column filters and the search, from all pages (30 rows a page), to xlsx (EntriesXlsx): Data a date cell, Czas the
    column "Godziny" as a number of decimal hours. *@
 
@@ -15,12 +14,7 @@
            DataAsOf="PolishCalendar.Today(TimeProvider)" PreserveRowOrder="true" Loading="Entries is null" FooterSummary="@Summary(Entries ?? [])">
     <RowActions Context="row">
         @{ var id = (int)row[IdKey]!; }
-        <FluentButton IconStart="@(new Icons.Regular.Size20.Edit())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
-                      Title="Edytuj" aria-label="Edytuj" OnClick="@(() => ChangeAfterAsync(() => Dialogs.EditAsync(id)))" />
-        <FluentButton IconStart="@(new Icons.Regular.Size20.Copy())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
-                      Title="Kopiuj" aria-label="Kopiuj" OnClick="@(() => ChangeAfterAsync(() => Dialogs.CopyAsync(id)))" />
-        <FluentButton IconStart="@(new Icons.Regular.Size20.Delete())" IconOnly="true" Appearance="ButtonAppearance.Subtle"
-                      Title="Usuń" aria-label="Usuń" OnClick="@(() => ChangeAfterAsync(() => Dialogs.DeleteAsync(id)))" />
+        <EntryRowActions Id="id" Gate="_gate" AfterChange="() => OnChanged.InvokeAsync()" />
     </RowActions>
 </EodReport>
 
@@ -52,7 +46,7 @@
             new(nameof(EntryRow.DayName), "Dzień", ColumnType.List),
             new(nameof(EntryRow.ProjectCode), "Projekt", ColumnType.List),
             new(nameof(EntryRow.WorkTypeName), "Typ pracy", ColumnType.List),
-            new(nameof(EntryRow.Description), "Opis", ColumnType.List),
+            new(nameof(EntryRow.Description), "Opis", ColumnType.List) { FillWidth = true },
             new(nameof(EntryRow.Minutes), "Czas", ColumnType.List)
             {
                 Format = v => Czas.Format((int)v!),
@@ -65,7 +59,7 @@
     /// The report of the current Month under the form on Nowy wpis: the same columns as <see cref="Report"/>, its own
     /// title (the table's <c>aria-label</c>) and key; the export file is named like the one of Lista wpisów.
     /// </summary>
-    internal static readonly ReportDefinition MonthReport = Report with
+    internal static readonly ReportDefinition CurrentMonth = Report with
     {
         Key = HelpTopics.WpisyNowy,
         Title = "Wpisy bieżącego Miesiąca",
@@ -75,18 +69,18 @@
 
     private IReadOnlyList<EntryRow>? _shown;
     private IReadOnlyList<IReadOnlyDictionary<string, object?>> _rows = [];
-    private bool _busy;
+    private readonly SingleAction _gate = new();
 
     /// <summary>The Entries from <c>EntryStore.ListAsync</c>, in its order; <c>null</c> until the first load (skeleton rows).</summary>
     [Parameter] public IReadOnlyList<EntryRow>? Entries { get; set; }
 
-    /// <summary>The report definition: <see cref="Report"/> (Lista wpisów, default) or <see cref="MonthReport"/> (Nowy wpis).</summary>
+    /// <summary>The report definition: <see cref="Report"/> (Lista wpisów, default) or <see cref="CurrentMonth"/> (Nowy wpis).</summary>
     [Parameter] public ReportDefinition Definition { get; set; } = Report;
 
     /// <summary>The key of the User's layout (AD-9): the help topic of the host screen.</summary>
     [Parameter, EditorRequired] public string LayoutKey { get; set; } = "";
 
-    /// <summary>Called after a row action that changed the data (<see cref="EntryDialogs"/> returned <c>true</c>).</summary>
+    /// <summary>Called after a row action that changed the data or found the Entry missing, before <see cref="EntryDialogs"/> shows its bar.</summary>
     [Parameter] public EventCallback OnChanged { get; set; }
 
     /// <summary>The report row of an Entry: the columns plus <c>Id</c> for the row actions (AD-9).</summary>
@@ -112,27 +106,6 @@
         {
             _shown = Entries;
             _rows = Entries?.Select(ToRow).ToList() ?? [];
-        }
-    }
-
-    // A row action while another one is still running (e.g. a second click while its window is open) is ignored.
-    private async Task ChangeAfterAsync(Func<Task<bool>> action)
-    {
-        if (_busy)
-        {
-            return;
-        }
-        _busy = true;
-        try
-        {
-            if (await action())
-            {
-                await OnChanged.InvokeAsync();
-            }
-        }
-        finally
-        {
-            _busy = false;
         }
     }
 }

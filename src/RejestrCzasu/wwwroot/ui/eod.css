@@ -132,8 +132,12 @@ fluent-message-bar .title { font-weight: var(--fontWeightSemibold); margin-inlin
 .fluent-data-grid th[cell-type="columnheader"] { text-align: start; color: var(--colorNeutralForeground2); white-space: nowrap; padding: 4px 6px; }
 .fluent-data-grid td { height: 44px; }
 .fluent-data-grid td:not([col-select="true"]) { max-width: 420px; }
-/* Kolumna opisowa (numer + przedmiot): 42% szerokości. W trybie Table siatka ma table-layout: fixed – szerokość bierze się z nagłówka. */
+/* Kolumna opisowa (numer + przedmiot): 42% szerokości. Tabela ma table-layout: auto – kolumna z procentową szerokością dostaje ten udział szerokości tabeli, max-width: 0 – treść jej nie poszerza. */
 .fluent-data-grid :is(th, td).eod-col-flex { max-width: 0; width: 42%; }
+/* Rejestr (AD-23 poz. 17): kolumna ReportColumn.FillWidth bierze pozostałą szerokość – pozostałe kolumny zwężone do treści (width: 1px, tabela ma table-layout: auto, więc width: 100% kolumny rozciągałoby tabelę bez końca); max-width: 0 – długi tekst nie poszerza tabeli, komórka w jednej linii z „…”; min-width: 12rem – kolumna zostaje czytelna, a gdy tabela się nie mieści, obszar raportu przewija się poziomo. */
+.fluent-data-grid:has(.eod-col-fill) :is(th, td):not(.eod-col-fill) { width: 1px; }
+.fluent-data-grid :is(th, td).eod-col-fill { max-width: 0; min-width: 12rem; }
+.fluent-data-grid td.eod-col-fill { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fluent-data-grid td.eod-cell-actions { padding: 0 8px; text-align: end; white-space: nowrap; overflow: visible; }
 .fluent-data-grid tbody tr:last-child td { border-bottom-color: transparent; }
 .fluent-data-grid td .eod-caption { display: block; overflow: hidden; text-overflow: ellipsis; }

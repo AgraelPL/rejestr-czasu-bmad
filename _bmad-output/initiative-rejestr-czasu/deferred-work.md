@@ -75,3 +75,33 @@
 - source_plan: `plan-7-9-eksport-i-paginacja-wpisow.md`
   summary: Ekran „Eksport” z pozycją w menu (epic-miesiac-i-zestawienie, R12/FR-12, NFR-6) odpada, a R17 „brak eksportu CSV” wymaga przepisania (initiative R17 i decyzja 02.11.2026, PRD FR-16 i „Poza zakresem”, epic-wzorzec-ui R1 i Done when).
   evidence: Decyzja Autora 2026-11-04: eksport tylko przyciskiem „Eksportuj” na Liście wpisów i liście Nowego wpisu, Zestawienie xlsx zostaje w Widoku miesiąca; tickety i PRD do aktualizacji przez PO.
+
+## Rozstrzygnięte (3.4, Widok miesiąca, 05.11.2026)
+
+- „Pasek komunikatu pojawia się przed ponownym wczytaniem Listy wpisów (przegląd 7.5 #3)…” — rozstrzygnięte w 3.4: `EntryDialogs` przyjmuje opcjonalny `afterChange` (ponowne wczytanie danych ekranu) i pokazuje pasek dopiero po nim; tak robią Lista wpisów, Nowy wpis i Widok miesiąca (AD-10).
+- source_plan: `tickets/epic-miesiac-i-zestawienie/tickets/story-strona-bedu-i-sprawdzanie-uprawnien-na-eodpage-plan.md`
+  summary: Po wejściu na stronę wymagającą logowania fokus nie trafia w H1, bo `FocusOnNavigate Selector="h1"` (Routes.razor) próbuje raz, przy treści „Sprawdzanie uprawnień...” bez H1.
+  evidence: Przegląd 3.7; zachowanie sprzed zmiany (stary `<p>` też bez H1). Dotyka dostępności nawigacji klawiaturą; poprawka np. ponowny fokus po zakończeniu autoryzacji - osobna historia.
+
+## Rozstrzygnięte / Przeniesione (3.9, Refactor sweep, 07.11.2026)
+
+Rozstrzygnięte:
+- Ikony Edytuj / Kopiuj / Usuń i blokada „jedna akcja naraz” powielone w `MonthPage` i `EntriesReport` (Założenie 3.4) - rozstrzygnięte w 3.9: wspólny komponent `Features/Wpisy/EntryRowActions.razor` i klasa `SingleAction` (jedna instancja na ekran) z testem `SingleActionTests`.
+- Reguła przejściowa `.eod-content:not(:has(> .eod-page))` (przeniesione z 7.7) - już rozstrzygnięte w 3.7: `/Error` i „Sprawdzanie uprawnień...” na `EodPage`, reguła usunięta (grep w `app.css`: 0).
+- Klucze `PolishLocalizer` bez testu pokrycia (przeniesione z 7.7) - już rozstrzygnięte w 3.6 (AD-23 poz. 16, test pokrycia zasobu).
+- Klasy `month-summary*` bez CSS (przegląd 3.3, patch) - już rozstrzygnięte w 3.3 (grep: 0).
+- Literówka nagłówka w zamrożonej Matrix planu 3.3 (Plan Change Log 3.3) - już rozstrzygnięte: test sprawdza poprawny nagłówek; plan zamrożony, bez działań.
+- Nieznany klucz `PolishLocalizer` rzuca jak biblioteka (Plan Change Log 3.6) - już rozstrzygnięte (`docs/ui/DOPASOWANIA.md` poz. 16).
+- `/miesiac/9999-12` z Wpisem 27-31.12 rzuca (przegląd 3.4, reject) - bez działań: nierealna data.
+- Link `/konto/zmiana-hasla` z pełnym przeładowaniem (Założenie 3.5) - nie kod: kontrola ręczna Autora przed PR epiku 3.
+- Testy Playwright (przeniesione z 7.7) - termin zmieniony decyzją Autora 05.11.2026 (Notes epiku 3): zamiast „po epiku 3” osobna historia po Teście wrześniowym; zastępuje propozycję z wpisu „Przeniesione (7.7…)” powyżej.
+
+Przeniesione:
+- Fokus po autoryzacji nie trafia w H1 (przegląd 3.7, wpis powyżej) - propozycja: nowa drobna historia dostępności po Teście wrześniowym, bo zmienia zachowanie fokusu.
+
+- source_plan: `tickets/epic-miesiac-i-zestawienie/tickets/story-refactor-sweep-plan.md`
+  summary: „Szukaj” w raportach trafia także w ukryte kolumny (np. Tydzień i Dzień w Widoku miesiąca) (przegląd 3.1, odrzucone w 3.1).
+  evidence: Przeniesione: propozycja historii z nową pozycją AD-23 - zmiana silnika kopii `Ui/` (`EodReport`) i zachowania wszystkich raportów; do decyzji Autora.
+- source_plan: `plan-3-10-opis-obszar-tekstowy-okna.md`
+  summary: Ctrl+Enter w Opisie nic nie robi, gdy User puści Ctrl przed Enter (brak nowej linii i brak zapisu).
+  evidence: Przegląd 3.10; skrypt Fluent UI 5.0.1 (`addKeyPressEventListener`) robi `preventDefault` na keydown, a zapis wysyła na keyup tylko przy dokładnie tym samym `ctrlKey`. Do sprawdzenia przez Autora w Sesji wpisywania; poprawka wymaga własnej obsługi klawisza w eod.js (pozycja AD-23).

@@ -3,7 +3,7 @@ title: 'Projekty i Typy pracy na wzorcu'
 type: 'feature'
 ticket: '4'
 created: '2026-11-03'
-status: 'built'
+status: done
 baseline_revision: '9eafd137716179d117b17a47e35a7863d373e461'
 route: 'full'
 route_source: 'auto'

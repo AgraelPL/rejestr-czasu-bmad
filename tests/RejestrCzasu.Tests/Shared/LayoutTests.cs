@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.FluentUI.AspNetCore.Components;
 using RejestrCzasu.Accounts;
+using RejestrCzasu.Components;
 using RejestrCzasu.Components.Pages;
 using RejestrCzasu.Data;
 using RejestrCzasu.Shared;
@@ -54,10 +55,13 @@ public sealed class LayoutTests : BunitContext
         var cut = RenderLayout(_ => { });
 
         var menu = cut.Find(".eod-nav-menu");
-        foreach (var href in new[] { "/miesiac", "/wpisy", "/eksport", "/projekty", "/typy-pracy" })
+        foreach (var href in new[] { "/miesiac", "/wpisy", "/projekty", "/typy-pracy" })
         {
             Assert.NotNull(menu.QuerySelector($"[href='{href}']"));
         }
+        // No Eksport screen (decision 05.11.2026): the Zestawienie is downloaded from the Widok miesiąca.
+        Assert.Null(menu.QuerySelector("[href='/eksport']"));
+        Assert.DoesNotContain("Eksport", menu.TextContent);
         Assert.Contains("Rejestr", menu.TextContent);
         Assert.Contains("Słowniki", menu.TextContent);
         Assert.Empty(cut.FindAll("[href='/uzytkownicy']"));
@@ -166,6 +170,32 @@ public sealed class LayoutTests : BunitContext
         Assert.Equal("Nie znaleziono", page.QuerySelector("h1.eod-h1")!.TextContent);
         Assert.NotNull(page.QuerySelector(".eod-card .eod-empty"));
         Assert.Equal("/", page.QuerySelector(".not-found-home")!.GetAttribute("href"));
+    }
+
+    [Fact]
+    public void Error_IsEodPageInTheShell()
+    {
+        var cut = RenderLayout(b =>
+        {
+            b.OpenComponent<Error>(0);
+            b.CloseComponent();
+        });
+
+        var page = cut.Find(".eod-shell .eod-content > .eod-page");
+        Assert.Equal("Błąd", page.QuerySelector("h1.eod-h1")!.TextContent);
+        Assert.Equal("Podczas przetwarzania żądania wystąpił błąd.", page.QuerySelector(".eod-page-head .eod-caption")!.TextContent);
+    }
+
+    [Fact]
+    public void Authorizing_IsEodPageInTheShell()
+    {
+        _auth.SetAuthorizing();
+
+        var cut = Render<Routes>();
+
+        var card = cut.Find(".eod-shell .eod-content > .eod-page .eod-card");
+        Assert.Contains("Sprawdzanie uprawnień...", card.TextContent);
+        Assert.Empty(cut.FindAll(".eod-page-head"));
     }
 
     [Fact]

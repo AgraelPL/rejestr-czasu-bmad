@@ -3,6 +3,7 @@ using RejestrCzasu.Accounts;
 using RejestrCzasu.Components;
 using RejestrCzasu.Data;
 using RejestrCzasu.Features;
+using RejestrCzasu.Features.Zestawienie;
 using RejestrCzasu.Options;
 using RejestrCzasu.Shared;
 using RejestrCzasu.Startup;
@@ -107,6 +108,7 @@ app.MapRazorComponents<App>()
     // frame-ancestors is already part of our CSP header; avoid a second CSP header from Blazor.
     .AddInteractiveServerRenderMode(options => options.ContentSecurityFrameAncestorsPolicy = null);
 app.MapAccountEndpoints();
+app.MapSummaryEndpoint();
 app.MapAppHealth();
 
 // Startup sequence (AD-21) before the server starts: connection check, migrations, first Administrator.

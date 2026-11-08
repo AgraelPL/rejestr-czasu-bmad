@@ -1,0 +1,232 @@
+@page "/miesiac"
+@page "/miesiac/{Miesiac}"
+@using System.Globalization
+@using RejestrCzasu.Domain
+@using RejestrCzasu.Features.Pomoc
+@using RejestrCzasu.Features.Wpisy
+@using RejestrCzasu.Features.Zestawienie
+@using RejestrCzasu.Reporting
+@inject MonthEntriesQuery Query
+@inject TimeProvider TimeProvider
+@inject NavigationManager Navigation
+@* Widok miesiąca (R2, R17, AD-9): the Wpisy of the Miesiąc from the address (/miesiac/RRRR-MM, a bookmark; /miesiac
+   is always the current Miesiąc in Poland) on EodPage with EodReport, grouped Tydzień → Dzień in a locked layout. A
+   wrong address (not RRRR-MM or outside 0001-01–9999-12) is the „nie znaleziono” page, without a query. Poprzedni,
+   Bieżący and Następny go to /miesiac/RRRR-MM. One row is one Wpis (never a Wiersz zestawienia), in the order of
+   MonthReport.Entries. Every sum (week, day, Miesiąc) comes from MonthReport (AD-5), built from the Wpisy of
+   MonthEntriesQuery (AD-16); the column filters only hide rows and never change a sum. The Zestawienie of the Miesiąc
+   is downloaded by the DownloadLink "Pobierz Zestawienie" from SummaryEndpoint (AD-14); no export of the report or
+   paging. The row icons edit, copy and delete the Wpis through EntryDialogs by its Id (AD-10), one action at a time;
+   after a change the MonthReport is built again from the database before EntryDialogs shows its bar. *@
+
+@if (_invalid)
+{
+    return;
+}
+
+<EodPage Title="Widok miesiąca" Description="@($"{_month.Name}: Twoje Wpisy dzień po dniu, z Sumą dnia, tygodnia i Miesiąca.")" Fill="true">
+    <Actions>
+        <FluentButton Class="month-previous" OnClick="@(() => Go(_month.Previous))" Disabled="@(_month == Min)">Poprzedni</FluentButton>
+        <FluentButton Class="month-current" OnClick="@(() => Go(Current))" Disabled="@(_month == Current)">Bieżący</FluentButton>
+        <FluentButton Class="month-next" OnClick="@(() => Go(_month.Next))" Disabled="@(_month == Max)">Następny</FluentButton>
+        @if (_report is { Entries.Count: > 0 })
+        {
+            <DownloadLink Href="@SummaryEndpoint.Path(_month)">@DownloadText</DownloadLink>
+        }
+        else if (_report is not null)
+        {
+            <span class="eod-caption">@NoSummaryText</span>
+        }
+    </Actions>
+    <ChildContent>
+        <PageHelp Topic="@HelpTopics.Miesiac" />
+        <EodCard NoPadding="true" Fill="true">
+            <EodReport @key="_month" Definition="Report" Rows="_rows" LayoutKey="@LayoutKey(_month)" ShowExport="false" LockedLayout="true"
+                       PreserveRowOrder="true" Loading="_report is null" GroupSummary="GroupText"
+                       FooterSummary="@(_report is null ? null : Footer(_report))">
+                <RowActions Context="row">
+                    @{ var id = (int)row[IdKey]!; }
+                    <EntryRowActions Id="id" Gate="_gate" AfterChange="ReloadAsync" />
+                </RowActions>
+                <EmptyContent>
+                    <EodEmptyState Compact="true" Title="@EmptyText" />
+                </EmptyContent>
+            </EodReport>
+        </EodCard>
+    </ChildContent>
+</EodPage>
+
+@code {
+    /// <summary>Text of the report without Wpisy.</summary>
+    internal const string EmptyText = "Brak Wpisów w tym Miesiącu.";
+
+    /// <summary>Text of the link to the Zestawienie of the Miesiąc.</summary>
+    internal const string DownloadText = "Pobierz Zestawienie";
+
+    /// <summary>Text in place of the link when the Miesiąc has no Wpisy.</summary>
+    internal const string NoSummaryText = "Brak Wpisów - nie ma Zestawienia do pobrania.";
+
+    /// <summary>Key of the Wpis id in a report row, outside the columns (AD-9).</summary>
+    internal const string IdKey = nameof(MonthEntry.Id);
+
+    /// <summary>Key of the hidden grouping column of the week: the first day of the week in the Miesiąc.</summary>
+    internal const string WeekKey = "Week";
+
+    /// <summary>Key of the hidden grouping column of the day: the date of the Wpis.</summary>
+    internal const string DayKey = "Day";
+
+    /// <summary>
+    /// The report of the Widok miesiąca (AD-9): hidden List columns Week and Day group the rows (headers without the
+    /// column name, AD-23 item 15), the visible List columns Projekt, Typ pracy, Opis and Czas (<see cref="int"/>
+    /// minutes shown by <see cref="Czas.Format"/>) only filter. No <see cref="ReportDefinition.Total"/>: the sums come
+    /// from <see cref="MonthReport"/>.
+    /// </summary>
+    internal static readonly ReportDefinition Report = new()
+    {
+        Key = HelpTopics.Miesiac,
+        Title = "Widok miesiąca",
+        Description = "Twoje Wpisy wybranego Miesiąca w tygodniach i dniach, z sumami.",
+        FileName = HelpTopics.Miesiac,
+        Columns =
+        [
+            new(WeekKey, "Tydzień", ColumnType.List)
+            {
+                Hidden = true,
+                GroupLabel = false,
+                Format = v => MonthReport.WeekLabel((DateOnly)v!),
+            },
+            new(DayKey, "Dzień", ColumnType.List)
+            {
+                Hidden = true,
+                GroupLabel = false,
+                Format = v => DayText((DateOnly)v!),
+            },
+            new(nameof(MonthEntry.ProjectCode), "Projekt", ColumnType.List),
+            new(nameof(MonthEntry.WorkTypeName), "Typ pracy", ColumnType.List),
+            new(nameof(MonthEntry.Description), "Opis", ColumnType.List) { FillWidth = true },
+            new(nameof(MonthEntry.Minutes), "Czas", ColumnType.List) { Format = v => Czas.Format((int)v!) },
+        ],
+        Grouping = [WeekKey, DayKey],
+    };
+
+    /// <summary>The first Miesiąc: Poprzedni is disabled on it.</summary>
+    internal static readonly YearMonth Min = new(1, 1);
+
+    /// <summary>The last Miesiąc: Następny is disabled on it.</summary>
+    internal static readonly YearMonth Max = new(9999, 12);
+
+    private YearMonth _month;
+    private YearMonth? _shown;
+    private bool _invalid;
+    private readonly SingleAction _gate = new();
+    private int _version;
+    private MonthReport? _report;
+    private IReadOnlyList<IReadOnlyDictionary<string, object?>> _rows = [];
+
+    /// <summary>The Miesiąc from the address, RRRR-MM (e.g. <c>2026-09</c>); without it the current Miesiąc in Poland.</summary>
+    [Parameter] public string? Miesiac { get; set; }
+
+    private YearMonth Current => YearMonth.From(PolishCalendar.Today(TimeProvider));
+
+    /// <summary>
+    /// The Miesiąc of an address segment: exactly four ASCII digits, a hyphen and two digits, within 0001-01–9999-12.
+    /// </summary>
+    internal static bool TryParse(string text, out YearMonth month)
+    {
+        month = default;
+        if (text.Length != 7 || text[4] != '-'
+            || !text.Remove(4, 1).All(char.IsAsciiDigit))
+        {
+            return false;
+        }
+        try
+        {
+            month = new YearMonth(int.Parse(text[..4], CultureInfo.InvariantCulture), int.Parse(text[5..], CultureInfo.InvariantCulture));
+            return true;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>The key of the User's layout (AD-9): the help topic with the Miesiąc, e.g. <c>miesiac@2026-09</c>.</summary>
+    internal static string LayoutKey(YearMonth month) => $"{HelpTopics.Miesiac}@{month}";
+
+    /// <summary>Header of a day group, e.g. „Wtorek, 01.09.2026”.</summary>
+    internal static string DayText(DateOnly date) => $"{PolishCalendar.DayName(date)}, {Formats.Date(date)}";
+
+    /// <summary>The report row of a Wpis: the columns plus <c>Id</c> (AD-9); Week is <see cref="MonthReport.WeekFirst"/>.</summary>
+    internal static IReadOnlyDictionary<string, object?> ToRow(MonthEntry entry)
+    {
+        return new Dictionary<string, object?>
+        {
+            [IdKey] = entry.Id,
+            [WeekKey] = MonthReport.WeekFirst(entry.Date),
+            [DayKey] = entry.Date,
+            [nameof(MonthEntry.ProjectCode)] = entry.ProjectCode,
+            [nameof(MonthEntry.WorkTypeName)] = entry.WorkTypeName,
+            [nameof(MonthEntry.Description)] = entry.Description,
+            [nameof(MonthEntry.Minutes)] = entry.Minutes,
+        };
+    }
+
+    /// <summary>Text of the footer after the counter: the sum of the whole Miesiąc (AD-5).</summary>
+    internal static string Footer(MonthReport report) => $"Suma Miesiąca: {Czas.Format(report.Minutes)}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        YearMonth month;
+        if (string.IsNullOrEmpty(Miesiac))
+        {
+            month = Current;
+        }
+        else if (!TryParse(Miesiac, out month))
+        {
+            _invalid = true;
+            // A wrong address: the Polish "nie znaleziono" page of the Router (404 on a full page load), no query.
+            Navigation.NotFound();
+            return;
+        }
+        _invalid = false;
+        if (_shown == month)
+        {
+            return;
+        }
+        _shown = month;
+        _month = month;
+        // A new Miesiąc starts with skeleton rows; the reload after a row action keeps the old rows until the new ones.
+        _report = null;
+        _rows = [];
+        await ReloadAsync();
+    }
+
+    private void Go(YearMonth month) => Navigation.NavigateTo($"/miesiac/{month}");
+
+    // Only the newest load is shown: a load for an earlier Miesiąc that ends later is dropped.
+    private async Task ReloadAsync()
+    {
+        var version = ++_version;
+        var month = _month;
+        var report = MonthReport.Build(month, await Query.LoadAsync(month));
+        if (version == _version)
+        {
+            _rows = report.Entries.Select(ToRow).ToList();
+            _report = report;
+            StateHasChanged();
+        }
+    }
+
+    // Level 0 is the week, level 1 the day; the key is the raw value of the group (a DateOnly).
+    private string GroupText(int level, object? key)
+    {
+        if (_report is null)
+        {
+            return "";
+        }
+        var date = (DateOnly)key!;
+        return level == 0
+            ? $"Suma tygodnia: {Czas.Format(_report.WeekMinutes(date))}"
+            : $"Suma dnia: {Czas.Format(_report.DayMinutes(date))}";
+    }
+}

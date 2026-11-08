@@ -12,11 +12,6 @@
     width: 100%;
 }
 
-/* Treść w EodShell bez EodPage (/Error, Sprawdzanie uprawnień) dostaje odstęp strony z eod.css. */
-.eod-content:not(:has(> .eod-page)) {
-    padding: 20px var(--eod-gutter, 24px) 24px;
-}
-
 /* The screen failing on every render (AppErrorBoundary), shown without the shell. */
 .app-error {
     gap: 8px;
@@ -45,12 +40,32 @@
     margin: 0.25rem 0;
 }
 
-/* Every window (fluent-dialog, not a drawer): width and height from its content, never wider than the screen. Overrides
-   the fixed width of the library's sizes (DialogSize.Medium = 592px), so the Entry window no longer scrolls sideways. */
+/* Every window (fluent-dialog, not a drawer): width and height from its content, never larger than the screen (the
+   content scrolls inside). Overrides the fixed width of the library's sizes (DialogSize.Medium = 592px), so the Entry
+   window no longer scrolls sideways. fit-content, not auto: the modal <dialog> is position: fixed with inset: 0, so
+   auto stretched it over the whole screen (up to max-height) whatever its content. */
 fluent-dialog:not([position=start]):not([position=end])::part(dialog) {
-    height: auto;
+    height: fit-content;
+    max-height: calc(100dvh - 2rem);
     max-width: min(48rem, calc(100vw - 2rem));
-    width: auto;
+    overflow: auto;
+    width: fit-content;
+}
+
+/* The default content width of every window (not a drawer): the library's dialog body is an inline-size container
+   (its buttons follow its width), so its content never gives it a width, and without one a fit-content window shrinks
+   to the body's padding. The width is the content box (the body adds 2 x 24px padding): 28rem for a confirmation, a
+   message and the Projekt and Typ pracy forms, the Entry form below; on a narrow screen the width of the screen minus
+   the window's margins (2 x 1rem) and the body's padding. */
+fluent-dialog:not([position=start]):not([position=end]) fluent-dialog-body {
+    contain-intrinsic-inline-size: min(28rem, calc(100vw - 5rem));
+}
+
+/* A confirmation or message (EodConfirmDialog, ShowMessageBoxAsync): a long text without spaces (e.g. a long Opis)
+   wraps instead of widening the window. */
+fluent-dialog .fluent-message-box .message {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 /* Projekty and Typy pracy: the add/edit window (ProjectDialog, WorkTypeDialog); Zapisz first, then Anuluj. The form
@@ -88,10 +103,18 @@ fluent-dialog:not([position=start]):not([position=end])::part(dialog) {
 
     .entry-form fluent-field,
     .entry-form fluent-text-input,
+    .entry-form fluent-textarea,
     .entry-form fluent-combobox {
         max-width: none;
         min-width: 0;
         width: 100%;
+    }
+
+    /* Opis (a text area): the full width of its column, about two lines high (the library's minimum) and no higher
+       unless the User drags its edge, so it does not stretch the row of the wide grid; Enter = a new line. */
+    .entry-form fluent-textarea {
+        --block-size: var(--min-block-size);
+        --inline-size: 100%;
     }
 
 .entry-form-date {
@@ -125,11 +148,13 @@ fluent-dialog:not([position=start]):not([position=end])::part(dialog) {
         }
 }
 
-/* The Entry window (EntryDialog) takes its width from the form, so its body is no size container (an inline-size
-   container cannot get its width from its content): fixed columns as the medium grid, Opis over two columns; one
-   column on a narrow screen. 8.5 + 18 + 12rem and two gaps = 40.5rem, within the window's 48rem. */
-fluent-dialog :has(> .entry-form) {
-    container-type: normal;
+/* The Entry window (EntryDialog): its body gets the width of the form (see the default content width above). The form's
+   parent is a plain div in the body, an inline-size container like every holder of the form (:has(> .entry-form)); it
+   only fills the body, and the rules below win over its container queries. Fixed columns as the medium grid, Opis over
+   two columns; one column on a narrow screen. 8.5 + 18 + 12rem and two gaps = 40.5rem, within the window's 48rem; with
+   the body's padding (3rem) and the window's margins (2rem) 45.5rem, so one column below 46rem. */
+fluent-dialog:not([position=start]):not([position=end]) fluent-dialog-body:has(.entry-form) {
+    contain-intrinsic-inline-size: 40.5rem;
 }
 
 fluent-dialog .entry-form {
@@ -140,7 +165,11 @@ fluent-dialog .entry-form {
         grid-column: span 2;
     }
 
-@media (max-width: 44rem) {
+@media (max-width: 46rem) {
+    fluent-dialog:not([position=start]):not([position=end]) fluent-dialog-body:has(.entry-form) {
+        contain-intrinsic-inline-size: calc(100vw - 5rem);
+    }
+
     fluent-dialog .entry-form {
         grid-template-columns: minmax(0, 1fr);
         width: calc(100vw - 5rem);
@@ -369,3 +398,33 @@ h1:focus {
     font-size: var(--fontSizeBase200);
     line-height: var(--lineHeightBase200);
 }
+
+/* DownloadLink (AD-14): an <a download> that looks like a Primary button. */
+.app-download-link {
+    align-items: center;
+    background: var(--colorBrandBackground);
+    border: var(--strokeWidthThin) solid transparent;
+    border-radius: var(--borderRadiusMedium);
+    color: var(--colorNeutralForegroundOnBrand);
+    display: inline-flex;
+    font: inherit;
+    font-weight: var(--fontWeightSemibold);
+    gap: var(--spacingHorizontalSNudge);
+    min-height: 32px;
+    padding: 0 var(--spacingHorizontalM);
+    text-decoration: none;
+}
+
+    .app-download-link:hover {
+        background: var(--colorBrandBackgroundHover);
+        color: var(--colorNeutralForegroundOnBrand);
+    }
+
+    .app-download-link:active {
+        background: var(--colorBrandBackgroundPressed);
+    }
+
+    .app-download-link:focus-visible {
+        outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+        outline-offset: 1px;
+    }

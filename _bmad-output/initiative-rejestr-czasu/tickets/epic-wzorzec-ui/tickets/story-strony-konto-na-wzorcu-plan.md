@@ -3,7 +3,7 @@ title: 'Strony /konto na wzorcu'
 type: 'feature'
 ticket: '6'
 created: '2026-11-03'
-status: 'built'
+status: done
 baseline_revision: '2483e128113e64f27deb20d98530ccb9c4398584'
 route: 'full'
 route_source: 'auto'

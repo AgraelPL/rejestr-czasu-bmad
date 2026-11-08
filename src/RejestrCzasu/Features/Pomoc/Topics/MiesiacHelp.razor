@@ -1,0 +1,80 @@
+@* Help topic "miesiac" (AD-22, R26): the Widok miesiąca screen (menu Widok miesiąca). *@
+<p>
+    Ekran <strong>Widok miesiąca</strong> pokazuje Twoje Wpisy z wybranego Miesiąca, dzień po dniu, z Sumą dnia, Sumą
+    tygodnia i sumą Miesiąca. Po otwarciu z menu to bieżący Miesiąc (według czasu polskiego). Wpisy widzisz tylko Ty.
+</p>
+
+<h2>Wybór Miesiąca</h2>
+<p>
+    Przyciski <strong>Poprzedni</strong> i <strong>Następny</strong> nad listą przechodzą do Miesiąca wcześniej
+    i później, także przez przełom roku (np. z „Styczeń 2026” do „Grudzień 2025”), a <strong>Bieżący</strong> wraca do
+    bieżącego Miesiąca - na bieżącym Miesiącu jest wyłączony. Wybrany Miesiąc jest w nagłówku ekranu i w adresie
+    strony, np. <strong>/miesiac/2026-09</strong> dla września 2026, więc taki adres możesz zapisać jako zakładkę
+    i otworzyć ten Miesiąc od razu. Adres <strong>/miesiac</strong> zawsze otwiera bieżący Miesiąc. Adres z błędnym
+    Miesiącem (np. /miesiac/2026-13 albo /miesiac/2026-9 zamiast /miesiac/2026-09) pokazuje stronę „nie znaleziono”.
+</p>
+
+<h2>Grupy: tydzień i dzień</h2>
+<p>
+    Wpisy są pogrupowane w tygodnie, a w tygodniu w dni. Nagłówek tygodnia ma jego numer w Miesiącu i zakres dat,
+    np. „Tydzień 1 (01.09–06.09)”: tydzień trwa od poniedziałku do niedzieli, ale jego zakres i suma obejmują tylko dni
+    tego Miesiąca, więc pierwszy i ostatni tydzień mogą być krótsze. Tydzień z dniem 1 to zawsze „Tydzień 1”; tydzień
+    bez Wpisów nie ma grupy, więc numery mogą przeskoczyć (np. „Tydzień 1”, „Tydzień 3”). Nagłówek dnia to dzień
+    tygodnia i data, np. „Wtorek, 01.09.2026”; dni bez Wpisów się nie pojawiają.
+</p>
+<p>
+    Każdy wiersz to jeden Wpis z kolumnami <strong>Projekt</strong> (kod), <strong>Typ pracy</strong>,
+    <strong>Opis</strong> i <strong>Czas</strong> (jak w Jirze, np. 1h 30m). W dniu Wpisy są uporządkowane według kodu
+    Projektu, potem nazwy Typu pracy, a przy remisie w kolejności dodania. Grupę zwijasz i rozwijasz strzałką przy jej
+    nagłówku. Układu (grupowania, sortowania i kolejności kolumn) nie da się tu zmienić. Długi lub kilkuliniowy Opis
+    jest w jednej linii, ucięty „…”; pełny tekst widać po najechaniu na niego myszą.
+</p>
+
+<h2>Edycja, kopia i usunięcie Wpisu</h2>
+<p>
+    Na końcu każdego wiersza są ikony <strong>Edytuj</strong>, <strong>Kopiuj</strong> i <strong>Usuń</strong>, takie
+    same jak na Liście wpisów. Edytuj otwiera okno „Edycja Wpisu” z zapisanymi wartościami, Kopiuj okno „Kopia Wpisu”
+    z Projektem, Typem pracy, opisem i Czasem oryginału oraz datą ostatnio ustawioną na ekranie Nowy wpis (bez niej -
+    dzisiejszą), a Usuń pyta o potwierdzenie. Po zapisie lub usunięciu lista i wszystkie sumy (dnia, tygodnia
+    i Miesiąca) są od razu przeliczone, a potem pojawia się komunikat, np. „Zapisano Wpis…” albo „Usunięto Wpis…”.
+    Wpis przeniesiony edycją na inny Miesiąc znika z listy; dzień lub tydzień bez Wpisów znika razem z nim. Anuluj
+    niczego nie zmienia.
+</p>
+
+<h2>Sumy</h2>
+<p>
+    W nagłówku tygodnia jest liczba widocznych pozycji i Suma tygodnia, np. „5 pozycji · Suma tygodnia: 30h”, a
+    w nagłówku dnia - Suma dnia, np. „2 pozycje · Suma dnia: 8h”. W stopce jest licznik pozycji i suma Miesiąca, np.
+    „31 pozycji · Suma Miesiąca: 103h”. Bez Wpisów lista pokazuje „Brak Wpisów w tym Miesiącu.”, a stopka
+    „0 pozycji · Suma Miesiąca: 0h”.
+</p>
+
+<h2>Filtr nie zmienia sum</h2>
+<p>
+    W okienku kolumny (przycisk w nagłówku) możesz odznaczyć wartości, których nie chcesz widzieć, a pole
+    <strong>Szukaj we wszystkich kolumnach</strong> zawęża listę do wierszy z wpisanym tekstem. Filtr i wyszukiwanie
+    tylko ukrywają wiersze: liczniki pozycji maleją (w stopce z dopiskiem „po filtrach, z …”), a dzień bez widocznych
+    Wpisów znika, ale Suma dnia, Suma tygodnia i suma Miesiąca zawsze dotyczą wszystkich Wpisów Miesiąca.
+</p>
+
+<h2>Pobierz Zestawienie</h2>
+<p>
+    Przycisk <strong>Pobierz Zestawienie</strong> nad listą zapisuje plik Excela z Zestawieniem Miesiąca dla Odbiorcy,
+    np. <strong>Zestawienie-wrzesień_2026.xlsx</strong>. Ekran zostaje otwarty, a plik trafia do pobranych plików
+    przeglądarki. Prefiks zapisany w <strong>Ustawieniach konta</strong> trafia na początek nazwy pliku, np.
+    <strong>ABC_Zestawienie-wrzesień_2026.xlsx</strong>.
+</p>
+<p>
+    Plik ma jeden arkusz o nazwie Miesiąca, np. „Wrzesień 2026”, i kolumny <strong>Dzień tygodnia</strong>,
+    <strong>Data</strong>, <strong>Kod</strong>, <strong>Typ</strong>, <strong>Opis</strong>, <strong>Godziny</strong>,
+    <strong>Suma dnia</strong> i <strong>Suma tygodnia</strong>. Jeden wiersz to Wpisy jednego dnia z tym samym
+    Projektem i Typem pracy, złączone w jeden: ich opisy są w kolejnych liniach komórki, a godziny zsumowane. Dzień
+    tygodnia, data i Suma dnia są tylko w pierwszym wierszu dnia, Suma tygodnia tylko w pierwszym wierszu tygodnia.
+    Pod wierszami, po jednym pustym, jest pogrubiony wiersz <strong>RAZEM</strong> z sumą Miesiąca, np.
+    „RAZEM WRZESIEŃ 2026”. Godziny są liczbami (np. 1,5), nie formułami.
+</p>
+<p>
+    Sumy w pliku są takie same jak Suma dnia, Suma tygodnia i suma Miesiąca na tym ekranie, także gdy lista jest
+    zawężona filtrem - plik zawsze obejmuje wszystkie Wpisy Miesiąca. Gdy Miesiąc nie ma Wpisów, przycisku nie ma, a
+    w jego miejscu jest tekst „Brak Wpisów - nie ma Zestawienia do pobrania.”.
+</p>

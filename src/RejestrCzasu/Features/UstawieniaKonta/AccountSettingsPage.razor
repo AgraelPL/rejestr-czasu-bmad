@@ -1,0 +1,72 @@
+@page "/ustawienia-konta"
+@using Blazilla
+@using RejestrCzasu.Domain
+@using RejestrCzasu.Features.Pomoc
+@using RejestrCzasu.Features.Zestawienie
+@inject AccountSettingsStore Store
+@inject TimeProvider TimeProvider
+@inject UiMessages Messages
+@* Ustawienia konta (R7, R25): the prefix of the Zestawienie file name and the link to the password change (AD-15: the
+   password is changed only on /konto/zmiana-hasla). The prefix is checked only by AccountSettingsFormValidator (AD-8),
+   saved through AccountSettingsStore (AD-7, AD-16); the preview of the file name always comes from SummaryFile.Name
+   for the current Miesiąc in Poland and the typed value after trimming, also an invalid one. *@
+
+<EodPage Title="Ustawienia konta" Description="Prefiks nazwy pliku Zestawienia i zmiana hasła.">
+    <PageHelp Topic="@HelpTopics.UstawieniaKonta" />
+    <EodCard Title="Zestawienie">
+        @if (_loaded)
+        {
+            @* novalidate: only AccountSettingsFormValidator shows messages, under the field. *@
+            <EditForm Model="_form" OnValidSubmit="SaveAsync" class="account-settings-form" novalidate>
+                <FluentValidator Validator="_validator" />
+                <FluentTextInput @bind-Value="_form.Prefix" Label="Prefiks nazwy pliku Zestawienia" Immediate="true"
+                                 class="account-settings-prefix" />
+                <p class="account-settings-preview">Nazwa pliku: <strong>@Preview</strong></p>
+                <FluentButton Type="ButtonType.Submit" Appearance="ButtonAppearance.Primary" Disabled="_busy"
+                              class="account-settings-save">Zapisz</FluentButton>
+            </EditForm>
+        }
+    </EodCard>
+    <EodCard Title="Hasło">
+        <FluentAnchorButton Href="@AccountEndpoints.ChangePasswordPath" class="account-settings-password">Zmień hasło</FluentAnchorButton>
+    </EodCard>
+</EodPage>
+
+@code {
+    internal const string SavedMessage = "Zapisano Ustawienia konta.";
+
+    private readonly AccountSettingsFormValidator _validator = new();
+    private readonly AccountSettingsForm _form = new();
+    private bool _loaded;
+    private bool _busy;
+
+    /// <summary>The file name of the Zestawienie of the current Miesiąc with the typed prefix.</summary>
+    private string Preview =>
+        SummaryFile.Name(YearMonth.From(PolishCalendar.Today(TimeProvider)), (_form.Prefix ?? "").Trim());
+
+    protected override async Task OnInitializedAsync()
+    {
+        _form.Prefix = await Store.GetPrefixAsync();
+        _loaded = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+        _busy = true;
+        try
+        {
+            var prefix = (_form.Prefix ?? "").Trim();
+            await Store.SavePrefixAsync(prefix);
+            _form.Prefix = prefix;
+            await Messages.ShowSuccessAsync(SavedMessage);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

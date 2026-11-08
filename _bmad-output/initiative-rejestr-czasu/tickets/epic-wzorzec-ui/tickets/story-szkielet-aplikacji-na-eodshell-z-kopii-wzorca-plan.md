@@ -3,7 +3,7 @@ title: 'Szkielet aplikacji na EodShell z kopii wzorca'
 type: 'feature'
 ticket: '3'
 created: '2026-11-03'
-status: 'built'
+status: done
 baseline_revision: 'b7f810d899852f3a707720c99585b861d34dbe3e'
 route: 'full'
 route_source: 'auto'

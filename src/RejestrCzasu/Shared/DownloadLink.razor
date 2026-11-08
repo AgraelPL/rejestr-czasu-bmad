@@ -1,0 +1,18 @@
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@* A file download (AD-14): a plain <a href download> styled as a button. The Blazor router skips anchors with
+   download, so the browser fetches the endpoint itself and the page stays; never NavigateTo an endpoint. *@
+<a href="@Href" download class="@($"app-download-link {Class}".TrimEnd())">
+    <EodIcon Value="@(new Icons.Regular.Size20.ArrowDownload())" />
+    <span>@ChildContent</span>
+</a>
+
+@code {
+    /// <summary>The address of the file endpoint, e.g. <c>/zestawienie/2026/9</c>.</summary>
+    [Parameter, EditorRequired] public string Href { get; set; } = default!;
+
+    /// <summary>Extra CSS classes after <c>app-download-link</c>.</summary>
+    [Parameter] public string? Class { get; set; }
+
+    /// <summary>The text of the link.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

@@ -3,7 +3,7 @@ title: 'Nowy wpis, Lista wpisów i okno Wpisu na wzorcu'
 type: 'feature'
 ticket: '5'
 created: '2026-11-03'
-status: 'built'
+status: done
 baseline_revision: '6495c7e5e62f45b5a107b7078f2e03b6a3445d63'
 route: 'full'
 route_source: 'auto'

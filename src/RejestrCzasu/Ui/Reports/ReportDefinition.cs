@@ -91,6 +91,22 @@ public sealed record ReportColumn(string Key, string Label, ColumnType Type = Co
     /// <value>Domyślnie <see langword="null"/> – nagłówek <see cref="Label"/>.</value>
     /// <remarks>Dopasowanie Rejestru (AD-23 poz. 13, docs/ui/DOPASOWANIA.md); czyta go pisarz pliku ekranu.</remarks>
     public string? ExportLabel { get; init; }
+
+    /// <summary>
+    /// Wiersz grupy tej kolumny zaczyna się od nagłówka („Kolumna: wartość”); <see langword="false"/> – sama wartość
+    /// (np. „Tydzień 1 (01.09–06.09)” zamiast „Tydzień: Tydzień 1 (01.09–06.09)”).
+    /// </summary>
+    /// <value>Domyślnie <see langword="true"/> – jak we wzorcu.</value>
+    /// <remarks>Dopasowanie Rejestru (AD-23 poz. 15, docs/ui/DOPASOWANIA.md).</remarks>
+    public bool GroupLabel { get; init; } = true;
+
+    /// <summary>
+    /// Kolumna bierze pozostałą szerokość tabeli, ale długi tekst jej nie poszerza: komórka w jednej linii ucięta „…”,
+    /// pełny tekst w podpowiedzi (<c>title</c>) po najechaniu (np. Opis Wpisu, także wieloliniowy).
+    /// </summary>
+    /// <value>Domyślnie <see langword="false"/> – jak we wzorcu.</value>
+    /// <remarks>Dopasowanie Rejestru (AD-23 poz. 17, docs/ui/DOPASOWANIA.md); klasa <c>eod-col-fill</c> w eod.css.</remarks>
+    public bool FillWidth { get; init; }
 }
 
 /// <summary>Jeden poziom sortowania raportu (kolejne poziomy rozstrzygają remisy poprzednich).</summary>

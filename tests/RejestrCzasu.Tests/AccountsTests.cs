@@ -74,6 +74,17 @@ public sealed class AccountsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ErrorPage_Anonymous_IsEodPage()
+    {
+        await using var app = new AppClient(postgres);
+
+        var (html, _) = await app.GetPageAsync("/Error");
+
+        Assert.Contains("eod-page", html);
+        Assert.Contains("Podczas przetwarzania żądania wystąpił błąd.", html);
+    }
+
+    [Fact]
     public async Task Register_LoginTakenWithOtherLetterCase_IsRejected_InPolish()
     {
         await using var app = new AppClient(postgres);

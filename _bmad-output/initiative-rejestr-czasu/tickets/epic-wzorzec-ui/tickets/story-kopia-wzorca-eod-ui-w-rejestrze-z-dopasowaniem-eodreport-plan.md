@@ -3,7 +3,7 @@ title: 'Kopia wzorca eod-ui w Rejestrze z dopasowaniem EodReport'
 type: 'feature'
 ticket: '1'
 created: '2026-11-02'
-status: 'built'
+status: done
 baseline_revision: '69c244a5c6b393ef45d47be7d7b0cc4175409fbd'
 route: 'full'
 route_source: 'auto'

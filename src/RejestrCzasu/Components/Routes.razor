@@ -2,7 +2,11 @@
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Shared.MainLayout)">
             <Authorizing>
-                <p>Sprawdzanie uprawnień...</p>
+                <EodPage>
+                    <EodCard>
+                        <p>Sprawdzanie uprawnień...</p>
+                    </EodCard>
+                </EodPage>
             </Authorizing>
             <NotAuthorized>
                 @if (context.User.Identity?.IsAuthenticated == true)
