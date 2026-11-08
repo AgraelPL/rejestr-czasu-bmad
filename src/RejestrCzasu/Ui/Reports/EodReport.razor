@@ -164,6 +164,7 @@
                         var sortLevel = Layout.Sorting.FindIndex(s => s.Key == column.Key);
                         <th cell-type="columnheader"
                             scope="col"
+                            class="@(column.FillWidth ? FillClass : null)"
                             col-index="@(i + 1)"
                             col-justify="@(column.Type == ColumnType.Number ? "end" : "start")"
                             col-pinned="@(column.IsKey ? "start" : null)"
@@ -449,15 +450,17 @@
                 var column = _visibleColumns[i];
                 var value = ReportEngine.GetValue(row, column.Key);
                 var text = ReportEngine.Display(column, value);
+                var fill = column.FillWidth ? FillClass : null;
+                var title = column.FillWidth ? text : null;
                 if (column.IsLink)
                 {
-                    <td col-index="@(i + 1)" col-pinned="@(column.IsKey ? "start" : null)">
+                    <td col-index="@(i + 1)" col-pinned="@(column.IsKey ? "start" : null)" class="@fill" title="@title">
                         <a class="eod-cell-main" href="@(RowHref?.Invoke(row) ?? "#")">@text</a>
                     </td>
                 }
                 else if (column.BadgeColors is not null)
                 {
-                    <td col-index="@(i + 1)">
+                    <td col-index="@(i + 1)" class="@fill" title="@title">
                         <FluentBadge Appearance="BadgeAppearance.Tint" Color="@Statuses.Color(value?.ToString(), column.BadgeColors)">@text</FluentBadge>
                     </td>
                 }
@@ -466,7 +469,8 @@
                     <td col-index="@(i + 1)"
                         col-pinned="@(column.IsKey ? "start" : null)"
                         col-justify="@(column.Type == ColumnType.Number ? "end" : null)"
-                        class="@(column.Type is ColumnType.Number or ColumnType.Date ? "eod-num" : null)">@text</td>
+                        class="@((column.Type is ColumnType.Number or ColumnType.Date, fill) switch { (true, null) => "eod-num", (true, _) => $"eod-num {fill}", _ => fill })"
+                        title="@title">@text</td>
                 }
             }
             @if (RowActions is not null)

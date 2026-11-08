@@ -8,7 +8,7 @@ namespace RejestrCzasu.Features.Wpisy;
 /// The xlsx writer of the export of the lists of Entries (AD-9, AD-23 poz. 14): <c>EodReport</c> gives the visible
 /// columns in the screen's order and every row after the filters; the file has one sheet "Wpisy" with a bold header
 /// row. Data is a date cell (dd.mm.yyyy), "Godziny" a number of decimal hours (it sums in Excel), every other column
-/// literal text: never a formula and never converted to a number.
+/// literal text: never a formula and never converted to a number; Opis wrapped (its lines visible).
 /// </summary>
 internal static class EntriesXlsx
 {
@@ -110,6 +110,11 @@ internal static class EntriesXlsx
             default:
                 // A string value is a text cell as is: "=SUMA(A1)", "0012" or "1,5" stay text.
                 cell.Value = value is null ? "" : column.Format?.Invoke(value) ?? value.ToString() ?? "";
+                if (column.Key == nameof(EntryRow.Description))
+                {
+                    // Wrapped, so the lines of a multi-line Opis show in Excel.
+                    cell.Style.Alignment.WrapText = true;
+                }
                 break;
         }
     }

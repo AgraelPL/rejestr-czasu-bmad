@@ -258,16 +258,17 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         Assert.Equal(new DateOnly(2026, 8, 20), DialogDate(cut).Instance.Value);
         Assert.Equal("RDZ", ProjectList(cut).Instance.Value?.Code);
         Assert.Equal("Development", WorkTypeList(cut).Instance.Value?.Name);
-        Assert.Equal(("Sierpień", "2h"), (TextInput(cut, "entry-description").Instance.Value, TextInput(cut, "entry-czas").Instance.Value));
+        Assert.Equal(("Sierpień", "2h"), (Description(cut).Instance.Value, TextInput(cut, "entry-czas").Instance.Value));
 
         var abc = ProjectList(cut).Instance.Items!.Single(p => p.Code == "ABC");
         var spotkanie = WorkTypeList(cut).Instance.Items!.Single(w => w.Name == "Spotkanie");
         await cut.InvokeAsync(() => DialogDate(cut).Instance.ValueChanged.InvokeAsync(new DateOnly(2026, 8, 21)));
         await cut.InvokeAsync(() => ProjectList(cut).Instance.ValueChanged.InvokeAsync(abc));
         await cut.InvokeAsync(() => WorkTypeList(cut).Instance.ValueChanged.InvokeAsync(spotkanie));
-        await cut.InvokeAsync(() => TextInput(cut, "entry-description").Instance.ValueChanged.InvokeAsync("Sierpień poprawiony"));
         await cut.InvokeAsync(() => TextInput(cut, "entry-czas").Instance.ValueChanged.InvokeAsync("3h 15m"));
-        await cut.Find(".entry-save").ClickAsync(new MouseEventArgs());
+        // Ctrl+Enter in Opis saves with the text area's current text (no change event yet); a plain Enter is a new line.
+        Assert.Equal([NewEntryPageTests.CtrlEnter], Description(cut).Instance.ChangeAfterKeyPress ?? []);
+        await cut.InvokeAsync(() => Description(cut).Instance.ChangeAfterKeyPressHandlerAsync("Sierpień poprawiony", NewEntryPageTests.CtrlEnter));
 
         WaitForMessage(cut, "success", "Zapisano Wpis: 21.08.2026, ABC, 3h 15m.");
         cut.WaitForAssertion(() => Assert.Empty(cut.FindAll("fluent-dialog")));
@@ -309,7 +310,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         Assert.DoesNotContain(cut.FindAll(".eod-messages fluent-message-bar"), b => b.TextContent.Contains("już nie istnieje"));
         Assert.NotEmpty(cut.FindAll("fluent-dialog"));
         Assert.Equal("5h", TextInput(cut, "entry-czas").Instance.Value);
-        Assert.Equal("Drugi 1 września", TextInput(cut, "entry-description").Instance.Value);
+        Assert.Equal("Drugi 1 września", Description(cut).Instance.Value);
         cut.WaitForAssertion(() => Assert.DoesNotContain("Spotkanie", WorkTypeList(cut).Instance.Items!.Select(w => w.Name)));
         Assert.Equal(60, (await EntryAsync(ids["Drugi 1 września"]))!.Minutes);
     }
@@ -367,7 +368,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         Assert.Contains("Kopia Wpisu", cut.Find("fluent-dialog").TextContent);
         Assert.Equal(new DateOnly(2026, 9, 10), DialogDate(cut).Instance.Value);
         Assert.Equal(("RDZ", "Development"), (ProjectList(cut).Instance.Value?.Code, WorkTypeList(cut).Instance.Value?.Name));
-        Assert.Equal(("Sierpień", "2h"), (TextInput(cut, "entry-description").Instance.Value, TextInput(cut, "entry-czas").Instance.Value));
+        Assert.Equal(("Sierpień", "2h"), (Description(cut).Instance.Value, TextInput(cut, "entry-czas").Instance.Value));
         Assert.Equal(4, await CountAsync());
 
         await cut.InvokeAsync(() => DialogDate(cut).Instance.ValueChanged.InvokeAsync(new DateOnly(2026, 9, 11)));
@@ -406,7 +407,7 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
         Assert.Null(ProjectList(cut).Instance.Value);
         Assert.DoesNotContain("OLD", ProjectList(cut).Instance.Items!.Select(p => p.Code));
         Assert.Equal("Development", WorkTypeList(cut).Instance.Value?.Name);
-        Assert.Equal(("Koniec września", "24h"), (TextInput(cut, "entry-description").Instance.Value, TextInput(cut, "entry-czas").Instance.Value));
+        Assert.Equal(("Koniec września", "24h"), (Description(cut).Instance.Value, TextInput(cut, "entry-czas").Instance.Value));
     }
 
     [Theory]
@@ -756,6 +757,9 @@ public sealed class EntriesPageTests : BunitContext, IAsyncLifetime
 
     private static IRenderedComponent<FluentCombobox<WorkTypeOption, WorkTypeOption?>> WorkTypeList(IRenderedComponent<MainLayout> cut) =>
         cut.FindComponent<FluentCombobox<WorkTypeOption, WorkTypeOption?>>();
+
+    private static IRenderedComponent<FluentTextArea> Description(IRenderedComponent<MainLayout> cut) =>
+        cut.FindComponents<FluentTextArea>().Single(i => i.Instance.Class == "entry-description");
 
     private static IRenderedComponent<FluentTextInput> TextInput(IRenderedComponent<MainLayout> cut, string cssClass) =>
         cut.FindComponents<FluentTextInput>().Single(i => i.Instance.Class == cssClass);

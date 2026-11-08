@@ -102,3 +102,6 @@ Przeniesione:
 - source_plan: `tickets/epic-miesiac-i-zestawienie/tickets/story-refactor-sweep-plan.md`
   summary: „Szukaj” w raportach trafia także w ukryte kolumny (np. Tydzień i Dzień w Widoku miesiąca) (przegląd 3.1, odrzucone w 3.1).
   evidence: Przeniesione: propozycja historii z nową pozycją AD-23 - zmiana silnika kopii `Ui/` (`EodReport`) i zachowania wszystkich raportów; do decyzji Autora.
+- source_plan: `plan-3-10-opis-obszar-tekstowy-okna.md`
+  summary: Ctrl+Enter w Opisie nic nie robi, gdy User puści Ctrl przed Enter (brak nowej linii i brak zapisu).
+  evidence: Przegląd 3.10; skrypt Fluent UI 5.0.1 (`addKeyPressEventListener`) robi `preventDefault` na keydown, a zapis wysyła na keyup tylko przy dokładnie tym samym `ctrlKey`. Do sprawdzenia przez Autora w Sesji wpisywania; poprawka wymaga własnej obsługi klawisza w eod.js (pozycja AD-23).

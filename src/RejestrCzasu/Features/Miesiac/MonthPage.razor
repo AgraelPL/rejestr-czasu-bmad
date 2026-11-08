@@ -103,7 +103,7 @@
             },
             new(nameof(MonthEntry.ProjectCode), "Projekt", ColumnType.List),
             new(nameof(MonthEntry.WorkTypeName), "Typ pracy", ColumnType.List),
-            new(nameof(MonthEntry.Description), "Opis", ColumnType.List),
+            new(nameof(MonthEntry.Description), "Opis", ColumnType.List) { FillWidth = true },
             new(nameof(MonthEntry.Minutes), "Czas", ColumnType.List) { Format = v => Czas.Format((int)v!) },
         ],
         Grouping = [WeekKey, DayKey],

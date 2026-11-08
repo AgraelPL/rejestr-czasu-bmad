@@ -1,10 +1,11 @@
 using FluentValidation;
+using RejestrCzasu.Data;
 using RejestrCzasu.Domain;
 
 namespace RejestrCzasu.Shared;
 
 /// <summary>
-/// The one validator of the Entry form (AD-8), attached through Blazilla: required fields and the Czas rule taken from
+/// The one validator of the Entry form (AD-8), attached through Blazilla: required fields, the length of Opis after trimming and the Czas rule taken from
 /// <see cref="Czas"/>. The Suma dnia over 24 h is not checked (R4).
 /// </summary>
 public sealed class EntryFormValidator : AbstractValidator<EntryInput>
@@ -13,6 +14,7 @@ public sealed class EntryFormValidator : AbstractValidator<EntryInput>
     public const string ProjectMessage = "Wybierz Projekt.";
     public const string WorkTypeMessage = "Wybierz Typ pracy.";
     public const string DescriptionMessage = "Podaj opis.";
+    public static readonly string DescriptionLengthMessage = $"Opis może mieć najwyżej {TimeEntry.DescriptionMaxLength} znaków.";
     public const string CzasMessage = "Podaj Czas, np. 1h 30m, 45m albo 1:30 - od 15m do 24h, w krokach co 15 minut.";
 
     public EntryFormValidator()
@@ -22,6 +24,9 @@ public sealed class EntryFormValidator : AbstractValidator<EntryInput>
         RuleFor(e => e.WorkType).NotNull().WithMessage(WorkTypeMessage);
         RuleFor(e => e.Description)
             .Must(description => !string.IsNullOrWhiteSpace(description)).WithMessage(DescriptionMessage);
+        RuleFor(e => e.Description)
+            .Must(description => (description ?? "").Trim().Length <= TimeEntry.DescriptionMaxLength)
+            .WithMessage(DescriptionLengthMessage);
         RuleFor(e => e.Czas).Must(IsValidCzas).WithMessage(CzasMessage);
     }
 

@@ -99,6 +99,14 @@ public sealed record ReportColumn(string Key, string Label, ColumnType Type = Co
     /// <value>Domyślnie <see langword="true"/> – jak we wzorcu.</value>
     /// <remarks>Dopasowanie Rejestru (AD-23 poz. 15, docs/ui/DOPASOWANIA.md).</remarks>
     public bool GroupLabel { get; init; } = true;
+
+    /// <summary>
+    /// Kolumna bierze pozostałą szerokość tabeli, ale długi tekst jej nie poszerza: komórka w jednej linii ucięta „…”,
+    /// pełny tekst w podpowiedzi (<c>title</c>) po najechaniu (np. Opis Wpisu, także wieloliniowy).
+    /// </summary>
+    /// <value>Domyślnie <see langword="false"/> – jak we wzorcu.</value>
+    /// <remarks>Dopasowanie Rejestru (AD-23 poz. 17, docs/ui/DOPASOWANIA.md); klasa <c>eod-col-fill</c> w eod.css.</remarks>
+    public bool FillWidth { get; init; }
 }
 
 /// <summary>Jeden poziom sortowania raportu (kolejne poziomy rozstrzygają remisy poprzednich).</summary>

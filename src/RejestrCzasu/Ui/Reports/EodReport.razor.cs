@@ -165,6 +165,9 @@ public partial class EodReport
     [Parameter]
     public int? PageSize { get; set; }
 
+    // Dopasowanie Rejestru, AD-23 poz. 17: klasa nagłówka i komórek kolumny z ReportColumn.FillWidth (eod.css).
+    private const string FillClass = "eod-col-fill";
+
     /// <summary>
     /// Dane raportu się wczytują: zamiast wierszy – szkielety (FluentSkeleton) w kolumnach bieżącego układu, w stopce
     /// „Wczytywanie danych…”, tabela z <c>aria-busy="true"</c>.

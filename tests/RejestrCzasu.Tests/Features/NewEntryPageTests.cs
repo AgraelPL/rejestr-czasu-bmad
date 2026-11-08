@@ -273,14 +273,18 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
     }
 
     [Fact(Timeout = TestTimeoutMs)]
-    public async Task EnterInOpis_AndInData_AndSaveButton_SaveToo()
+    public async Task CtrlEnterInOpis_AndEnterInData_AndSaveButton_SaveToo()
     {
         var (projects, workTypes) = await SeedAsync(Xunit.TestContext.Current.CancellationToken);
         var cut = RenderScreen();
 
+        // The text typed in Opis reaches the server only with Ctrl+Enter (no change event yet): it is saved, in two lines.
         await FillAsync(cut, projects["RDZ"], workTypes["Development"], "", "0:15");
-        await EnterAsync(cut, Description(cut), "Z Enterem w opisie");
+        await CtrlEnterAsync(cut, Description(cut), "Z Ctrl+Enter\nw opisie");
         WaitForMessage(cut, "success", "Zapisano Wpis: 03.09.2026, RDZ, 15m.");
+        // Nowy wpis after the save (R5): Opis cleared, the focus in Projekt.
+        Assert.Equal("", Description(cut).Instance.Value);
+        cut.WaitForAssertion(() => Assert.Equal(ProjectList(cut).Instance.Element.Id, FocusedFields(cut).Last()));
 
         await FillAsync(cut, projects["ABC"], workTypes["Development"], "Z Enterem w dacie", "24h");
         await cut.Find(".entry-form-date").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
@@ -292,7 +296,7 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         WaitForMessage(cut, "success", "Zapisano Wpis: 03.09.2026, RDZ, 1h 30m.");
 
         Assert.Equal(
-            [("Z Enterem w opisie", 15), ("Z Enterem w dacie", 1440), ("Przyciskiem", 90)],
+            [("Z Ctrl+Enter\nw opisie", 15), ("Z Enterem w dacie", 1440), ("Przyciskiem", 90)],
             (await EntriesAsync()).OrderBy(e => e.Id).Select(e => (e.Description, e.Minutes)));
     }
 
@@ -349,6 +353,32 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         Assert.Empty(await EntriesAsync());
         Assert.Equal(projects["RDZ"], ProjectList(cut).Instance.Value);
         Assert.Equal("Spotkanie", Description(cut).Instance.Value);
+    }
+
+    [Fact(Timeout = TestTimeoutMs)]
+    public async Task Opis_TextAreaWithoutMaxLength_OnlyCtrlEnterSaves_LongerThan500AfterTrim_ShowsMessage()
+    {
+        var (projects, workTypes) = await SeedAsync(Xunit.TestContext.Current.CancellationToken);
+        var cut = RenderScreen();
+
+        var description = Description(cut).Instance;
+        // No maxlength: the browser would cut a pasted text before the trim (AD-8); a plain Enter starts a new line.
+        Assert.Null(description.MaxLength);
+        Assert.Equal(TextAreaResize.Vertical, description.Resize);
+        Assert.Equal([CtrlEnter], description.ChangeAfterKeyPress ?? []);
+        Assert.DoesNotContain(description.ChangeAfterKeyPress ?? [], k => k == KeyPress.For(KeyCode.Enter));
+        // Enter in Czas still saves.
+        Assert.Equal([KeyPress.For(KeyCode.Enter)], Czas(cut).Instance.ChangeAfterKeyPress ?? []);
+
+        await FillAsync(cut, projects["RDZ"], workTypes["Development"], "", "1h");
+        await CtrlEnterAsync(cut, Description(cut), " " + new string('a', TimeEntry.DescriptionMaxLength + 1) + " ");
+        cut.WaitForAssertion(() => Assert.Contains(EntryFormValidator.DescriptionLengthMessage, cut.Markup));
+        Assert.Empty(await EntriesAsync());
+
+        var longest = new string('b', TimeEntry.DescriptionMaxLength);
+        await CtrlEnterAsync(cut, Description(cut), "  " + longest + "\n ");
+        WaitForMessage(cut, "success", "Zapisano Wpis: 03.09.2026, RDZ, 1h.");
+        Assert.Equal([longest], (await EntriesAsync()).Select(e => e.Description));
     }
 
     [Fact(Timeout = TestTimeoutMs)]
@@ -490,6 +520,16 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         return cut.InvokeAsync(() => input.Instance.ChangeAfterKeyPressHandlerAsync(text, KeyPress.For(KeyCode.Enter)));
     }
 
+    /// <summary>The only save key of Opis (a plain Enter starts a new line): Ctrl+Enter, sent with the field's current text.</summary>
+    internal static readonly KeyPress CtrlEnter = KeyPress.For(KeyCode.Enter).AndCtrlKey(true).WithPreventDefault(true);
+
+    /// <summary>Ctrl+Enter in Opis: the Fluent UI script sends the text area's current text with the key (ChangeAfterKeyPress).</summary>
+    private static Task CtrlEnterAsync(IRenderedComponent<MainLayout> cut, IRenderedComponent<FluentTextArea> description, string text)
+    {
+        Assert.Equal([CtrlEnter], description.Instance.ChangeAfterKeyPress ?? []);
+        return cut.InvokeAsync(() => description.Instance.ChangeAfterKeyPressHandlerAsync(text, CtrlEnter));
+    }
+
     private static IRenderedComponent<FluentDatePicker<DateOnly?>> DatePicker(IRenderedComponent<MainLayout> cut) =>
         cut.FindComponent<FluentDatePicker<DateOnly?>>();
 
@@ -530,7 +570,8 @@ public sealed class NewEntryPageTests : BunitContext, IAsyncLifetime
         await db.SaveChangesAsync(Ct);
     }
 
-    private static IRenderedComponent<FluentTextInput> Description(IRenderedComponent<MainLayout> cut) => TextInput(cut, "entry-description");
+    private static IRenderedComponent<FluentTextArea> Description(IRenderedComponent<MainLayout> cut) =>
+        cut.FindComponents<FluentTextArea>().Single(i => i.Instance.Class == "entry-description");
 
     private static IRenderedComponent<FluentTextInput> Czas(IRenderedComponent<MainLayout> cut) => TextInput(cut, "entry-czas");
 

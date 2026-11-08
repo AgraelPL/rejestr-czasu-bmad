@@ -65,6 +65,8 @@ public sealed class EntryFormValidatorTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
+    [InlineData("  \n ")]
+    [InlineData("\r\n\t")]
     public void EmptyDescription_IsRequired(string description)
     {
         var input = Valid();
@@ -73,6 +75,38 @@ public sealed class EntryFormValidatorTests
         var error = Assert.Single(_validator.Validate(input).Errors);
 
         Assert.Equal((nameof(EntryInput.Description), "Podaj opis."), (error.PropertyName, error.ErrorMessage));
+    }
+
+    [Theory]
+    [InlineData(500, "")]
+    [InlineData(500, "  ")]
+    [InlineData(500, " \n ")]
+    [InlineData(1, "")]
+    public void Description_UpTo500CharactersAfterTrim_IsValid(int length, string padding)
+    {
+        var input = Valid();
+        input.Description = padding + new string('a', length) + padding;
+
+        Assert.True(_validator.Validate(input).IsValid);
+    }
+
+    [Theory]
+    [InlineData("", false)]
+    [InlineData("  ", false)]
+    [InlineData("", true)]
+    [InlineData("  ", true)]
+    public void Description_Over500CharactersAfterTrim_HasPolishMessage(string padding, bool twoLines)
+    {
+        var input = Valid();
+        // 501 characters after the trim: one line of 501, or two lines of 250 joined by a line break.
+        var text = twoLines ? new string('a', 250) + "\n" + new string('b', 250) : new string('a', 501);
+        input.Description = padding + text + padding;
+
+        var error = Assert.Single(_validator.Validate(input).Errors);
+
+        Assert.Equal(
+            (nameof(EntryInput.Description), "Opis może mieć najwyżej 500 znaków."),
+            (error.PropertyName, error.ErrorMessage));
     }
 
     [Fact]

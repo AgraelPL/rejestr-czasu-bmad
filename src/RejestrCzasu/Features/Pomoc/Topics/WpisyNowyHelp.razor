@@ -12,7 +12,9 @@
     <li><strong>Projekt</strong> - lista Twoich aktywnych Projektów w postaci „KOD - nazwa”. Wpisz początek kodu,
         a lista wskaże pierwszy pasujący Projekt.</li>
     <li><strong>Typ pracy</strong> - lista Twoich aktywnych Typów pracy. Wpisz początek nazwy.</li>
-    <li><strong>Opis</strong> - wymagany; spacje na początku i końcu są pomijane.</li>
+    <li><strong>Opis</strong> - wymagany, najwyżej 500 znaków; spacje i puste linie na początku i końcu są
+        pomijane. Opis może mieć kilka linii: <strong>Enter</strong> w tym polu zaczyna nową linię. Dłuższy Opis nie
+        zostanie zapisany, a przy polu pojawi się komunikat.</li>
     <li><strong>Czas</strong> - tak jak w Jirze: godziny z literą <strong>h</strong> i minuty z literą
         <strong>m</strong>, np. <strong>1h 30m</strong>, <strong>1h30m</strong>, <strong>2h</strong>,
         <strong>45m</strong> albo <strong>90m</strong>. Możesz też wpisać godziny z ułamkiem (<strong>1,5h</strong>
@@ -31,8 +33,9 @@
         <strong>Shift+Tab</strong> wraca do poprzedniego.</li>
     <li>Na liście Projektu lub Typu pracy <strong>Tab</strong> albo <strong>Enter</strong> wybiera wskazaną pozycję.
         Enter na otwartej liście tylko wybiera pozycję, nie zapisuje Wpisu.</li>
-    <li><strong>Enter</strong> w polu Data, Opis lub Czas zapisuje Wpis, bez dodatkowego pytania. Przycisk
-        <strong>Zapisz</strong> robi to samo.</li>
+    <li>Wpis zapisuje, bez dodatkowego pytania, <strong>Enter</strong> w polu Data lub Czas,
+        <strong>Ctrl+Enter</strong> w polu Opis (tam sam Enter zaczyna nową linię) albo przycisk
+        <strong>Zapisz</strong>.</li>
 </ul>
 
 <h2>Po zapisaniu</h2>
@@ -53,7 +56,8 @@
     w obrębie jednego dnia ostatnio zapisany Wpis jest wyżej. Kolumny są takie jak na ekranie
     <strong>Lista wpisów</strong>: <strong>Data</strong>, <strong>Dzień</strong>, <strong>Projekt</strong> (kod),
     <strong>Typ pracy</strong>, <strong>Opis</strong> i <strong>Czas</strong>. W stopce widać liczbę Wpisów i sumę
-    ich Czasu, np. „Wpisy: 3, suma Czasu: 5h”.
+    ich Czasu, np. „Wpisy: 3, suma Czasu: 5h”. Długi lub kilkuliniowy Opis jest w jednej linii, ucięty „…”; pełny
+    tekst widać po najechaniu na niego myszą.
 </p>
 <p>
     Po każdym zapisaniu Wpisu lista wczytuje się ponownie, więc nowy Wpis od razu na niej widać. Kursor zostaje

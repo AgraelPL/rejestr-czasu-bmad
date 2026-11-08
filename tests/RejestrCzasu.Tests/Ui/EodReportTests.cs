@@ -6,7 +6,7 @@ using RejestrCzasu.Ui;
 
 namespace RejestrCzasu.Tests.Ui;
 
-/// <summary>EodReport of the eod-ui copy: Rejestr adjustments AD-23 items 1–5 and 11–15, one test per I/O matrix row.</summary>
+/// <summary>EodReport of the eod-ui copy: Rejestr adjustments AD-23 items 1–5, 11–15 and 17, one test per I/O matrix row.</summary>
 public sealed class EodReportTests : BunitContext
 {
     private static readonly ReportColumn Kod = new("kod", "Kod") { IsKey = true };
@@ -370,6 +370,34 @@ public sealed class EodReportTests : BunitContext
         Assert.Equal(3, cut.FindAll("th [col-sort-button]").Count);
         Assert.Equal(2, cut.FindAll("th[draggable]").Count);
         Assert.Contains("Dodaj poziom", cut.Markup);
+    }
+
+    [Fact]
+    public void FillWidth_HeaderAndCellsHaveFillClass_CellTitleIsTheFullText()
+    {
+        var definition = Plain with
+        {
+            Columns = [Kod, Projekt with { FillWidth = true, Format = v => $"Projekt {v}" }, CzasColumn],
+        };
+        var rows = new[] { Row("A", "pierwsza\ndruga", 30) };
+        var cut = RenderReport(definition, rows: rows);
+
+        Assert.Equal([false, true, false], cut.FindAll("thead th[cell-type=columnheader]").Select(th => th.ClassList.Contains("eod-col-fill")));
+        var cells = cut.Find("tbody tr[hover]").QuerySelectorAll("td");
+        Assert.Equal("eod-col-fill", cells[1].GetAttribute("class"));
+        // The full text with its line break; the browser shows the cell in one line, cut with an ellipsis.
+        Assert.Equal("Projekt pierwsza\ndruga", cells[1].GetAttribute("title"));
+        Assert.Null(cells[0].GetAttribute("title"));
+        Assert.Null(cells[2].GetAttribute("title"));
+    }
+
+    [Fact]
+    public void FillWidthOmitted_NoFillClass_NoTitle()
+    {
+        var cut = RenderReport(Plain);
+
+        Assert.Empty(cut.FindAll(".eod-col-fill"));
+        Assert.Empty(cut.FindAll("tbody td[title]"));
     }
 
     private IRenderedComponent<EodReport> RenderReport(
